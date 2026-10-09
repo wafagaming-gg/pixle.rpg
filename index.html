@@ -20,6 +20,7 @@
 
   #side{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
   #mini{width:128px;height:128px;border:2px solid #fff;image-rendering:pixelated;background:#000;pointer-events:none}
+  #vtag{font-size:11px;color:#ffd23f;background:rgba(10,14,28,.8);border:2px solid #fff;padding:2px 6px;text-shadow:1px 1px #000;pointer-events:none}
   #tools{display:flex;gap:4px}
   #tools label,#tools button{font:inherit;font-size:11px;color:#fff;background:rgba(10,14,28,.8);border:2px solid #fff;padding:3px 6px;cursor:pointer}
   #tools input{display:none}
@@ -77,6 +78,7 @@
 
 <div id="side">
   <canvas id="mini" width="64" height="64"></canvas>
+  <div id="vtag">🏠 Desa</div>
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
@@ -843,6 +845,10 @@ function updateHUD(){
   if(avail)html+='<div class="new">★ Misi baru: '+avail.npc+'</div>';
   else if(!act.length)html+='<div>Semua misi selesai!</div>';
   if(html!==lastQ){$('quest').innerHTML=html;lastQ=html;}
+  const vd=Math.hypot(P.x-8,P.y-8)/T;
+  const va=Math.atan2(-P.y,-P.x),arrows=['→','↘','↓','↙','←','↖','↑','↗'];
+  const vtxt=vd<12?'🏠 Kamu di desa':'🏠 Desa '+arrows[((Math.round(va/(Math.PI/4))%8)+8)%8]+' '+Math.round(vd)+' petak';
+  if($('vtag').textContent!==vtxt)$('vtag').textContent=vtxt;
   updateHotbar();
 }
 
@@ -1588,6 +1594,16 @@ function drawMini(dt){
   mobs.forEach(s=>{const x=Math.floor(s.x/T)-ox,y=Math.floor(s.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64)mctx.fillRect(x,y,2,2);});
   mctx.fillStyle='#5ee6ff';
   pickups.forEach(p=>{if(p.type!=='crystal')return;const x=Math.floor(p.x/T)-ox,y=Math.floor(p.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64)mctx.fillRect(x,y,2,2);});
+  // penanda desa: ikon emas di posisi desa, atau menempel di tepi peta bila di luar jangkauan
+  let vx=0-ox,vy=0-oy,inside=vx>=3&&vx<=60&&vy>=3&&vy<=60;
+  if(!inside){
+    const ang=Math.atan2(vy-32,vx-32);
+    vx=Math.round(32+Math.cos(ang)*28);vy=Math.round(32+Math.sin(ang)*28);
+  }
+  mctx.fillStyle='#000';mctx.fillRect(vx-3,vy-3,7,7);
+  mctx.fillStyle='#ffd23f';mctx.fillRect(vx-2,vy-2,5,5);
+  mctx.fillStyle='#c0504d';mctx.fillRect(vx-2,vy-2,5,2);
+  mctx.fillStyle='#000';mctx.fillRect(vx,vy+1,1,2);
   mctx.fillStyle='#fff';mctx.fillRect(32,32,3,3);mctx.fillStyle='#000';mctx.fillRect(33,33,1,1);
 }
 
