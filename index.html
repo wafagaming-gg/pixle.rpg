@@ -71,6 +71,37 @@
 #bZ{right:94px;bottom:148px;width:46px;height:46px;font-size:12px}
 #bX{right:16px;bottom:190px;width:46px;height:46px;font-size:12px}
 #err{display:none;position:absolute;left:8px;right:8px;bottom:8px;z-index:99;background:rgba(120,0,0,.92);border:2px solid #fff;padding:8px;font-size:12px;line-height:1.4;white-space:pre-wrap;user-select:text;-webkit-user-select:text;pointer-events:auto}
+#auth,#acct{display:none;position:absolute;inset:0;z-index:50;background:rgba(10,14,28,.96);align-items:center;justify-content:center}
+#auth.on,#acct.on{display:flex}
+#acct{background:rgba(10,14,28,.8);z-index:40}
+.abox{width:min(360px,92vw);background:#0a0e1c;border:3px solid #ffe066;padding:16px;font-size:14px;line-height:1.5}
+.abox h2{font-size:18px;color:#ffe066;margin-bottom:4px}
+.abox p{color:#9ad;font-size:12px;margin-bottom:10px}
+.abox input{-webkit-user-select:text;user-select:text;display:block;width:100%;font:inherit;font-size:15px;color:#fff;background:#1a2036;border:2px solid #fff;padding:8px;margin:0 0 8px;touch-action:auto}
+.abox button{font:inherit;font-size:14px;color:#fff;background:#2e5aa8;border:2px solid #fff;padding:8px;width:100%;margin-top:4px;cursor:pointer}
+.abox button.sec{background:#333c5c}.abox button.dng{background:#a03030}
+.abox button:disabled{opacity:.5}
+#aerr{color:#ff8a80;font-size:12px;min-height:16px;margin-bottom:2px;white-space:pre-wrap}
+.abox .tabs{display:flex;gap:4px;margin-bottom:10px}
+.abox .tabs button{margin:0;background:#1a2036;padding:6px}
+.abox .tabs button.on{background:#2e5aa8}
+#lobby{display:none;position:absolute;inset:0;z-index:45;background:radial-gradient(ellipse at 50% 0,#243257 0,#0a0e1c 70%);overflow:auto;touch-action:pan-y;padding:14px}
+#lobby.on{display:block}
+.lbox{width:min(900px,100%);margin:0 auto}
+.lbox h2{font-size:22px;color:#ffe066;text-align:center;margin:6px 0 2px}
+.lbox .sub{text-align:center;color:#9ad;font-size:12px;margin-bottom:12px}
+#lcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.rc{border:3px solid #556;background:rgba(10,14,28,.85);padding:10px;cursor:pointer;font-size:12px;line-height:1.45}
+.rc.sel{border-color:#ffe066;box-shadow:0 0 10px #ffe066}
+.rc .ic{font-size:34px;text-align:center}
+.rc b{display:block;text-align:center;font-size:15px;margin:2px 0 6px}
+.rc .st{display:flex;justify-content:space-between;gap:6px}
+.rc .st span:last-child{letter-spacing:-2px;color:#ffe066}
+.rc p{color:#bcd;margin-top:6px;font-size:11px;overflow-wrap:anywhere}
+#selrow{white-space:normal!important;max-width:210px;font-size:11px;line-height:1.3}
+.lbtn{display:block;margin:12px auto 0;font:inherit;font-size:15px;color:#fff;background:#2e5aa8;border:2px solid #fff;padding:10px 18px;min-width:min(320px,90%);cursor:pointer}
+.lbtn:disabled{opacity:.4}.lbtn.sec{background:#333c5c;font-size:13px;padding:7px 14px}.lbtn.dng{background:#a03030}
+#lcont{max-width:360px;margin:0 auto}
 </style>
 </head>
 <body>
@@ -78,6 +109,7 @@
 
 <div id="hud">
   <div class="row"><b>Lv <span id="lvl">1</span></b> &nbsp; <span id="clock">12:00</span></div>
+  <div class="row" id="rolet" style="color:#ffe066"></div>
   <div class="row">HP <span class="bar"><i id="hpbar" class="hp"></i></span> <span id="hptxt"></span></div>
   <div class="row">MP <span class="bar"><i id="mpbar" class="mp"></i></span> <span id="mptxt"></span></div>
   <div class="row">XP <span class="bar"><i id="xpbar" class="xp"></i></span></div>
@@ -91,13 +123,47 @@
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
-    <button id="mapBtn">Peta</button><button id="resetBtn">Reset</button>
+    <button id="mapBtn">Peta</button><button id="resetBtn">Reset</button><button id="acctBtn">👤</button>
   </div>
 </div>
 
 <div id="hotbar"></div>
 <div id="dialog"><b id="dname"></b><span id="dtext"></span><span id="dhint">▼ E / Enter / Space / klik</span></div>
 <div id="err"></div><div id="toast"></div><div id="shop"></div>
+<div id="lobby"><div class="lbox">
+  <h2>🏰 Lobi</h2>
+  <div class="sub" id="lwho"></div>
+  <div id="lcont" style="display:none"><div class="rc sel" id="lsaved"></div>
+    <button id="lplay" class="lbtn" type="button">▶ Lanjutkan Petualangan</button>
+    <button id="lchg" class="lbtn sec" type="button">Ganti peran (mulai ulang karakter)</button>
+    <div id="lchgnote" style="color:#ff8a80;font-size:11px;text-align:center;margin-top:4px"></div></div>
+  <div id="lpick"><div class="sub" style="font-size:14px;color:#fff">Pilih perananmu</div><div id="lcards"></div>
+    <button id="lgo" class="lbtn" type="button" disabled>Pilih peran dulu</button></div>
+</div></div>
+<div id="auth"><div class="abox">
+  <h2>Pixel Open World RPG</h2>
+  <p>Masuk agar progres tersimpan di akunmu dan tidak hilang saat game diperbarui.</p>
+  <div class="tabs"><button id="tabIn" class="on" type="button">Masuk</button><button id="tabUp" type="button">Daftar</button></div>
+  <div id="authForm">
+    <input id="aemail" type="email" placeholder="Email" autocomplete="username" required>
+    <input id="apass" type="password" placeholder="Kata sandi (min. 6 karakter)" autocomplete="current-password" required>
+    <input id="apass2" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" style="display:none">
+    <div id="aerr"></div>
+    <button id="asubmit" type="button">Masuk</button>
+    <button id="aguest" type="button" class="sec">Main tanpa akun</button>
+    <div id="anote" style="color:#ffd23f;font-size:11px;margin-top:6px"></div>
+  </div>
+</div></div>
+<div id="acct"><div class="abox">
+  <h2>Akun</h2>
+  <p id="acctMail"></p>
+  <button id="acctLobby" class="sec" type="button">Ke Lobi</button>
+  <button id="acctOut" class="sec" type="button">Keluar</button>
+  <input id="acctPw" type="password" placeholder="Kata sandi untuk konfirmasi" style="display:none" autocomplete="current-password">
+  <button id="acctDel" class="dng" type="button">Hapus akun &amp; mulai dari awal</button>
+  <button id="acctX" class="sec" type="button">Tutup</button>
+  <div id="acctErr" style="color:#ff8a80;font-size:12px;margin-top:6px"></div>
+</div></div>
 
 <div id="controls">
   <div id="dpad">
@@ -781,8 +847,33 @@ const qById={};QUESTS.forEach(q=>qById[q.id]=q);
    ========================================================= */
 const DIRS=[[0,1],[0,-1],[-1,0],[1,0]];   // bawah, atas, kiri, kanan
 const WALK=[0,1,0,3];
-const SAVE_KEY='pixel_rpg_save_v2';
-const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis'];
+const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
+const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
+let SAVE_KEY=null;                             // diisi setelah login
+const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp'];
+const ROLES={
+  warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.5,bow:0,spell:0,maxLvl:50,farm:true,xpMul:0.5,
+    ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
+    desc:'Bisa menanam, memancing, dan beternak (panen & ternak berlimpah makin banyak seiring level). Bertarung sedikit dengan pedang lemah. Level hanya naik dari bertani/memancing/beternak. Maks Lv 50.'},
+  prajurit:{id:'prajurit',n:'Prajurit',ic:'⚔️',col:'#ff7a6a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:2.5,bow:0,spell:0,maxLvl:150,farm:false,xpMul:1,
+    ket:3,atk:5,hint:'⚔️ Prajurit: klik kiri untuk menebas dengan pedang.',
+    desc:'Pengguna pedang. Ketahanan sedang, serangan pedang sangat kuat. Hanya bertarung. Maks Lv 150.'},
+  pemanah:{id:'pemanah',n:'Pemanah',ic:'🏹',col:'#9fd86a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.3,bow:2.5,spell:0,maxLvl:150,farm:false,xpMul:1,
+    ket:3,atk:5,hint:'🏹 Pemanah: klik kiri menembak busur. Q ganti ke pedang (sangat lemah).',
+    desc:'Pengguna busur. Ketahanan sedang, panah sangat kuat, serangan jarak dekat sangat lemah. Hanya bertarung. Maks Lv 150.'},
+  penyihir:{id:'penyihir',n:'Penyihir',ic:'🔮',col:'#b48cff',hp0:14,hpl:2.5,def:0.8,mp0:40,mpl:6,mpr:1.7,sword:0,bow:0,spell:2.5,maxLvl:150,farm:false,xpMul:1,
+    ket:3,atk:5,hint:'🔮 Penyihir: klik kiri/kanan atau F untuk sihir. 1-6 pilih sihir (terbuka seiring level).',
+    desc:'Hanya memakai sihir. Ketahanan sedang, sihir sangat kuat. 6 sihir terbuka seiring level. Maks Lv 150.'},
+  tanker:{id:'tanker',n:'Tanker',ic:'🛡️',col:'#6ab8ff',hp0:28,hpl:5,def:0.5,mp0:10,mpl:1,mpr:1,sword:1.4,bow:0,spell:0,maxLvl:150,farm:false,xpMul:1,shield:true,
+    ket:5,atk:3,hint:'🛡️ Tanker: TAHAN klik kanan / F untuk mengangkat perisai (damage -85%, jalan lebih lambat). Klik kiri: pedang.',
+    desc:'Pengguna perisai. Ketahanan sangat kuat, serangan sedang. Tahan klik kanan/F untuk bertahan. Sedikit bertarung dengan pedang. Maks Lv 150.'}
+};
+const ROLE_IDS=['warga','prajurit','pemanah','penyihir','tanker'];
+const SPELL_LV=[1,5,12,25,40,60];
+const FISH=[{k:'Ikan Kecil',sell:6,xp:4,w:50},{k:'Ikan Mas',sell:14,xp:8,w:30},{k:'Ikan Besar',sell:30,xp:15,w:15},{k:'Ikan Emas',sell:90,xp:40,w:5}];
+const RL=()=>ROLES[(typeof P!=='undefined'&&P&&P.role)||'warga'];
+const xpNeed=l=>Math.round((15+l*6)*RL().xpMul);
+const randRound=x=>Math.floor(x)+(Math.random()<x-Math.floor(x)?1:0);
 const freshStats=()=>({crystal:0,kill:0,slime:0,bat:0,goblin:0,skeleton:0,golem:0,ghost:0,arrow:0,flower:0,far:0,coin:0});
 
 function freshPlayer(){
@@ -790,7 +881,7 @@ function freshPlayer(){
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
     weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false],
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[]};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
@@ -810,9 +901,26 @@ const HP=[200,300,400,500];
 const PLOTS=[{k:'farm',x:8,y:-2,w:4,h:3,p:150},{k:'farm',x:8,y:2,w:4,h:3,p:250},{k:'ranch',x:-11,y:-2,w:4,h:3,p:200},{k:'ranch',x:-11,y:2,w:4,h:3,p:300}];
 function plotAt(x,y){return PLOTS.find(p=>x>=p.x&&x<p.x+p.w&&y>=p.y&&y<p.y+p.h);}
 
+function recalc(){
+  const R=RL();
+  P.lvl=Math.min(P.lvl,R.maxLvl);
+  P.maxHp=Math.round(R.hp0+R.hpl*(P.lvl-1))+(P.bhp||0);
+  P.maxMp=Math.round(R.mp0+R.mpl*(P.lvl-1))+(P.bmp||0);
+  if(R.id!=='pemanah'){P.hasBow=false;P.weapon='sword';}else P.hasBow=true;
+  if(R.id==='penyihir'){SPELL_LV.forEach((l,i)=>{if(P.lvl>=l)P.sp[i]=true;});if(!P.sp[P.sel])P.sel=0;}
+  P.hp=Math.min(P.hp,P.maxHp);P.mp=Math.min(P.mp,P.maxMp);
+}
+function initRole(id){
+  P.role=id;const R=RL();
+  if(id==='warga')P.bag.tool.cangkul=true;
+  if(id==='pemanah')P.weapon='bow';
+  P.lvl=Math.min(P.lvl,R.maxLvl);
+  if(P.bhp===0&&P.bmp===0){/* sudah dihitung saat load */}
+  recalc();P.hp=P.maxHp;P.mp=P.maxMp;
+}
 function loadGame(){
   try{
-    const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    const s=JSON.parse((window.__ls?__ls.get(SAVE_KEY):localStorage.getItem(SAVE_KEY))||'null');
     if(s&&s.p){
       SAVE_FIELDS.forEach(k=>{if(s.p[k]!==undefined)P[k]=s.p[k];});
       P.st=Object.assign(freshStats(),P.st||{});
@@ -826,14 +934,18 @@ function loadGame(){
       if(!Array.isArray(P.animals))P.animals=[];if(!P.crops||typeof P.crops!=='object')P.crops={};if(!P.hf||typeof P.hf!=='object')P.hf={};if(!Array.isArray(P.vis))P.vis=[];
       if(!Array.isArray(P.land)||P.land.length!==4)P.land=[false,false,false,false];if(!Array.isArray(P.homes)||P.homes.length!==4)P.homes=[false,false,false,false];
       if(!(P.selSeed>=0&&P.selSeed<3))P.selSeed=0;if(!(P.selF>=0&&P.selF<FURN.length))P.selF=0;
+      if(s.p.bhp===undefined){P.bhp=Math.max(0,(s.p.maxHp||10)-(10+2*((s.p.lvl||1)-1)));P.bmp=Math.max(0,(s.p.maxMp||20)-(20+3*((s.p.lvl||1)-1)));}
+      if(!ROLES[P.role])P.role=null;
+      P.bhp=P.bhp||0;P.bmp=P.bmp||0;
       collected=new Set(s.col||[]);picked=new Set(s.flw||[]);gtime=s.time||0;shownIntro=true;
     }
   }catch(e){}
 }
 function saveGame(){
+  if(!SAVE_KEY||!started)return;
   try{
     const p={};SAVE_FIELDS.forEach(k=>p[k]=P[k]);if(IN!==null){p.x=OX;p.y=OY;}
-    localStorage.setItem(SAVE_KEY,JSON.stringify({p,col:[...collected],flw:[...picked],time:gtime}));
+    (window.__ls?__ls.set:(k,v)=>localStorage.setItem(k,v))(SAVE_KEY,JSON.stringify({p,col:[...collected],flw:[...picked],time:gtime}));
   }catch(e){}
 }
 function nightF(){
@@ -853,15 +965,16 @@ function giveReward(q){
   const r=q.rew;
   delete P.qact[q.id];P.qdone.push(q.id);
   if(r.c)P.coins+=r.c;
-  if(r.bow){P.hasBow=true;}
-  if(r.spell!==undefined){P.sp[r.spell]=true;P.sel=r.spell;}
-  if(r.hp)P.maxHp+=r.hp;
-  if(r.mp)P.maxMp+=r.mp;
+  const isMage=P.role==='penyihir';
+  if(r.spell!==undefined&&isMage){P.sp[r.spell]=true;P.sel=r.spell;}
+  if(r.hp)P.bhp+=r.hp;
+  if(r.mp)P.bmp+=r.mp;
+  recalc();
   if(r.hp||r.mp||r.heal){P.hp=P.maxHp;P.mp=P.maxMp;}
   if(r.xp)gainXp(r.xp);
   let msg='Misi selesai: '+q.title+'! +'+(r.c||0)+' koin';
-  if(r.bow)msg+=' | Busur didapat (Q)';
-  if(r.spell!==undefined)msg+=' | Sihir '+SPELLS[r.spell].name+' terbuka (tekan '+(r.spell+1)+')';
+  if(r.bow&&P.role==='pemanah')msg+=' | Busurmu makin terasah';
+  if(r.spell!==undefined&&isMage)msg+=' | Sihir '+SPELLS[r.spell].name+' terbuka (tekan '+(r.spell+1)+')';
   toast(msg);
 }
 // true bila NPC sudah menangani pembicaraan lewat misi
@@ -1027,18 +1140,26 @@ function buildHotbar(){
   const w=document.createElement('div');w.className='slot';w.title='Ganti senjata (Q)';
   w.innerHTML='<span class="ic">⚔️</span><small>Q</small>';
   w.addEventListener('pointerdown',e=>{e.preventDefault();swapWeapon();});
+
   hb.appendChild(w);hbSlots.w=w;
   const sep=document.createElement('div');sep.className='sep';hb.appendChild(sep);
+  const isMage=P.role==='penyihir';
+  sep.style.display='none';
+  if(isMage)w.style.display='none';
+  if(P.role==='warga'){w.style.display='none';}
+  w.title=P.role==='pemanah'?'Ganti busur/pedang (Q)':'Senjata';
   SPELLS.forEach((s,i)=>{
     const el=document.createElement('div');el.className='slot';el.style.setProperty('--c',s.col);
     el.title=s.name+' (MP '+s.mp+')';
     el.innerHTML='<span class="ic">'+s.icon+'</span><small>'+(i+1)+'</small><i class="cdv"></i>';
     el.addEventListener('pointerdown',e=>{e.preventDefault();selectSpell(i);});
+    if(!isMage)el.style.display='none';
     hb.appendChild(el);hbSlots[i]=el;el._cd=el.querySelector('.cdv');
   });
 }
 function updateHotbar(){
-  hbSlots.w.firstChild.textContent=P.weapon==='bow'?'🏹':'⚔️';
+  hbSlots.w.firstChild.textContent=RL().shield?'🛡️':P.weapon==='bow'?'🏹':'⚔️';
+  hbSlots.w.classList.toggle('sel',!!P.shield);
   SPELLS.forEach((s,i)=>{
     const el=hbSlots[i];
     el.classList.toggle('sel',P.sel===i);
@@ -1054,7 +1175,7 @@ function updateHUD(){
   $('hptxt').textContent=Math.max(0,Math.ceil(P.hp))+'/'+P.maxHp;
   $('mpbar').style.width=clamp(P.mp/P.maxMp,0,1)*100+'%';
   $('mptxt').textContent=Math.floor(P.mp)+'/'+P.maxMp;
-  $('xpbar').style.width=clamp(P.xp/(P.lvl*25),0,1)*100+'%';
+  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('rolet').textContent=RL().ic+' '+RL().n+(P.lvl>=RL().maxLvl?' · MAKS':' · maks Lv '+RL().maxLvl);
   $('coins').textContent=P.coins;$('crys').textContent=P.st.crystal;$('kills').textContent=P.st.kill;
   const hours=(12+gtime/300*24)%24,hh=Math.floor(hours),mm=Math.floor((hours-hh)*60);
   $('clock').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' '+SEAS[seasonIdx()].ic+SEAS[seasonIdx()].s;
@@ -1073,20 +1194,25 @@ function updateHUD(){
   const va=Math.atan2(ns.s.y*T-(IN!==null?OY:P.y),ns.s.x*T-(IN!==null?OX:P.x)),arrows=['→','↘','↓','↙','←','↖','↑','↗'];
   const vtxt='● '+ns.s.name+(vd<ns.s.r?' (di sini)':' '+arrows[((Math.round(va/(Math.PI/4))%8)+8)%8]+' '+Math.round(vd)+' petak');$('vtag').style.color=ns.s.col;
   if($('vtag').textContent!==vtxt)$('vtag').textContent=vtxt;
-  $('selrow').textContent=IN!==null?'🪑 '+FURN[P.selF].n+' x'+(P.bag.furn[FURN[P.selF].id]||0)+' (Z/X)':'🌱 '+CROPS[CK[P.selSeed]].n+' x'+P.bag.seed[CK[P.selSeed]]+' (Z) 🌾'+P.bag.feed;
+  $('selrow').textContent=(IN===null&&!RL().farm)?RL().hint:IN!==null?'🪑 '+FURN[P.selF].n+' x'+(P.bag.furn[FURN[P.selF].id]||0)+' (Z/X)':'🌱 '+CROPS[CK[P.selSeed]].n+' x'+P.bag.seed[CK[P.selSeed]]+' (Z) 🌾'+P.bag.feed;
   updateHotbar();
 }
 
 /* =========================================================
    GAMEPLAY
    ========================================================= */
-function gainXp(n){
+function gainXp(n,farm){
+  const R=RL();
+  if(R.id==='warga'&&!farm)return;          // warga hanya naik level lewat bertani/memancing/beternak
+  if(P.lvl>=R.maxLvl){P.xp=0;return;}
   P.xp+=n;
-  while(P.xp>=P.lvl*25){
-    P.xp-=P.lvl*25;P.lvl++;P.maxHp+=2;P.maxMp+=3;P.hp=P.maxHp;P.mp=P.maxMp;
-    toast('LEVEL UP! Lv '+P.lvl);
+  while(P.lvl<R.maxLvl&&P.xp>=xpNeed(P.lvl)){
+    P.xp-=xpNeed(P.lvl);P.lvl++;recalc();P.hp=P.maxHp;P.mp=P.maxMp;
+    toast('LEVEL UP! Lv '+P.lvl+(P.lvl>=R.maxLvl?' (MAKSIMAL)':''));
     fx.push({k:'text',x:P.x,y:P.y-26,txt:'LEVEL UP!',col:'#ffe066',t:0,life:1.4});
+    if(R.id==='penyihir'){const i=SPELL_LV.indexOf(P.lvl);if(i>=0)toast('Sihir '+SPELLS[i].name+' terbuka! (tombol '+(i+1)+')');}
   }
+  if(P.lvl>=R.maxLvl)P.xp=0;
 }
 function floatText(x,y,txt,col){fx.push({k:'text',x,y,txt,col,t:0,life:0.9});}
 function burst(x,y,col){
@@ -1119,8 +1245,9 @@ function nearestNpc(r){
 }
 function interact(){
   if(dying)return;
+  if(fishS)return fishInteract();
   if(IN!==null)return inInteract();
-  const n=nearestNpc(28);if(!n){doorInteract()||farmInteract()||ranchInteract();return;}
+  const n=nearestNpc(28);if(!n){doorInteract()||farmInteract()||ranchInteract()||fishInteract();return;}
   const dx=P.x-n.x,dy=P.y-n.y;
   n.dir=dirFromVec(dx,dy)===3?3:dirFromVec(dx,dy);n.moving=false;
   n.talk();
@@ -1139,26 +1266,47 @@ function farmInteract(){
   const [fx_,fy_]=front(),tx=Math.floor(fx_/T),ty=Math.floor(fy_/T);
   const pi=PLOTS.findIndex(p=>p.k==='farm'&&tx>=p.x&&tx<p.x+p.w&&ty>=p.y&&ty<p.y+p.h);
   if(pi<0)return false;
+  if(!RL().farm){toast('Perananmu tidak bisa bertani 🚫 (hanya Warga Desa)');return true;}
   if(!P.land[pi]){toast('Lahan dijual '+PLOTS[pi].p+' koin. Beli di Agen Properti.');return true;}
   const k=tx+','+ty,c=P.crops[k],B=P.bag;
   if(!c){
     if(!B.tool.cangkul){toast('Butuh Cangkul (Toko Peralatan)');return true;}
     if(SEAS[seasonIdx()].cg===0){toast('Tanah membeku! Tidak bisa menanam di musim salju ❄️');return true;}
     const s=CK[P.selSeed];if(!B.seed[s]){toast('Bibit '+CROPS[s].n+' habis (Z ganti bibit)');return true;}
-    B.seed[s]--;P.crops[k]={t:s,g:0,w:false};toast('Menanam '+CROPS[s].n+' 🌱');return true;}
+    B.seed[s]--;P.crops[k]={t:s,g:0,w:false};gainXp(2,true);toast('Menanam '+CROPS[s].n+' 🌱');return true;}
   const d=CROPS[c.t];
-  if(c.g>=d.t){delete P.crops[k];const n=B.tool.sabit?2:1;B.prod[c.t]=(B.prod[c.t]||0)+n;toast('Panen '+d.n+' x'+n+' 🧺');
+  if(c.g>=d.t){delete P.crops[k];const n=randRound((B.tool.sabit?2:1)*(1+P.lvl*0.06));B.prod[c.t]=(B.prod[c.t]||0)+n;gainXp(6+Math.round(d.sell/3),true);toast('Panen berlimpah! '+d.n+' x'+n+' 🧺');
     for(let i=0;i<6;i++)sparkFx(tx*T+8,ty*T+8,d.col,0.5,(Math.random()-0.5)*40,-10-Math.random()*25,2);return true;}
   if(!c.w&&B.tool.siram){c.w=true;toast('Disiram 💧 tumbuh 2x lebih cepat');return true;}
   toast(d.n+' tumbuh '+Math.floor(c.g/d.t*100)+'%'+(c.w?' (disiram)':''));return true;}
+let fishS=null;
+function waterFront(){
+  const v=DIRS[P.dir];
+  for(const d of [9,14,20]){const x=P.x+v[0]*d,y=P.y-3+v[1]*d;if(tileAt(Math.floor(x/T),Math.floor(y/T)).t<=TY.WATER)return [x,y];}
+  return null;}
+function fishInteract(){
+  if(fishS){
+    if(fishS.state==='bite'){
+      fishS=null;
+      const w=FISH.map((f,i)=>f.w*(i>=2?1+P.lvl*0.04:1)),tot=w.reduce((a,b)=>a+b,0);let r=Math.random()*tot,i=0;
+      while(i<w.length-1&&(r-=w[i])>=0)i++;
+      const f=FISH[i];P.bag.prod[f.k]=(P.bag.prod[f.k]||0)+1;gainXp(f.xp,true);
+      toast('🎣 Dapat '+f.k+'! (+'+f.xp+' XP)');
+      for(let k=0;k<8;k++)sparkFx(P.x+DIRS[P.dir][0]*14,P.y-3+DIRS[P.dir][1]*14,'#bfe6ff',0.5,(Math.random()-0.5)*50,-10-Math.random()*30,2);
+    }else{fishS=null;toast('Pancingan ditarik');}
+    return true;}
+  const w=waterFront();if(!w)return false;
+  if(!RL().farm){toast('Perananmu tidak bisa memancing 🚫 (hanya Warga Desa)');return true;}
+  fishS={x:w[0],y:w[1],state:'wait',t:2+Math.random()*4};toast('Melempar pancing... 🎣 (tunggu, lalu tekan E saat ikan menyambar)');return true;}
 function ranchInteract(){
   let best=null,bd=22;
   for(const a of P.animals){const d=Math.hypot(a.x-P.x,a.y-P.y);if(d<bd){bd=d;best=a;}}
   if(!best)return false;
+  if(!RL().farm){toast('Perananmu tidak bisa beternak 🚫 (hanya Warga Desa)');return true;}
   const d=ANIM[best.type];
-  if(best.ready){best.ready=false;best.prog=0;P.bag.prod[d.prod]=(P.bag.prod[d.prod]||0)+1;toast('+1 '+d.prod);return true;}
+  if(best.ready){const n=randRound(1+P.lvl*0.08);best.ready=false;best.prog=0;P.bag.prod[d.prod]=(P.bag.prod[d.prod]||0)+n;gainXp(d.sell>10?12:6,true);toast('Ternak berlimpah! +'+n+' '+d.prod);return true;}
   if(best.feed>0){toast(d.n+' kenyang, produk '+Math.floor(best.prog/d.cyc*100)+'%');return true;}
-  if(P.bag.feed>0){P.bag.feed--;best.feed=d.cyc;toast(d.n+' diberi pakan 🌾');return true;}
+  if(P.bag.feed>0){P.bag.feed--;best.feed=d.cyc;gainXp(2,true);toast(d.n+' diberi pakan 🌾');return true;}
   toast('Pakan habis (Toko Bibit & Pakan)');return true;}
 const fAt=(i,tx,ty)=>(P.hf[i]||[]).find(f=>ty===f.y&&tx>=f.x&&tx<f.x+FD[f.id].w);
 function inSolid(px,py){
@@ -1206,7 +1354,7 @@ function shopBibit(){openMenu('Toko Bibit & Pakan Hewan',()=>{
   return r;});}
 function shopAlat(){openMenu('Toko Peralatan Berkebun',()=>[['cangkul','Cangkul (untuk menanam)',40],['siram','Penyiram (tumbuh 2x lebih cepat)',60],['sabit','Sabit (panen 2x lipat)',90]].map(([k,n,p])=>({t:n,b:P.bag.tool[k]?'Dimiliki':p+'🪙',off:P.bag.tool[k],f:()=>{if(pay(p))P.bag.tool[k]=true;}})));}
 function shopJual(mul){mul=mul||1;openMenu(mul>1?'Pasar Kerajaan (+25%)':'Pengepul Hasil Panen',()=>{
-  const pr={};CK.forEach(k=>pr[k]=CROPS[k].sell);for(const k in ANIM)pr[ANIM[k].prod]=ANIM[k].sell;
+  const pr={};CK.forEach(k=>pr[k]=CROPS[k].sell);for(const k in ANIM)pr[ANIM[k].prod]=ANIM[k].sell;FISH.forEach(f=>pr[f.k]=f.sell);
   for(const k in pr)pr[k]=Math.round(pr[k]*mul);return Object.keys(pr).map(k=>{const n=P.bag.prod[k]||0;return {t:k+' x'+n+' (@'+pr[k]+')',b:'Jual',off:!n,f:()=>{P.coins+=n*pr[k];P.bag.prod[k]=0;}};});});}
 function shopAgen(){openMenu('Agen Properti & Perabot',()=>{
   const r=[];
@@ -1308,23 +1456,26 @@ function faceAngle(a){P.dir=dirFromVec(Math.cos(a),Math.sin(a));P.aimA=a;P.aimT=
 /* ---- senjata ---- */
 function swapWeapon(){
   if(dlg||dying)return;
-  if(!P.hasBow){toast('Busur belum dimiliki. Selesaikan misi Tetua Desa.');return;}
+  if(P.role!=='pemanah'){toast('Perananmu tidak bisa berganti senjata');return;}
   P.weapon=P.weapon==='sword'?'bow':'sword';
   toast(P.weapon==='bow'?'Senjata: Busur':'Senjata: Pedang');
 }
 function attack(){
   if(P.atk>0||dying||dlg||menu||IN!==null)return;
+  if(P.role==='penyihir'){cast();return;}
+  if(P.shield)return;
+  fishS=null;
   const a=aimAngle();faceAngle(a);
   const ca=Math.cos(a),sa=Math.sin(a);
   if(P.weapon==='bow'&&P.hasBow){
     P.atk=0.5;
-    proj.push({t:'arrow',x:P.x+ca*8,y:P.y-7+sa*8,vx:ca*230,vy:sa*230,life:0.65,dmg:3+Math.floor((P.lvl-1)/2),r:3});
+    proj.push({t:'arrow',x:P.x+ca*8,y:P.y-7+sa*8,vx:ca*230,vy:sa*230,life:0.65,dmg:Math.max(1,Math.round((3+Math.floor((P.lvl-1)/2))*RL().bow)),r:3});
     return;
   }
   P.atk=0.3;
   fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.2});
   const cx=P.x+ca*13,cy=P.y-7+sa*13;
-  const dmg=2+Math.floor((P.lvl-1)/2);
+  const dmg=Math.max(1,Math.round((2+Math.floor((P.lvl-1)/2))*RL().sword));
   for(const m of mobs){
     if(m.dead)continue;
     if(Math.hypot(m.x-cx,mc(m)-cy)<15+MOBS[m.type].rad){
@@ -1335,10 +1486,12 @@ function attack(){
 
 /* ---- sihir ---- */
 function selectSpell(i){
+  if(P.role!=='penyihir')return;
   if(!P.sp[i]){toast('Sihir '+SPELLS[i].name+' belum terbuka');return;}
   P.sel=i;
 }
 function cycleSpell(dir){
+  if(P.role!=='penyihir')return;
   for(let k=1;k<=6;k++){
     const i=((P.sel+dir*k)%6+6)%6;
     if(P.sp[i]){P.sel=i;return;}
@@ -1346,13 +1499,14 @@ function cycleSpell(dir){
 }
 function cast(){
   if(dying||dlg||menu)return;
+  if(P.role!=='penyihir')return;        // tanker memakai perisai (ditahan), peran lain tidak bersihir
   if(IN!==null)return;const i=P.sel,s=SPELLS[i];
   if(!P.sp[i]){if(msgT<=0){toast('Sihir '+s.name+' belum terbuka');msgT=0.8;}return;}
   if(cds[i]>0)return;
   if(P.mp<s.mp){if(msgT<=0){toast('MP tidak cukup!');msgT=0.8;}return;}
   P.mp-=s.mp;cds[i]=s.cd;
   const a=aimAngle();faceAngle(a);
-  const ca=Math.cos(a),sa=Math.sin(a),ox=P.x+ca*8,oy=P.y-8+sa*8,pw=1+(P.lvl-1)*0.1;
+  const ca=Math.cos(a),sa=Math.sin(a),ox=P.x+ca*8,oy=P.y-8+sa*8,pw=(1+(P.lvl-1)*0.1)*RL().spell;
   switch(s.id){
     case 'angin':
       proj.push({t:'angin',x:ox,y:oy,vx:ca*135,vy:sa*135,life:0.8,dmg:1*pw,r:10,hit:new Set()});
@@ -1425,7 +1579,9 @@ function killMob(m,by){
   if(m.type==='golem')drop('crystal',1,60);
 }
 function hurt(n,fromX,fromY){
-  P.hp-=n;P.inv=1;
+  n=Math.max(1,Math.round(n*RL().def));
+  if(P.shield){n=Math.max(1,Math.round(n*0.15));floatText(P.x,P.y-32,'Tangkis!','#6ab8ff');}
+  P.hp-=n;P.inv=P.shield?0.35:1;
   floatText(P.x,P.y-24,'-'+n,'#ff6b6b');
   const a=Math.atan2(P.y-fromY,P.x-fromX);
   for(let i=0;i<3;i++)moveEnt(P,Math.cos(a)*3,Math.sin(a)*3,false);
@@ -1657,7 +1813,7 @@ function update(dt){
   const SS=SEAS[seasonIdx()];if(SS!==lastSS){if(lastSS)toast(SS.msg);lastSS=SS;}
   for(const k in P.crops){const c=P.crops[k];if(SS.rain)c.w=true;else if(SS.dry&&c.w&&Math.random()<dt*0.02)c.w=false;c.g+=dt*(c.w?2:1)*SS.cg;}
   for(const a of P.animals){const d=ANIM[a.type],pl=PLOTS[a.plot];
-    if(a.feed>0&&!a.ready){a.feed-=dt;a.prog+=dt*SS.am;if(a.prog>=d.cyc){a.ready=true;a.prog=d.cyc;}}
+    if(a.feed>0&&!a.ready){a.feed-=dt;a.prog+=dt*SS.am*(1+P.lvl*0.02);if(a.prog>=d.cyc){a.ready=true;a.prog=d.cyc;}}
     a.wt-=dt;if(a.wt<=0){a.wt=1+Math.random()*3;const m=Math.random()<0.6;a.vx=m?(Math.random()-0.5)*16:0;a.vy=m?(Math.random()-0.5)*12:0;}
     a.x=clamp(a.x+a.vx*dt,pl.x*T+5,(pl.x+pl.w)*T-5);a.y=clamp(a.y+a.vy*dt,pl.y*T+9,(pl.y+pl.h)*T-3);}
   if(IN===null)for(const S_ of SETT){if(!P.vis.includes(S_.name)&&Math.hypot(P.x/T-S_.x,P.y/T-S_.y)<S_.r-2){P.vis.push(S_.name);if(!S_.main){const c=S_.cap?150:40;P.coins+=c;gainXp(S_.cap?100:30);toast('Tiba di '+S_.name+'! +'+c+' koin');}}}
@@ -1669,23 +1825,29 @@ function update(dt){
   if(dying){
     deathT+=dt;
     if(deathT>1.6){
-      dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;P.coins=Math.floor(P.coins*0.8);P.inv=2;
+      fishS=null;P.shield=false;dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;P.coins=Math.floor(P.coins*0.8);P.inv=2;
       toast('Kamu bangun di desa. Koin berkurang 20%.');
     }
   }else{
     let ax=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
     let ay=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+    P.shield=!!(RL().shield&&(keys.cast||keys.f||mouseR)&&!dlg&&!menu&&IN===null);
+    if(fishS){
+      if(P.moving||IN!==null||dlg||menu||fishS.dead)fishS=null;
+      else{fishS.t-=dt;
+        if(fishS.state==='wait'&&fishS.t<=0){fishS.state='bite';fishS.t=1.2;toast('🐟 Ikan menyambar! Tekan E!');}
+        else if(fishS.state==='bite'&&fishS.t<=0){fishS=null;toast('Ikan lepas...');}}}
     P.moving=ax!==0||ay!==0;
     if(P.moving){
       const l=Math.hypot(ax,ay);ax/=l;ay/=l;
-      const run=keys.shift?1.7:1,sp=58*run*SS.ps;
+      const run=keys.shift&&!P.shield?1.7:1,sp=58*run*SS.ps*(P.shield?0.55:1);
       if(P.aimT<=0){if(Math.abs(ax)>Math.abs(ay))P.dir=ax>0?3:2;else P.dir=ay>0?0:1;}
       const nx=P.x+ax*sp*dt,ny=P.y+ay*sp*dt;
       if(!blocked(nx,P.y)&&!npcBlock(nx,P.y))P.x=nx;
       if(!blocked(P.x,ny)&&!npcBlock(P.x,ny))P.y=ny;
       P.anim+=dt*(run>1?11:7.5);
     }
-    P.mp=Math.min(P.maxMp,P.mp+(2+P.lvl*0.15)*SS.mr*dt);
+    P.mp=Math.min(P.maxMp,P.mp+(2+P.lvl*0.15)*RL().mpr*SS.mr*dt);
     if(keys.attack||mouseL)attack();
     if(keys.cast||keys.f||mouseR)cast();
     if(IN===null){const dTiles=Math.hypot(P.x,P.y)/T;if(dTiles>P.st.far)P.st.far=dTiles;}
@@ -1768,6 +1930,13 @@ function drawEntity(e,now){
       ctx.drawImage(SPR.player[P.dir][P.moving?WALK[Math.floor(P.anim)%4]:0],sx-9,sy-21);
     }
     if(P.weapon==='bow'&&P.hasBow)drawBow(sx,sy);
+    ctx.fillStyle=RL().col;ctx.fillRect(sx-2,sy-26,4,2);
+    if(P.shield){const v=DIRS[P.dir],cx_=sx+v[0]*8,cy_=sy-9+v[1]*6;
+      ctx.fillStyle='#fff';ctx.fillRect(cx_-5,cy_-6,10,12);ctx.fillStyle='#3a78d8';ctx.fillRect(cx_-4,cy_-5,8,10);ctx.fillStyle='#ffe066';ctx.fillRect(cx_-1,cy_-4,2,8);ctx.fillRect(cx_-3,cy_-1,6,2);}
+    if(fishS){const bx=Math.round(fishS.x-camX),by=Math.round(fishS.y-camY)+(fishS.state==='bite'?Math.round(Math.sin(performance.now()/60)*2):0);
+      ctx.fillStyle='rgba(255,255,255,.7)';for(let i=1;i<8;i++)ctx.fillRect(Math.round(sx+(bx-sx)*i/8),Math.round(sy-12+(by-sy+12)*i/8-Math.sin(i/8*Math.PI)*4),1,1);
+      ctx.fillStyle='#fff';ctx.fillRect(bx-1,by-1,3,3);ctx.fillStyle='#e0443e';ctx.fillRect(bx-1,by-2,3,2);
+      if(fishS.state==='bite')txt('!',bx,by-8,'#ffe066',9);}
   }else if(e.kind==='npc'){
     shadow(sx,sy,10);
     if(e.cart)drawCart(e,sx,sy);else ctx.drawImage(e.set[e.dir][e.moving?WALK[Math.floor(e.anim)%4]:0],sx-9,sy-21);
@@ -2027,12 +2196,13 @@ function press(k){
   else if(k.length===1&&k>='1'&&k<='6')selectSpell(+k-1);
 }
 addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='INPUT')return;
   const k=e.key.toLowerCase();
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   if(!keys[k])press(k);
   keys[k]=true;
 });
-addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+addEventListener('keyup',e=>{if(e.target&&e.target.tagName==='INPUT')return;keys[e.key.toLowerCase()]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseL=mouseR=false;});
 
 // mouse: klik kiri = serang, klik kanan = sihir, roda = ganti sihir
@@ -2051,7 +2221,7 @@ addEventListener('pointerup',e=>{
   if(e.button===2)mouseR=false;
 });
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-addEventListener('wheel',e=>{if(dlg)return;e.preventDefault();cycleSpell(e.deltaY>0?1:-1);},{passive:false});
+addEventListener('wheel',e=>{if(dlg||authOpen())return;e.preventDefault();cycleSpell(e.deltaY>0?1:-1);},{passive:false});
 
 document.querySelectorAll('[data-k]').forEach(b=>{
   const k=b.dataset.k;
@@ -2071,7 +2241,7 @@ $('spriteFile').addEventListener('change',e=>{
 });
 $('spriteClr').addEventListener('click',()=>{customImg=null;toast('Karakter bawaan dipakai');});
 $('resetBtn').addEventListener('click',()=>{
-  if(confirm('Hapus progres dan mulai dari awal?')){try{localStorage.removeItem(SAVE_KEY);}catch(e){}location.reload();}
+  if(confirm('Hapus progres dan pilih peran dari awal? (akun tetap ada)')){const k=SAVE_KEY;SAVE_KEY=null;try{localStorage.removeItem(k);}catch(e){}location.reload();}
 });
 $('mapBtn').addEventListener('click',showMap);addEventListener('beforeunload',saveGame);
 setInterval(saveGame,5000);
@@ -2079,20 +2249,6 @@ setInterval(saveGame,5000);
 /* =========================================================
    MAIN LOOP
    ========================================================= */
-try{loadGame();}catch(e){showErr(e);}
-buildHotbar();
-try{initNpcs();initVillageCrystals();}catch(e){showErr(e);}
-if(!shownIntro){
-  say('Pixel RPG',[
-    'Selamat datang di dunia terbuka! Gerak: WASD / panah. Lari: tahan Shift.',
-    'Klik kiri: serang ke arah kursor (tahan untuk terus menyerang). Q: ganti pedang/busur.',
-    'Klik kanan atau F: pakai sihir. Tombol 1-6 atau roda mouse: pilih sihir. E: bicara dengan NPC.',
-    'Musim berganti: semi, panas, hujan, salju. Tiap musim memengaruhi tanaman, ternak, dan gerakmu. (P: lompat musim)',
-    'Dunia punya 5 desa dan Ibu Kota Aurelia, masing-masing berwarna beda. Tekan M atau tombol Peta untuk melihat arah dan jarak.',
-    'Bertani & beternak: beli lahan di Agen Properti, bibit/alat di toko, lalu hadapi petak/hewan dan tekan E. Z ganti bibit. Masuk rumah: E di depan pintu.',
-    'Mulai dari Tetua Desa. Selesaikan misi untuk membuka busur dan 6 sihir. Tiap musuh punya kelemahan elemen!'
-  ]);
-}
 let last=performance.now(),hudT=0;
 function frame(t){
   const dt=Math.min(0.05,(t-last)/1000);last=t;
@@ -2105,7 +2261,171 @@ function frame(t){
   }catch(e){showErr(e);}
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
+
+/* =========================================================
+   AKUN (email + kata sandi, tersimpan di perangkat ini)
+   ========================================================= */
+const mem={};let persist=true;
+try{localStorage.setItem('_t','1');localStorage.removeItem('_t');}catch(e){persist=false;}
+const ls={get(k){if(persist){try{return localStorage.getItem(k);}catch(e){persist=false;}}return k in mem?mem[k]:null;},
+  set(k,v){if(persist){try{localStorage.setItem(k,v);return true;}catch(e){persist=false;}}mem[k]=String(v);return true;},
+  del(k){delete mem[k];if(persist){try{localStorage.removeItem(k);}catch(e){}}}};
+const accounts=()=>{try{return JSON.parse(ls.get(ACC_KEY)||'{}')||{};}catch(e){return {};}};
+const putAccounts=a=>ls.set(ACC_KEY,JSON.stringify(a));
+const normMail=m=>String(m||'').trim().toLowerCase();
+const hex=u8=>[...u8].map(b=>b.toString(16).padStart(2,'0')).join('');
+async function hashPass(pw,saltHex){
+  const enc=new TextEncoder();
+  if(window.crypto&&crypto.subtle){
+    try{
+      const key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+      const salt=new Uint8Array(saltHex.match(/../g).map(h=>parseInt(h,16)));
+      const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},key,256);
+      return 'p:'+hex(new Uint8Array(bits));
+    }catch(e){}
+  }
+  let h1=0xdeadbeef,h2=0x41c6ce57;const t=saltHex+pw;       // cadangan bila WebCrypto tidak ada
+  for(let r=0;r<2000;r++)for(let i=0;i<t.length;i++){const c=t.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return 'f:'+(h2>>>0).toString(16)+(h1>>>0).toString(16);
+}
+const newSalt=()=>{const u=new Uint8Array(16);(window.crypto&&crypto.getRandomValues)?crypto.getRandomValues(u):u.forEach((_,i)=>u[i]=Math.random()*256);return hex(u);};
+const authOpen=()=>$('auth').classList.contains('on')||$('acct').classList.contains('on');
+window.__ls=ls;
+let curMail=null,started=false;
+
+function startGame(mail){
+  curMail=mail;SAVE_KEY=SAVE_PFX+mail;ls.set(SESSION_KEY,mail);
+  $('auth').classList.remove('on');
+  openLobby();
+}
+/* ---- lobi & pemilihan peran ---- */
+let pendingRole=null,chgArm=false;
+const bars=n=>'█'.repeat(n)+'░'.repeat(5-n);
+function roleCardHtml(R,pick){
+  return '<div class="ic">'+R.ic+'</div><b style="color:'+R.col+'">'+R.n+'</b>'+
+   '<div class="st"><span>Ketahanan</span><span>'+bars(R.ket)+'</span></div>'+
+   '<div class="st"><span>Serangan</span><span>'+bars(R.atk)+'</span></div>'+
+   '<div class="st"><span>Level maks</span><span style="letter-spacing:0">'+R.maxLvl+'</span></div>'+
+   '<p>'+R.desc+'</p>';
+}
+function showPick(){
+  $('lcont').style.display='none';$('lpick').style.display='block';pendingRole=null;
+  $('lgo').disabled=true;$('lgo').textContent='Pilih peran dulu';
+  const box=$('lcards');box.innerHTML='';
+  ROLE_IDS.forEach(id=>{
+    const R=ROLES[id],d=document.createElement('div');d.className='rc';d.innerHTML=roleCardHtml(R);
+    d.addEventListener('click',()=>{
+      pendingRole=id;[...box.children].forEach(c=>c.classList.remove('sel'));d.classList.add('sel');
+      $('lgo').disabled=false;$('lgo').textContent='Mulai sebagai '+R.n+' '+R.ic;});
+    box.appendChild(d);});
+}
+function openLobby(){
+  $('lobby').classList.add('on');chgArm=false;$('lchgnote').textContent='';$('lchg').textContent='Ganti peran (mulai ulang karakter)';
+  $('lwho').textContent=curMail?'Masuk sebagai '+curMail:'Mode tanpa akun';
+  let saved=null;
+  try{const sv=SAVE_KEY&&JSON.parse(ls.get(SAVE_KEY)||'null');if(sv&&sv.p&&ROLES[sv.p.role])saved=sv.p;}catch(e){}
+  if(saved){
+    const R=ROLES[saved.role];
+    $('lsaved').innerHTML=roleCardHtml(R)+'<p style="color:#ffe066;text-align:center;font-size:13px">Level '+Math.min(saved.lvl||1,R.maxLvl)+' / '+R.maxLvl+'</p>';
+    $('lcont').style.display='block';$('lpick').style.display='none';
+  }else showPick();
+}
+function enterGame(){
+  if(started)return;started=true;$('lobby').classList.remove('on');bootGame();requestAnimationFrame(frame);
+}
+$('lplay').onclick=enterGame;
+$('lgo').onclick=()=>{if(pendingRole)enterGame();};
+$('lchg').onclick=()=>{
+  if(!chgArm){chgArm=true;$('lchg').textContent='Klik lagi untuk HAPUS karakter & pilih peran baru';$('lchg').classList.add('dng');$('lchgnote').textContent='Semua progres karakter ini akan hilang.';return;}
+  if(SAVE_KEY)ls.del(SAVE_KEY);$('lchg').classList.remove('dng');showPick();
+};
+function setupRoleUI(){
+  const R=RL();
+  $('bC').style.display=R.shield?'':'none';$('bC').textContent='PERISAI';
+  $('bW').style.display=R.id==='pemanah'?'':'none';
+  $('bZ').style.display=R.farm?'':'none';
+  $('bA').textContent=R.id==='penyihir'?'SIHIR':R.id==='pemanah'?'TEMBAK':'SERANG';
+}
+function bootGame(){
+try{loadGame();}catch(e){showErr(e);}
+let newRole=false;
+if(!P.role){newRole=true;initRole(pendingRole||'warga');}else recalc();
+buildHotbar();setupRoleUI();
+try{initNpcs();initVillageCrystals();}catch(e){showErr(e);}
+if(newRole&&shownIntro)setTimeout(()=>toast(RL().hint),600);
+if(!shownIntro){
+  say('Pixel RPG',[
+    'Peranmu: '+RL().ic+' '+RL().n+'. '+RL().desc,
+    'Selamat datang di dunia terbuka! Gerak: WASD / panah. Lari: tahan Shift.',
+    'Klik kiri: serang ke arah kursor (tahan untuk terus menyerang). Q: ganti pedang/busur (khusus Pemanah).',
+    'Klik kanan atau F: pakai sihir. Tombol 1-6 atau roda mouse: pilih sihir. E: bicara dengan NPC.',
+    'Musim berganti: semi, panas, hujan, salju. Tiap musim memengaruhi tanaman, ternak, dan gerakmu. (P: lompat musim)',
+    'Dunia punya 5 desa dan Ibu Kota Aurelia, masing-masing berwarna beda. Tekan M atau tombol Peta untuk melihat arah dan jarak.',
+    'Bertani & beternak: beli lahan di Agen Properti, bibit/alat di toko, lalu hadapi petak/hewan dan tekan E. Z ganti bibit. Masuk rumah: E di depan pintu.',
+    'Mulai dari Tetua Desa. Selesaikan misi untuk membuka busur dan 6 sihir. Tiap musuh punya kelemahan elemen!'
+  ]);
+}
+}
+let mode='in';
+function setMode(m){
+  mode=m;$('tabIn').classList.toggle('on',m==='in');$('tabUp').classList.toggle('on',m==='up');
+  $('apass2').style.display=m==='up'?'block':'none';$('apass2').required=m==='up';
+  $('apass').autocomplete=m==='up'?'new-password':'current-password';
+  $('asubmit').textContent=m==='up'?'Daftar & Main':'Masuk';$('aerr').textContent='';
+}
+$('tabIn').onclick=()=>setMode('in');$('tabUp').onclick=()=>setMode('up');
+async function doAuth(){
+  const err=m=>{$('aerr').textContent=m;},btn=$('asubmit');
+  const mail=normMail($('aemail').value),pw=$('apass').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail))return err('Email tidak valid.');
+  if(pw.length<6)return err('Kata sandi minimal 6 karakter.');
+  btn.disabled=true;err('');
+  try{
+    const acc=accounts();
+    if(mode==='up'){
+      if(acc[mail])return err('Email sudah terdaftar. Silakan masuk.');
+      if(pw!==$('apass2').value)return err('Kata sandi tidak sama.');
+      const salt=newSalt();acc[mail]={salt,hash:await hashPass(pw,salt),t:Date.now()};
+      if(!putAccounts(acc))return err('Gagal menyimpan akun (penyimpanan browser diblokir?).');
+      // progres lama (sebelum ada akun) diambil alih oleh akun pertama
+      const old=ls.get(LEGACY_KEY);
+      if(old&&!Object.keys(acc).some(k=>k!==mail&&ls.get(SAVE_PFX+k))){ls.set(SAVE_PFX+mail,old);ls.del(LEGACY_KEY);}
+    }else{
+      const a=acc[mail];
+      if(!a||await hashPass(pw,a.salt)!==a.hash)return err('Email atau kata sandi salah.');
+    }
+    $('apass').value=$('apass2').value='';
+    startGame(mail);
+  }catch(ex){err('Gagal: '+(ex&&ex.message||ex));}
+  finally{btn.disabled=false;}
+}
+$('asubmit').addEventListener('click',doAuth);
+['aemail','apass','apass2'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doAuth();}}));
+
+$('aguest').onclick=()=>{curMail=null;SAVE_KEY=persist?LEGACY_KEY:null;$('auth').classList.remove('on');openLobby();};
+if(!persist)$('anote').textContent='Penyimpanan browser tidak tersedia di sini: progres hanya bertahan selama halaman terbuka. Buka file ini langsung di browser agar tersimpan.';
+// panel akun
+$('acctBtn').addEventListener('click',()=>{if(!curMail){$('acctMail').textContent='Mode tanpa akun. Keluar lalu daftar untuk menyimpan progres.';}else $('acctMail').textContent='Masuk sebagai: '+curMail;$('acctPw').style.display='none';$('acctPw').value='';delStep=0;$('acctDel').textContent='Hapus akun & mulai dari awal';$('acctErr').textContent='';$('acct').classList.add('on');for(const k in keys)keys[k]=false;});
+$('acctX').onclick=()=>$('acct').classList.remove('on');
+$('acctLobby').onclick=()=>{saveGame();SAVE_KEY=null;location.reload();};
+$('acctOut').onclick=()=>{saveGame();SAVE_KEY=null;ls.del(SESSION_KEY);if(persist)location.reload();else{started=started;location.reload();}};
+let delStep=0;
+$('acctDel').onclick=async()=>{
+  if(!curMail){$('acctErr').textContent='Tidak ada akun untuk dihapus.';return;}
+  if(delStep===0){delStep=1;$('acctPw').style.display='block';$('acctPw').focus();$('acctDel').textContent='Klik lagi: HAPUS PERMANEN';$('acctErr').textContent='Masukkan kata sandi lalu klik tombol merah sekali lagi. Semua progres akan hilang.';return;}
+  const acc=accounts(),a=acc[curMail];
+  if(!a||await hashPass($('acctPw').value,a.salt)!==a.hash){$('acctErr').textContent='Kata sandi salah. Akun tidak dihapus.';return;}
+  const k=SAVE_KEY;SAVE_KEY=null;delete acc[curMail];putAccounts(acc);ls.del(k);ls.del(SESSION_KEY);
+  if(!persist){location.reload();return;}
+  location.reload();
+};
+
+// masuk otomatis bila sesi tersimpan, kalau tidak tampilkan layar login
+{const m=ls.get(SESSION_KEY);
+ if(m&&accounts()[m])startGame(m);
+ else{ls.del(SESSION_KEY);const first=!Object.keys(accounts()).length;setMode(first?'up':'in');$('auth').classList.add('on');}}
 })();
 </script>
 </body>
