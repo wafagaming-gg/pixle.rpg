@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Pixel Open World RPG</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -102,6 +102,50 @@
 .lbtn{display:block;margin:12px auto 0;font:inherit;font-size:15px;color:#fff;background:#2e5aa8;border:2px solid #fff;padding:10px 18px;min-width:min(320px,90%);cursor:pointer}
 .lbtn:disabled{opacity:.4}.lbtn.sec{background:#333c5c;font-size:13px;padding:7px 14px}.lbtn.dng{background:#a03030}
 #lcont{max-width:360px;margin:0 auto}
+
+/* ===== PERBAIKAN TAMPILAN ANDROID ===== */
+html,body{height:100dvh}
+@media (pointer:coarse){
+  #hud{top:max(4px,env(safe-area-inset-top));left:max(4px,env(safe-area-inset-left));font-size:10px;line-height:1.35;padding:3px 6px;min-width:0;border-width:1px;background:rgba(10,14,28,.6)}
+  #hud .row{overflow:hidden;text-overflow:ellipsis}
+  .bar{width:60px;height:7px}
+  #selrow{white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;max-width:170px;font-size:9px}
+  #quest{max-width:170px;font-size:9px;line-height:1.3}
+  #quest div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #quest div:nth-child(n+2){display:none}
+  #side{top:max(4px,env(safe-area-inset-top));right:max(4px,env(safe-area-inset-right));gap:3px;max-width:160px}
+  #mini{width:76px;height:76px;border-width:1px}
+  #vtag{font-size:9px;padding:1px 4px;white-space:nowrap;border-width:1px}
+  #tools{flex-wrap:wrap;justify-content:flex-end;gap:3px}
+  #tools label,#tools button{font-size:10px;padding:2px 5px;border-width:1px}
+  .toast,#toast{font-size:12px;padding:4px 10px}
+}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:520px){
+  #hotbar{bottom:max(6px,env(safe-area-inset-bottom));gap:3px;padding:3px 4px;border-width:1px}
+  .slot{width:30px;height:30px;font-size:14px;border-width:1px}
+  #dialog{bottom:calc(max(6px,env(safe-area-inset-bottom)) + 46px);width:calc(100vw - 340px);max-width:560px;padding:6px 10px;font-size:12px;line-height:1.4;border-width:2px;box-shadow:none}
+  #dhint{font-size:10px;margin-top:2px}
+  #dpad{left:calc(max(10px,env(safe-area-inset-left)) + 4px);bottom:max(8px,env(safe-area-inset-bottom));width:120px;height:120px}
+  #dpad .btn{width:40px;height:40px;font-size:16px;border-radius:8px}
+  #dpad .btn:nth-child(1){left:40px;top:0}
+  #dpad .btn:nth-child(2){left:0;top:40px}
+  #dpad .btn:nth-child(3){left:80px;top:40px}
+  #dpad .btn:nth-child(4){left:40px;top:80px}
+  #bA,#bB,#bC,#bW,#bZ,#bX{width:46px;height:46px;border-radius:50%;font-size:10px;border-width:1px}
+  #bA{width:56px;height:56px;right:calc(max(10px,env(safe-area-inset-right)) + 0px);bottom:max(8px,env(safe-area-inset-bottom))}
+  #bB{right:calc(max(10px,env(safe-area-inset-right)) + 64px);bottom:max(8px,env(safe-area-inset-bottom))}
+  #bZ{right:calc(max(10px,env(safe-area-inset-right)) + 118px);bottom:max(8px,env(safe-area-inset-bottom))}
+  #bC{right:calc(max(10px,env(safe-area-inset-right)) + 6px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + 62px)}
+  #bW{right:calc(max(10px,env(safe-area-inset-right)) + 64px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + 56px)}
+  #bX{right:calc(max(10px,env(safe-area-inset-right)) + 118px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + 56px)}
+  #shop{max-height:92vh;font-size:12px}
+  .abox{max-height:94vh;overflow:auto;padding:10px}
+}
+@media (pointer:coarse) and (orientation:portrait){
+  #dpad{left:8px;bottom:8px}
+  #hotbar{bottom:156px}
+  #side{max-width:130px}
+}
 </style>
 </head>
 <body>
