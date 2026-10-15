@@ -147,6 +147,39 @@ html,body{height:100dvh}
   #hotbar{bottom:156px}
   #side{max-width:130px}
 }
+
+/* ===== KUSTOMISASI KARAKTER & NAMA ===== */
+.pv{image-rendering:pixelated}
+.hero{display:flex;gap:12px;align-items:center;justify-content:center;margin:0 0 10px;padding:8px;border:3px solid #556;background:rgba(10,14,28,.85)}
+.hero canvas{flex:none;background:radial-gradient(circle,#2b3a66 0,#141a30 80%);border:2px solid #556}
+.hero .hi{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hero .hi b{font-size:16px;color:#ffe066;overflow-wrap:anywhere}
+.hero .hi span{font-size:11px;color:#9ad}
+.hero .hi .lbtn{margin:6px 0 0;min-width:0;padding:6px 10px;font-size:12px}
+#lpick .hero{max-width:420px;margin:0 auto 12px}
+.lin{-webkit-user-select:text;user-select:text;display:block;width:100%;margin:0 auto 6px;font:inherit;font-size:15px;color:#fff;background:#1a2036;border:2px solid #fff;padding:8px;touch-action:auto}
+#lnameBox{max-width:360px;margin:0 auto 10px}
+#lnamenote{color:#ff8a80;font-size:11px;text-align:center;min-height:14px}
+#cust{display:none;position:absolute;inset:0;z-index:55;background:rgba(10,14,28,.93);align-items:center;justify-content:center;touch-action:pan-y}
+#cust.on{display:flex}
+.cbox{width:min(460px,95vw);max-height:94vh;overflow:auto;background:#0a0e1c;border:3px solid #ffe066;padding:12px;font-size:13px}
+.cbox h2{font-size:17px;color:#ffe066;text-align:center;margin-bottom:4px}
+#cname{text-align:center;color:#fff;font-size:13px;margin-bottom:6px}
+.cprev{display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:8px}
+.cprev canvas{background:radial-gradient(circle,#2b3a66 0,#141a30 80%);border:2px solid #556;cursor:pointer}
+.cbtns{display:flex;flex-direction:column;gap:6px}
+.cbox button{font:inherit;font-size:12px;color:#fff;background:#333c5c;border:2px solid #fff;padding:6px 10px;cursor:pointer}
+.cbox button.pri{background:#2e5aa8}
+.crow{margin:8px 0}
+.crow>label{display:block;color:#9ad;font-size:11px;margin-bottom:3px}
+.copts{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.cbox .ob{padding:4px 8px;font-size:12px;background:#1a2036;border-color:#556}
+.cbox .ob.on{border-color:#ffe066;background:#2e5aa8}
+.sw{width:24px;height:24px;border:2px solid #556;cursor:pointer}
+.sw.on{border-color:#ffe066;box-shadow:0 0 6px #ffe066;transform:scale(1.1)}
+.cbox input[type=color]{width:30px;height:26px;padding:0;border:2px solid #fff;background:none;cursor:pointer}
+.cact{display:flex;gap:8px;margin-top:12px}.cact button{flex:1;padding:9px;font-size:14px}
+@media (pointer:coarse){.sw{width:30px;height:30px}}
 </style>
 </head>
 <body>
@@ -155,6 +188,7 @@ html,body{height:100dvh}
 
 <div id="hud">
   <div class="row"><b>Lv <span id="lvl">1</span></b> &nbsp; <span id="clock">12:00</span></div>
+  <div class="row" id="pname" style="color:#fff"></div>
   <div class="row" id="rolet" style="color:#ffe066"></div>
   <div class="row">HP <span class="bar"><i id="hpbar" class="hp"></i></span> <span id="hptxt"></span></div>
   <div class="row">MP <span class="bar"><i id="mpbar" class="mp"></i></span> <span id="mptxt"></span></div>
@@ -170,7 +204,7 @@ html,body{height:100dvh}
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
-    <button id="mapBtn">Peta</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="acctBtn">👤</button>
+    <button id="mapBtn">Peta</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
   </div>
 </div>
 
@@ -180,11 +214,18 @@ html,body{height:100dvh}
 <div id="lobby"><div class="lbox">
   <h2>🏰 Lobi</h2>
   <div class="sub" id="lwho"></div>
-  <div id="lcont" style="display:none"><div class="rc sel" id="lsaved"></div>
+  <div id="lnameBox"><div class="sub" style="color:#fff;margin-bottom:4px">Nama karakter (tampil di atas kepala)</div>
+    <input id="lname" class="lin" type="text" maxlength="14" placeholder="3-14 huruf/angka" autocomplete="off">
+    <div id="lnamenote"></div></div>
+  <div id="lcont" style="display:none">
+    <div class="hero"><canvas id="lprevS" class="pv"></canvas><div class="hi"><b id="lhname"></b><span id="lhsub"></span><button id="lcust2" class="lbtn sec" type="button">🎨 Ubah Penampilan</button></div></div>
+    <div class="rc sel" id="lsaved"></div>
     <button id="lplay" class="lbtn" type="button">▶ Lanjutkan Petualangan</button>
     <button id="lchg" class="lbtn sec" type="button">Ganti peran (mulai ulang karakter)</button>
     <div id="lchgnote" style="color:#ff8a80;font-size:11px;text-align:center;margin-top:4px"></div></div>
-  <div id="lpick"><div class="sub" style="font-size:14px;color:#fff">Pilih perananmu</div><div id="lcards"></div>
+  <div id="lpick">
+    <div class="hero"><canvas id="lprevN" class="pv"></canvas><div class="hi"><b id="lhname2"></b><span>Atur penampilan sebelum mulai</span><button id="lcust" class="lbtn sec" type="button">🎨 Kustomisasi Karakter</button></div></div>
+    <div class="sub" style="font-size:14px;color:#fff">Pilih perananmu</div><div id="lcards"></div>
     <button id="lgo" class="lbtn" type="button" disabled>Pilih peran dulu</button></div>
 </div></div>
 <div id="auth"><div class="abox">
@@ -193,6 +234,7 @@ html,body{height:100dvh}
   <div class="tabs"><button id="tabIn" class="on" type="button">Masuk</button><button id="tabUp" type="button">Daftar</button></div>
   <div id="authForm">
     <input id="aemail" type="email" placeholder="Email" autocomplete="username" required>
+    <input id="aname" type="text" maxlength="14" placeholder="Nama karakter (3-14 huruf/angka)" autocomplete="nickname" style="display:none">
     <input id="apass" type="password" placeholder="Kata sandi (min. 6 karakter)" autocomplete="current-password" required>
     <input id="apass2" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" style="display:none">
     <div id="aerr"></div>
@@ -210,6 +252,14 @@ html,body{height:100dvh}
   <button id="acctDel" class="dng" type="button">Hapus akun &amp; mulai dari awal</button>
   <button id="acctX" class="sec" type="button">Tutup</button>
   <div id="acctErr" style="color:#ff8a80;font-size:12px;margin-top:6px"></div>
+</div></div>
+
+<div id="cust"><div class="cbox" id="cbox">
+  <h2>🎨 Kustomisasi Karakter</h2><div id="cname"></div>
+  <div class="cprev"><canvas id="cprev" class="pv" title="Klik untuk memutar"></canvas>
+    <div class="cbtns"><button id="cRot" type="button">⟳ Putar</button><button id="cRnd" type="button">🎲 Acak</button><button id="cDef" type="button">↺ Bawaan</button></div></div>
+  <div id="crows"></div>
+  <div class="cact"><button id="cSave" class="pri" type="button">✔ Simpan</button><button id="cCancel" type="button">Batal</button></div>
 </div></div>
 
 <div id="controls">
@@ -746,22 +796,76 @@ function drawChar(g,dir,f,P){
   if(dir<2)R(g,P.scarf,9,12,2,3);else R(g,P.scarf,10,11,2,4);
   // kepala
   R(g,P.skin,3,2,10,8);
+  drawHair(g,dir,P);
+  if(dir===0){
+    R(g,P.eye,5,7,2,2);R(g,'#fff',5,7,1,1);
+    R(g,P.eye,9,7,2,2);R(g,'#fff',9,7,1,1);
+    R(g,'#f08a86',4,9,1,1);R(g,'#f08a86',11,9,1,1);
+  }else if(dir===2){
+    R(g,P.eye,4,7,2,2);R(g,'#fff',4,7,1,1);R(g,'#f08a86',4,9,1,1);
+  }
+  if(P.ears){ if(dir<2){R(g,P.skin,2,4,1,3);R(g,P.skin,13,4,1,3);}else R(g,P.skin,13,5,1,3); }
+  drawAcc(g,dir,P);
+}
+function baseHair(g,dir,P){
   if(dir===0){
     R(g,P.hair,4,1,8,1);R(g,P.hair,3,2,10,3);R(g,P.hairD,3,4,10,1);R(g,P.hairL,5,2,3,1);R(g,P.hair,8,0,2,1);
     R(g,P.hair,3,5,1,4);R(g,P.hair,12,5,1,4);
     R(g,P.hair,4,5,3,1);R(g,P.hair,9,5,3,1);
-    R(g,P.eye,5,7,2,2);R(g,'#fff',5,7,1,1);
-    R(g,P.eye,9,7,2,2);R(g,'#fff',9,7,1,1);
-    R(g,'#f08a86',4,9,1,1);R(g,'#f08a86',11,9,1,1);
   }else if(dir===1){
     R(g,P.hair,3,2,10,8);R(g,P.hair,4,1,8,1);R(g,P.hair,8,0,2,1);
     R(g,P.hairL,5,2,3,1);R(g,P.hairD,4,8,8,1);R(g,P.hairD,4,9,8,1);
   }else{
     R(g,P.hair,4,1,8,1);R(g,P.hair,3,2,10,3);R(g,P.hairD,3,4,10,1);R(g,P.hairL,5,2,3,1);R(g,P.hair,8,0,2,1);
     R(g,P.hair,8,5,5,5);R(g,P.hairD,8,9,5,1);R(g,P.hair,3,5,4,1);
-    R(g,P.eye,4,7,2,2);R(g,'#fff',4,7,1,1);R(g,'#f08a86',4,9,1,1);
   }
-  if(P.ears){ if(dir<2){R(g,P.skin,2,4,1,3);R(g,P.skin,13,4,1,3);}else R(g,P.skin,13,5,1,3); }
+}
+// gaya rambut: 0 pendek (bawaan), 1 panjang, 2 jabrik, 3 kuncir, 4 cepak
+function drawHair(g,dir,P){
+  const st=P.style|0;
+  if(st===4){
+    if(dir===0){R(g,P.hair,4,1,8,1);R(g,P.hair,3,2,10,2);R(g,P.hairL,5,2,3,1);}
+    else if(dir===1){R(g,P.hair,4,1,8,1);R(g,P.hair,3,2,10,6);R(g,P.hairD,4,7,8,1);R(g,P.hairL,5,2,3,1);}
+    else{R(g,P.hair,4,1,8,1);R(g,P.hair,3,2,10,2);R(g,P.hair,8,4,5,3);R(g,P.hairL,5,2,3,1);}
+    return;
+  }
+  baseHair(g,dir,P);
+  if(st===1){
+    if(dir===0){R(g,P.hair,2,4,2,9);R(g,P.hair,12,4,2,9);R(g,P.hairD,2,12,2,1);R(g,P.hairD,12,12,2,1);}
+    else if(dir===1){R(g,P.hair,2,4,1,8);R(g,P.hair,13,4,1,8);R(g,P.hair,3,10,10,3);R(g,P.hairD,3,12,10,1);}
+    else{R(g,P.hair,8,10,5,3);R(g,P.hairD,8,12,5,1);}
+  }else if(st===2){
+    R(g,P.hair,4,0,1,1);R(g,P.hair,6,0,1,1);R(g,P.hair,11,0,1,1);
+    if(dir===0){R(g,P.hair,2,3,1,2);R(g,P.hair,13,3,1,2);}
+  }else if(st===3){
+    if(dir===0){R(g,P.hair,13,3,2,6);R(g,P.hairD,13,8,2,1);}
+    else if(dir===1){R(g,P.hair,7,10,2,5);R(g,P.hairD,7,14,2,1);}
+    else{R(g,P.hair,13,4,2,7);R(g,P.hairD,13,10,2,1);}
+  }
+}
+// aksesori: 0 tanpa, 1 ikat kepala, 2 topi, 3 kacamata, 4 mahkota
+function drawAcc(g,dir,P){
+  const a=P.acc|0;if(!a)return;
+  const c=P.accC||'#d94a4a',cd=P.accD||shade(c,.75);
+  if(a===1){
+    R(g,c,3,4,10,1);
+    if(dir===2)R(g,c,13,4,2,2);else if(dir===1){R(g,c,5,5,1,2);R(g,cd,10,5,1,2);}
+  }else if(a===2){
+    R(g,c,4,0,8,3);R(g,cd,4,2,8,1);
+    if(dir===2)R(g,cd,1,3,12,1);else R(g,cd,2,3,12,1);
+  }else if(a===3){
+    if(dir===0){
+      R(g,c,4,6,4,1);R(g,c,8,6,4,1);R(g,c,4,9,4,1);R(g,c,8,9,4,1);
+      R(g,c,4,7,1,2);R(g,c,7,7,1,2);R(g,c,8,7,1,2);R(g,c,11,7,1,2);
+      R(g,c,3,6,1,1);R(g,c,12,6,1,1);
+    }else if(dir===2){
+      R(g,c,3,6,4,1);R(g,c,3,9,4,1);R(g,c,3,7,1,2);R(g,c,6,7,1,2);R(g,c,7,6,5,1);
+    }
+  }else if(a===4){
+    R(g,'#ffd23f',4,1,8,1);R(g,'#c9a227',4,2,8,1);
+    R(g,'#ffd23f',4,0,1,1);R(g,'#ffd23f',7,0,2,1);R(g,'#ffd23f',11,0,1,1);
+    R(g,'#e0443e',7,1,2,1);
+  }
 }
 function makeFrame(dir,f,P){
   const [c,g]=mk(16,20);
@@ -772,6 +876,51 @@ function makeFrame(dir,f,P){
   return outline(c);
 }
 function makeSet(P){const s=[];for(let d=0;d<4;d++){s.push([]);for(let f=0;f<4;f++)s[d].push(makeFrame(d,f,P));}return s;}
+
+/* ---------- kustomisasi karakter ---------- */
+const LOOK_DEF={style:0,hair:'#a8501f',skin:'#ffd9b8',eye:'#2a2b4d',acc:0,accC:'#d94a4a',tunic:'#2e8b57',trim:'#f2c14e',scarf:'#d94a4a',pants:'#5b4636'};
+const LOOK_OPT={style:['Pendek','Panjang','Jabrik','Kuncir','Cepak'],acc:['Tanpa','Ikat kepala','Topi','Kacamata','Mahkota']};
+const LOOK_COL={
+  hair:['#a8501f','#2b2b33','#5a3a1c','#e8c04a','#c0504d','#4b3fb0','#3fa0d0','#ececec','#e06aa8','#3f9a5a'],
+  skin:['#ffe6cf','#ffd9b8','#f2cfae','#e8b98f','#c98e5f','#a0693f','#7a4a2a','#5a3420'],
+  eye:['#2a2b4d','#1b1b2b','#5a3a1c','#2e8b57','#3a78d8','#6a2fd0','#c0392b','#8a8a96'],
+  accC:['#d94a4a','#3a78d8','#2b2b33','#ffe066','#3fa060','#ffffff','#9b59b6'],
+  tunic:['#2e8b57','#3a78d8','#c0392b','#6a4fa0','#e0a030','#2b2b33','#f4f4f4','#d46a9c','#2e8b8b','#7a5230'],
+  trim:['#f2c14e','#ffffff','#c0c0c8','#e0443e','#3a78d8','#2b2b33'],
+  scarf:['#d94a4a','#ffffff','#ffd23f','#7ec8e3','#3fa060','#9b59b6','#2b2b33','#e07aa8'],
+  pants:['#5b4636','#2c2f66','#2b2b33','#3d6fb5','#6a6a74','#3d6f3a','#8a3a3a','#c8b080']
+};
+const LOOK_ROWS=[['style','Gaya rambut','btn'],['hair','Warna rambut','col'],['skin','Warna kulit','col'],['eye','Warna mata','col'],
+  ['acc','Aksesori','btn'],['accC','Warna aksesori','col'],['tunic','Baju','col'],['trim','Aksen baju','col'],['scarf','Syal','col'],['pants','Celana','col']];
+const HEXRE=/^#[0-9a-fA-F]{6}$/;
+const defaultLook=()=>Object.assign({},LOOK_DEF);
+function sanitizeLook(L){
+  const o=defaultLook();
+  if(L&&typeof L==='object'){
+    ['hair','skin','eye','accC','tunic','trim','scarf','pants'].forEach(k=>{if(typeof L[k]==='string'&&HEXRE.test(L[k]))o[k]=L[k].toLowerCase();});
+    o.style=Math.min(LOOK_OPT.style.length-1,Math.max(0,Math.floor(+L.style)||0));
+    o.acc=Math.min(LOOK_OPT.acc.length-1,Math.max(0,Math.floor(+L.acc)||0));
+  }
+  return o;
+}
+const tint=(c,f)=>'#'+[1,3,5].map(i=>Math.min(255,Math.round(parseInt(c.substr(i,2),16)*f)).toString(16).padStart(2,'0')).join('');
+function lookPal(L){
+  L=sanitizeLook(L);
+  return {hair:L.hair,hairD:shade(L.hair,.72),hairL:tint(L.hair,1.3),skin:L.skin,eye:L.eye,
+    tunic:L.tunic,tunicD:shade(L.tunic,.8),trim:L.trim,scarf:L.scarf,pants:L.pants,boots:shade(L.pants,.7),
+    style:L.style,acc:L.acc,accC:L.accC,accD:shade(L.accC,.75)};
+}
+function cleanName(n){
+  n=String(n==null?'':n).replace(/\s+/g,' ').trim();
+  return /^[\p{L}\p{N} _.\-]{3,14}$/u.test(n)?n:'';
+}
+const NAME_RULE='Nama karakter 3-14 karakter: huruf, angka, spasi, _ . -';
+function drawPrev(cv,look,dir,f,sc){
+  const fr=makeFrame(dir,f,lookPal(look));
+  cv.width=fr.width;cv.height=fr.height;cv.style.width=fr.width*sc+'px';cv.style.height=fr.height*sc+'px';
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);g.drawImage(fr,0,0);
+}
+function applyLook(){PAL.player=lookPal(P.look);SPR.player=makeSet(PAL.player);}
 
 const SL=[['#5ad06a','#2f9c46'],['#4fa3e8','#2a6fb3'],['#a468e0','#6f3fa8'],['#e0584e','#a02c25']];
 function makeSlime(tier,f){
@@ -969,7 +1118,7 @@ const WALK=[0,1,0,3];
 const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
 const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
 let SAVE_KEY=null;                             // diisi setelah login
-const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food'];
+const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look'];
 const ROLES={
   warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.5,bow:0,spell:0,maxLvl:50,farm:true,xpMul:0.5,
     ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
@@ -1000,7 +1149,7 @@ function freshPlayer(){
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
     weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false],
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook()};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
@@ -1056,6 +1205,7 @@ function loadGame(){
       if(!(P.selSeed>=0&&P.selSeed<3))P.selSeed=0;if(!(P.selF>=0&&P.selF<FURN.length))P.selF=0;
       if(s.p.bhp===undefined){P.bhp=Math.max(0,(s.p.maxHp||10)-(10+2*((s.p.lvl||1)-1)));P.bmp=Math.max(0,(s.p.maxMp||20)-(20+3*((s.p.lvl||1)-1)));}
       if(!ROLES[P.role])P.role=null;
+      P.look=sanitizeLook(P.look);P.name=cleanName(P.name);
       P.bhp=P.bhp||0;P.bmp=P.bmp||0;
       collected=new Set(s.col||[]);picked=new Set(s.flw||[]);gtime=s.time||0;shownIntro=true;
     }
@@ -1295,7 +1445,7 @@ function updateHUD(){
   $('hptxt').textContent=Math.max(0,Math.ceil(P.hp))+'/'+P.maxHp;
   $('mpbar').style.width=clamp(P.mp/P.maxMp,0,1)*100+'%';
   $('mptxt').textContent=Math.floor(P.mp)+'/'+P.maxMp;
-  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('xptxt').textContent=P.lvl>=RL().maxLvl?'MAKS':Math.floor(P.xp)+'/'+xpNeed(P.lvl);$('rolet').textContent=RL().ic+' '+RL().n+(P.lvl>=RL().maxLvl?' · MAKS':' · maks Lv '+RL().maxLvl);
+  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('xptxt').textContent=P.lvl>=RL().maxLvl?'MAKS':Math.floor(P.xp)+'/'+xpNeed(P.lvl);$('pname').textContent='👤 '+(P.name||'');$('rolet').textContent=RL().ic+' '+RL().n+(P.lvl>=RL().maxLvl?' · MAKS':' · maks Lv '+RL().maxLvl);
   $('fdbar').style.width=clamp(P.food,0,100)+'%';$('fdbar').style.background=P.food<20?'#e0443e':'#e0a030';
   $('fdtxt').textContent=Math.ceil(P.food)+'/100'+(P.food<=0?' LAPAR!':P.food<20?' lapar':P.food>=60?' kenyang':'');
   $('coins').textContent=P.coins;$('crys').textContent=P.st.crystal;$('kills').textContent=P.st.kill;
@@ -2054,6 +2204,11 @@ function drawBow(sx,sy){
     ctx.fillRect(Math.round(bx-sa*t*1.4-ca),Math.round(by+ca*t*1.4-sa),1,1);
   }
 }
+function drawNameTag(sx,sy){
+  const R_=RL(),top=customImg?24:21,y2=sy-top-3;
+  txt(P.name||'Petualang',sx,y2-8,'#ffffff',7);
+  txt('Lv '+P.lvl+' \u00b7 '+R_.n,sx,y2,R_.col,6);
+}
 function drawStatus(e,sx,sy,h,alt){
   const top=sy-h-alt;
   if(e.burn>0){
@@ -2089,7 +2244,7 @@ function drawEntity(e,now){
       ctx.drawImage(SPR.player[P.dir][P.moving?WALK[Math.floor(P.anim)%4]:0],sx-9,sy-21);
     }
     if(P.weapon==='bow'&&P.hasBow)drawBow(sx,sy);
-    ctx.fillStyle=RL().col;ctx.fillRect(sx-2,sy-26,4,2);
+    drawNameTag(sx,sy);
     if(P.shield){const v=DIRS[P.dir],cx_=sx+v[0]*8,cy_=sy-9+v[1]*6;
       ctx.fillStyle='#fff';ctx.fillRect(cx_-5,cy_-6,10,12);ctx.fillStyle='#3a78d8';ctx.fillRect(cx_-4,cy_-5,8,10);ctx.fillStyle='#ffe066';ctx.fillRect(cx_-1,cy_-4,2,8);ctx.fillRect(cx_-3,cy_-1,6,2);}
     if(fishS){const bx=Math.round(fishS.x-camX),by=Math.round(fishS.y-camY)+(fishS.state==='bite'?Math.round(Math.sin(performance.now()/60)*2):0);
@@ -2366,6 +2521,7 @@ function press(k){
 }
 addEventListener('keydown',e=>{
   if(e.target&&e.target.tagName==='INPUT')return;
+  if(custOpen())return;
   const k=e.key.toLowerCase();
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   if(!keys[k])press(k);
@@ -2490,7 +2646,7 @@ let last=performance.now(),hudT=0;
 function frame(t){
   const dt=Math.min(0.05,(t-last)/1000);last=t;
   try{
-    if(!dlg&&!menu)update(dt);
+    if(!dlg&&!menu&&!custOpen())update(dt);
     else{for(const f of fx)f.t+=dt;}
     render(t/1000);
     drawMini(dt);
@@ -2528,7 +2684,7 @@ async function hashPass(pw,saltHex){
   return 'f:'+(h2>>>0).toString(16)+(h1>>>0).toString(16);
 }
 const newSalt=()=>{const u=new Uint8Array(16);(window.crypto&&crypto.getRandomValues)?crypto.getRandomValues(u):u.forEach((_,i)=>u[i]=Math.random()*256);return hex(u);};
-const authOpen=()=>$('auth').classList.contains('on')||$('acct').classList.contains('on');
+const authOpen=()=>$('auth').classList.contains('on')||$('acct').classList.contains('on')||$('cust').classList.contains('on');
 window.__ls=ls;
 let curMail=null,started=false;
 
@@ -2538,7 +2694,7 @@ function startGame(mail){
   openLobby();
 }
 /* ---- lobi & pemilihan peran ---- */
-let pendingRole=null,chgArm=false;
+let pendingRole=null,chgArm=false,pendingLook=null,chosenName='',lobbySaved=null;
 const bars=n=>'█'.repeat(n)+'░'.repeat(5-n);
 function roleCardHtml(R,pick){
   return '<div class="ic">'+R.ic+'</div><b style="color:'+R.col+'">'+R.n+'</b>'+
@@ -2547,8 +2703,28 @@ function roleCardHtml(R,pick){
    '<div class="st"><span>Level maks</span><span style="letter-spacing:0">'+R.maxLvl+'</span></div>'+
    '<p>'+R.desc+'</p>';
 }
+function lobbyKnownName(){
+  const acc=curMail?((accounts()[curMail]||{}).name||''):'';
+  let sv=null;try{sv=SAVE_KEY&&JSON.parse(ls.get(SAVE_KEY)||'null');}catch(e){}
+  const sn=(sv&&sv.p&&ROLES[sv.p.role])?cleanName(sv.p.name):'';
+  return sn||cleanName(acc);
+}
+function heroName(){return lobbyKnownName()||cleanName($('lname').value)||'Petualang';}
+function refreshNameBox(){
+  $('lnameBox').style.display=lobbyKnownName()?'none':'block';$('lnamenote').textContent='';
+  $('lhname').textContent=$('lhname2').textContent=heroName();
+}
+$('lname').addEventListener('input',()=>{$('lnamenote').textContent='';$('lhname').textContent=$('lhname2').textContent=heroName();});
+function paintHeroN(){drawPrev($('lprevN'),pendingLook,0,0,4);}
+function paintHeroS(){
+  const sv=lobbySaved;if(!sv)return;
+  drawPrev($('lprevS'),sv.look,0,0,4);
+  const R=ROLES[sv.role];$('lhsub').textContent='Level '+Math.min(sv.lvl||1,R.maxLvl)+' \u00b7 '+R.n;
+}
 function showPick(){
   $('lcont').style.display='none';$('lpick').style.display='block';pendingRole=null;
+  if(!pendingLook)pendingLook=defaultLook();
+  refreshNameBox();paintHeroN();
   $('lgo').disabled=true;$('lgo').textContent='Pilih peran dulu';
   const box=$('lcards');box.innerHTML='';
   ROLE_IDS.forEach(id=>{
@@ -2559,19 +2735,85 @@ function showPick(){
     box.appendChild(d);});
 }
 function openLobby(){
-  $('lobby').classList.add('on');chgArm=false;$('lchgnote').textContent='';$('lchg').textContent='Ganti peran (mulai ulang karakter)';
+  $('lobby').classList.add('on');chgArm=false;$('lchgnote').textContent='';$('lchg').textContent='Ganti peran (mulai ulang karakter)';$('lchg').classList.remove('dng');
   $('lwho').textContent=curMail?'Masuk sebagai '+curMail:'Mode tanpa akun';
   let saved=null;
   try{const sv=SAVE_KEY&&JSON.parse(ls.get(SAVE_KEY)||'null');if(sv&&sv.p&&ROLES[sv.p.role])saved=sv.p;}catch(e){}
+  lobbySaved=saved;
   if(saved){
+    saved.look=sanitizeLook(saved.look);
     const R=ROLES[saved.role];
     $('lsaved').innerHTML=roleCardHtml(R)+'<p style="color:#ffe066;text-align:center;font-size:13px">Level '+Math.min(saved.lvl||1,R.maxLvl)+' / '+R.maxLvl+'</p>';
     $('lcont').style.display='block';$('lpick').style.display='none';
+    refreshNameBox();paintHeroS();
   }else showPick();
 }
+$('lcust').onclick=()=>openCust(pendingLook,heroName(),l=>{pendingLook=l;paintHeroN();});
+$('lcust2').onclick=()=>openCust(lobbySaved.look,heroName(),l=>{
+  lobbySaved.look=l;
+  try{const sv=JSON.parse(ls.get(SAVE_KEY)||'null');if(sv&&sv.p){sv.p.look=l;ls.set(SAVE_KEY,JSON.stringify(sv));}}catch(e){}
+  paintHeroS();
+});
 function enterGame(){
-  if(started)return;started=true;$('lobby').classList.remove('on');bootGame();requestAnimationFrame(frame);
+  if(started)return;
+  if(!lobbyKnownName()){
+    const n=cleanName($('lname').value);
+    if(!n){$('lnamenote').textContent=NAME_RULE+'.';$('lname').focus();return;}
+    chosenName=n;
+    if(curMail){const acc=accounts();if(acc[curMail]){acc[curMail].name=n;putAccounts(acc);}}
+  }
+  started=true;$('lobby').classList.remove('on');bootGame();requestAnimationFrame(frame);
 }
+/* ---- panel kustomisasi ---- */
+let draft=null,custCb=null,custDir=0,custT=0,custTimer=null;
+const DIR_ORDER=[0,3,1,2];
+function custOpen(){return $('cust').classList.contains('on');}
+function paintCust(){drawPrev($('cprev'),draft,DIR_ORDER[custDir],WALK[custT],8);}
+function openCust(look,name,cb){
+  draft=sanitizeLook(look);custCb=cb;custDir=0;custT=0;
+  $('cname').textContent=name?'Nama: '+name:'';
+  renderCust();$('cust').classList.add('on');
+  clearInterval(custTimer);custTimer=setInterval(()=>{custT=(custT+1)%4;paintCust();},220);
+}
+function closeCust(){$('cust').classList.remove('on');clearInterval(custTimer);custTimer=null;}
+function renderCust(){
+  const box=$('crows'),sc=$('cbox').scrollTop;box.innerHTML='';
+  LOOK_ROWS.forEach(([key,label,type])=>{
+    if(key==='accC'&&(draft.acc===0||draft.acc===4))return;
+    const row=document.createElement('div');row.className='crow';
+    const lb=document.createElement('label');lb.textContent=label;row.appendChild(lb);
+    const op=document.createElement('div');op.className='copts';
+    if(type==='btn'){
+      LOOK_OPT[key].forEach((t,i)=>{
+        const b=document.createElement('button');b.type='button';b.className='ob'+(draft[key]===i?' on':'');b.textContent=t;
+        b.onclick=()=>{draft[key]=i;renderCust();paintCust();};op.appendChild(b);});
+    }else{
+      LOOK_COL[key].forEach(c=>{
+        const d=document.createElement('div');d.className='sw'+(draft[key]===c?' on':'');d.style.background=c;d.title=c;
+        d.onclick=()=>{draft[key]=c;renderCust();paintCust();};op.appendChild(d);});
+      const ci=document.createElement('input');ci.type='color';ci.value=draft[key];ci.title='Pilih warna sendiri';
+      ci.oninput=()=>{draft[key]=ci.value.toLowerCase();paintCust();};
+      ci.onchange=()=>{draft[key]=ci.value.toLowerCase();renderCust();paintCust();};
+      op.appendChild(ci);
+    }
+    row.appendChild(op);box.appendChild(row);
+  });
+  $('cbox').scrollTop=sc;
+}
+const pickR=a=>a[Math.floor(Math.random()*a.length)];
+$('cRot').onclick=$('cprev').onclick=()=>{custDir=(custDir+1)%4;paintCust();};
+$('cRnd').onclick=()=>{
+  Object.keys(LOOK_COL).forEach(k=>draft[k]=pickR(LOOK_COL[k]));
+  draft.style=Math.floor(Math.random()*LOOK_OPT.style.length);draft.acc=Math.floor(Math.random()*LOOK_OPT.acc.length);
+  renderCust();paintCust();
+};
+$('cDef').onclick=()=>{draft=defaultLook();renderCust();paintCust();};
+$('cSave').onclick=()=>{const l=sanitizeLook(draft),cb=custCb;closeCust();if(cb)cb(l);};
+$('cCancel').onclick=closeCust;
+$('custBtn').addEventListener('click',()=>{
+  if(!started)return;
+  openCust(P.look,P.name,l=>{P.look=sanitizeLook(l);applyLook();saveGame();toast('Penampilan diperbarui');});
+});
 $('lplay').onclick=enterGame;
 $('lgo').onclick=()=>{if(pendingRole)enterGame();};
 $('lchg').onclick=()=>{
@@ -2588,14 +2830,18 @@ function setupRoleUI(){
 function bootGame(){
 try{loadGame();}catch(e){showErr(e);}
 let newRole=false;
-if(!P.role){newRole=true;initRole(pendingRole||'warga');}else recalc();
+if(!P.role){newRole=true;P.look=sanitizeLook(pendingLook);initRole(pendingRole||'warga');}else recalc();
+P.look=sanitizeLook(P.look);
+if(!cleanName(P.name))P.name=lobbyKnownName()||chosenName||'Petualang';
+applyLook();
 buildHotbar();setupRoleUI();
 try{initNpcs();initVillageCrystals();}catch(e){showErr(e);}
 if(newRole&&shownIntro)setTimeout(()=>toast(RL().hint),600);
 if(!shownIntro){
   say('Pixel RPG',[
-    'Peranmu: '+RL().ic+' '+RL().n+'. '+RL().desc,
+    'Halo, '+P.name+'! Peranmu: '+RL().ic+' '+RL().n+'. '+RL().desc,
     'Selamat datang di dunia terbuka! Gerak: WASD / panah. Lari: tahan Shift.',
+    'Namamu, levelmu, dan perananmu tampil di atas kepala karakter. Ubah penampilan kapan saja lewat tombol 🎨.',
     'Klik kiri: serang ke arah kursor (tahan untuk terus menyerang). Q: ganti pedang/busur (khusus Pemanah).',
     'Klik kanan atau F: pakai sihir. Tombol 1-6 atau roda mouse: pilih sihir. E: bicara dengan NPC.',
     'Musim berganti: semi, panas, hujan, salju. Tiap musim memengaruhi tanaman, ternak, dan gerakmu. (P: lompat musim)',
@@ -2610,7 +2856,7 @@ if(!shownIntro){
 let mode='in';
 function setMode(m){
   mode=m;$('tabIn').classList.toggle('on',m==='in');$('tabUp').classList.toggle('on',m==='up');
-  $('apass2').style.display=m==='up'?'block':'none';$('apass2').required=m==='up';
+  $('aname').style.display=m==='up'?'block':'none';$('apass2').style.display=m==='up'?'block':'none';$('apass2').required=m==='up';
   $('apass').autocomplete=m==='up'?'new-password':'current-password';
   $('asubmit').textContent=m==='up'?'Daftar & Main':'Masuk';$('aerr').textContent='';
 }
@@ -2620,13 +2866,15 @@ async function doAuth(){
   const mail=normMail($('aemail').value),pw=$('apass').value;
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail))return err('Email tidak valid.');
   if(pw.length<6)return err('Kata sandi minimal 6 karakter.');
+  const cname=cleanName($('aname').value);
+  if(mode==='up'&&!cname)return err(NAME_RULE+'.');
   btn.disabled=true;err('');
   try{
     const acc=accounts();
     if(mode==='up'){
       if(acc[mail])return err('Email sudah terdaftar. Silakan masuk.');
       if(pw!==$('apass2').value)return err('Kata sandi tidak sama.');
-      const salt=newSalt();acc[mail]={salt,hash:await hashPass(pw,salt),t:Date.now()};
+      const salt=newSalt();acc[mail]={salt,hash:await hashPass(pw,salt),t:Date.now(),name:cname};
       if(!putAccounts(acc))return err('Gagal menyimpan akun (penyimpanan browser diblokir?).');
       // progres lama (sebelum ada akun) diambil alih oleh akun pertama
       const old=ls.get(LEGACY_KEY);
@@ -2641,12 +2889,12 @@ async function doAuth(){
   finally{btn.disabled=false;}
 }
 $('asubmit').addEventListener('click',doAuth);
-['aemail','apass','apass2'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doAuth();}}));
+['aemail','aname','apass','apass2'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doAuth();}}));
 
 $('aguest').onclick=()=>{curMail=null;SAVE_KEY=persist?LEGACY_KEY:null;$('auth').classList.remove('on');openLobby();};
 if(!persist)$('anote').textContent='Penyimpanan browser tidak tersedia di sini: progres hanya bertahan selama halaman terbuka. Buka file ini langsung di browser agar tersimpan.';
 // panel akun
-$('acctBtn').addEventListener('click',()=>{if(!curMail){$('acctMail').textContent='Mode tanpa akun. Keluar lalu daftar untuk menyimpan progres.';}else $('acctMail').textContent='Masuk sebagai: '+curMail;$('acctPw').style.display='none';$('acctPw').value='';delStep=0;$('acctDel').textContent='Hapus akun & mulai dari awal';$('acctErr').textContent='';$('acct').classList.add('on');for(const k in keys)keys[k]=false;});
+$('acctBtn').addEventListener('click',()=>{if(!curMail){$('acctMail').textContent='Mode tanpa akun. Keluar lalu daftar untuk menyimpan progres.';}else $('acctMail').textContent='Masuk sebagai: '+curMail+(P.name?' \u00b7 Karakter: '+P.name:'');$('acctPw').style.display='none';$('acctPw').value='';delStep=0;$('acctDel').textContent='Hapus akun & mulai dari awal';$('acctErr').textContent='';$('acct').classList.add('on');for(const k in keys)keys[k]=false;});
 $('acctX').onclick=()=>$('acct').classList.remove('on');
 $('acctLobby').onclick=()=>{saveGame();SAVE_KEY=null;location.reload();};
 $('acctOut').onclick=()=>{saveGame();SAVE_KEY=null;ls.del(SESSION_KEY);if(persist)location.reload();else{started=started;location.reload();}};
