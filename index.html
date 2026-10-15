@@ -156,7 +156,7 @@ html,body{height:100dvh}
   <div class="row" id="rolet" style="color:#ffe066"></div>
   <div class="row">HP <span class="bar"><i id="hpbar" class="hp"></i></span> <span id="hptxt"></span></div>
   <div class="row">MP <span class="bar"><i id="mpbar" class="mp"></i></span> <span id="mptxt"></span></div>
-  <div class="row">XP <span class="bar"><i id="xpbar" class="xp"></i></span></div>
+  <div class="row">XP <span class="bar"><i id="xpbar" class="xp"></i></span> <span id="xptxt"></span></div>
   <div class="row">🪙 <span id="coins">0</span> &nbsp; 💎 <span id="crys">0</span> &nbsp; ⚔ <span id="kills">0</span></div>
   <div class="row" id="selrow" style="color:#9ad"></div><div id="quest"></div>
 </div>
@@ -910,7 +910,7 @@ const ROLE_IDS=['warga','prajurit','pemanah','penyihir','tanker'];
 const SPELL_LV=[1,5,12,25,40,60];
 const FISH=[{k:'Ikan Kecil',sell:6,xp:4,w:50},{k:'Ikan Mas',sell:14,xp:8,w:30},{k:'Ikan Besar',sell:30,xp:15,w:15},{k:'Ikan Emas',sell:90,xp:40,w:5}];
 const RL=()=>ROLES[(typeof P!=='undefined'&&P&&P.role)||'warga'];
-const xpNeed=l=>Math.round((15+l*6)*RL().xpMul);
+const xpNeed=l=>Math.round((15+l*6+0.04*l*l)*RL().xpMul);   // Lv1: 21, Lv50: 415, Lv100: 1015, Lv149: 1797 (Warga x0.5)
 const randRound=x=>Math.floor(x)+(Math.random()<x-Math.floor(x)?1:0);
 const freshStats=()=>({crystal:0,kill:0,slime:0,bat:0,goblin:0,skeleton:0,golem:0,ghost:0,arrow:0,flower:0,far:0,coin:0});
 
@@ -941,7 +941,7 @@ function plotAt(x,y){return PLOTS.find(p=>x>=p.x&&x<p.x+p.w&&y>=p.y&&y<p.y+p.h);
 
 function recalc(){
   const R=RL();
-  P.lvl=Math.min(P.lvl,R.maxLvl);
+  P.lvl=Math.min(Math.max(1,Math.floor(P.lvl)||1),R.maxLvl);
   P.maxHp=Math.round(R.hp0+R.hpl*(P.lvl-1))+(P.bhp||0);
   P.maxMp=Math.round(R.mp0+R.mpl*(P.lvl-1))+(P.bmp||0);
   if(R.id!=='pemanah'){P.hasBow=false;P.weapon='sword';}else P.hasBow=true;
@@ -952,7 +952,7 @@ function initRole(id){
   P.role=id;const R=RL();
   if(id==='warga')P.bag.tool.cangkul=true;
   if(id==='pemanah')P.weapon='bow';
-  P.lvl=Math.min(P.lvl,R.maxLvl);
+  P.lvl=1;P.xp=0;
   if(P.bhp===0&&P.bmp===0){/* sudah dihitung saat load */}
   recalc();P.hp=P.maxHp;P.mp=P.maxMp;
 }
@@ -1213,7 +1213,7 @@ function updateHUD(){
   $('hptxt').textContent=Math.max(0,Math.ceil(P.hp))+'/'+P.maxHp;
   $('mpbar').style.width=clamp(P.mp/P.maxMp,0,1)*100+'%';
   $('mptxt').textContent=Math.floor(P.mp)+'/'+P.maxMp;
-  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('rolet').textContent=RL().ic+' '+RL().n+(P.lvl>=RL().maxLvl?' · MAKS':' · maks Lv '+RL().maxLvl);
+  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('xptxt').textContent=P.lvl>=RL().maxLvl?'MAKS':Math.floor(P.xp)+'/'+xpNeed(P.lvl);$('rolet').textContent=RL().ic+' '+RL().n+(P.lvl>=RL().maxLvl?' · MAKS':' · maks Lv '+RL().maxLvl);
   $('coins').textContent=P.coins;$('crys').textContent=P.st.crystal;$('kills').textContent=P.st.kill;
   const hours=(12+gtime/300*24)%24,hh=Math.floor(hours),mm=Math.floor((hours-hh)*60);
   $('clock').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' '+SEAS[seasonIdx()].ic+SEAS[seasonIdx()].s;
