@@ -478,7 +478,7 @@ function genTile(x,y){
   const house=inHouse(x,y);
   if(house){t=TY.GRASS;dec=0;}
   if(plotAt(x,y)){t=TY.GRASS;dec=0;}
-  const solid=house||t<=TY.WATER||t===TY.STONE||dec===1||dec===2||dec===3;
+  const solid=house||t<=TY.WATER||t===TY.STONE||dec===1||dec===3;   // semak (dec 2) bisa dilewati
   return {t,v:(r1*4)|0,dec,dv,solid};
 }
 const tileCache=new Map();
@@ -2151,7 +2151,7 @@ function render(now){
       }
       if(tile.dec===4){if(seasonIdx()!==3&&!picked.has(tx*65536+ty))ctx.drawImage(SPR.flower[tile.dv],sx,sy);}
       else if(tile.dec===1)list.push({y:(ty+1)*T,k:1,a:sx,b:sy-16,i:tile.dv});
-      else if(tile.dec===2)list.push({y:(ty+1)*T,k:2,a:sx,b:sy,i:tile.dv});
+      else if(tile.dec===2)list.push({y:ty*T,k:2,a:sx,b:sy,i:tile.dv});
       else if(tile.dec===3)list.push({y:(ty+1)*T,k:3,a:sx,b:sy});
     }
   }
@@ -2168,7 +2168,13 @@ function render(now){
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
     switch(o.k){
-      case 1:ctx.drawImage(SPR.tree[o.i],o.a,o.b);treeSeason(o.a,o.b);break;
+      case 1:{
+        const psx=P.x-camX,psy=P.y-camY;
+        const behind=P.y<o.y&&psx+9>o.a&&psx-9<o.a+16&&psy>o.b&&psy-21<o.b+32;   // player tertutup daun
+        if(behind)ctx.globalAlpha=0.38;
+        ctx.drawImage(SPR.tree[o.i],o.a,o.b);treeSeason(o.a,o.b);
+        if(behind)ctx.globalAlpha=1;
+        break;}
       case 2:ctx.drawImage(SPR.bush[o.i],o.a,o.b);break;
       case 3:ctx.drawImage(SPR.rock,o.a,o.b);break;
       case 4:ctx.drawImage(SPR.house[o.i],o.a,o.b);roofSnow(o.a,o.b);break;
