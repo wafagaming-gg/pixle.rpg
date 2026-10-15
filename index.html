@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#101820">
 <title>Pixel Open World RPG</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -45,17 +48,20 @@
   #controls{display:none}
   .btn{position:absolute;width:46px;height:46px;border:2px solid #fff;background:rgba(255,255,255,.18);border-radius:10px;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;touch-action:none}
   .btn:active{background:rgba(255,255,255,.4)}
-  #dpad{position:absolute;left:14px;bottom:14px;width:138px;height:138px}
-  #dpad .btn:nth-child(1){left:46px;top:0}
-  #dpad .btn:nth-child(2){left:0;top:46px}
-  #dpad .btn:nth-child(3){left:92px;top:46px}
-  #dpad .btn:nth-child(4){left:46px;top:92px}
+  /* joystik melayang: sentuh di sisi kiri layar, lalu geser */
+  :root{--jr:56px}
+  #joyzone{display:none;position:absolute;inset:0;touch-action:none}
+  #joy{position:absolute;width:calc(var(--jr)*2);height:calc(var(--jr)*2);border-radius:50%;border:2px solid rgba(255,255,255,.55);background:rgba(255,255,255,.10);pointer-events:none;opacity:.4;transition:opacity .15s;
+       left:calc(max(14px,env(safe-area-inset-left)) + 8px);bottom:calc(max(10px,env(safe-area-inset-bottom)) + 8px)}
+  #joy.on{opacity:1;background:rgba(255,255,255,.16)}
+  #knob{position:absolute;left:50%;top:50%;width:calc(var(--jr)*.9);height:calc(var(--jr)*.9);margin:calc(var(--jr)*-.45);border-radius:50%;background:rgba(255,255,255,.42);border:2px solid #fff;box-shadow:0 0 8px rgba(0,0,0,.5)}
+  #joy::before{content:'';position:absolute;inset:calc(var(--jr)*.42);border-radius:50%;border:1px dashed rgba(255,255,255,.3)}
   #bA{right:16px;bottom:56px;width:66px;height:66px;border-radius:50%;font-size:13px}
   #bB{right:94px;bottom:16px;width:56px;height:56px;border-radius:50%;font-size:12px}
   #bC{right:94px;bottom:82px;width:56px;height:56px;border-radius:50%;font-size:12px;background:rgba(120,140,255,.3)}
   #bW{right:16px;bottom:130px;width:50px;height:50px;border-radius:50%;font-size:11px}
   @media (pointer:coarse){
-    #controls{display:block}
+    #controls,#joyzone{display:block}
     #dialog{bottom:220px}
     #hotbar{bottom:160px;gap:3px;padding:3px 4px}
     .slot{width:32px;height:32px;font-size:15px}
@@ -125,12 +131,6 @@ html,body{height:100dvh}
   .slot{width:30px;height:30px;font-size:14px;border-width:1px}
   #dialog{bottom:calc(max(6px,env(safe-area-inset-bottom)) + 46px);width:calc(100vw - 340px);max-width:560px;padding:6px 10px;font-size:12px;line-height:1.4;border-width:2px;box-shadow:none}
   #dhint{font-size:10px;margin-top:2px}
-  #dpad{left:calc(max(10px,env(safe-area-inset-left)) + 4px);bottom:max(8px,env(safe-area-inset-bottom));width:120px;height:120px}
-  #dpad .btn{width:40px;height:40px;font-size:16px;border-radius:8px}
-  #dpad .btn:nth-child(1){left:40px;top:0}
-  #dpad .btn:nth-child(2){left:0;top:40px}
-  #dpad .btn:nth-child(3){left:80px;top:40px}
-  #dpad .btn:nth-child(4){left:40px;top:80px}
   #bA,#bB,#bC,#bW,#bZ,#bX{width:46px;height:46px;border-radius:50%;font-size:10px;border-width:1px}
   #bA{width:56px;height:56px;right:calc(max(10px,env(safe-area-inset-right)) + 0px);bottom:max(8px,env(safe-area-inset-bottom))}
   #bB{right:calc(max(10px,env(safe-area-inset-right)) + 64px);bottom:max(8px,env(safe-area-inset-bottom))}
@@ -142,7 +142,6 @@ html,body{height:100dvh}
   .abox{max-height:94vh;overflow:auto;padding:10px}
 }
 @media (pointer:coarse) and (orientation:portrait){
-  #dpad{left:8px;bottom:8px}
   #hotbar{bottom:156px}
   #side{max-width:130px}
 }
@@ -150,6 +149,7 @@ html,body{height:100dvh}
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="joyzone"><div id="joy"><div id="knob"></div></div></div>
 
 <div id="hud">
   <div class="row"><b>Lv <span id="lvl">1</span></b> &nbsp; <span id="clock">12:00</span></div>
@@ -167,7 +167,7 @@ html,body{height:100dvh}
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
-    <button id="mapBtn">Peta</button><button id="resetBtn">Reset</button><button id="acctBtn">👤</button>
+    <button id="mapBtn">Peta</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="acctBtn">👤</button>
   </div>
 </div>
 
@@ -210,12 +210,6 @@ html,body{height:100dvh}
 </div></div>
 
 <div id="controls">
-  <div id="dpad">
-    <div class="btn" data-k="w">▲</div>
-    <div class="btn" data-k="a">◀</div>
-    <div class="btn" data-k="d">▶</div>
-    <div class="btn" data-k="s">▼</div>
-  </div>
   <div class="btn" id="bA" data-k="attack">SERANG</div>
   <div class="btn" id="bB" data-k="e">BICARA</div>
   <div class="btn" id="bC" data-k="cast">SIHIR</div>
@@ -1852,6 +1846,7 @@ function updatePickups(dt){
 }
 
 const keys={};
+const joy={on:false,id:null,x:0,y:0,m:0,cx:0,cy:0,R:56};
 function update(dt){
   gtime+=dt;
   const SS=SEAS[seasonIdx()];if(SS!==lastSS){if(lastSS)toast(SS.msg);lastSS=SS;}
@@ -1875,6 +1870,8 @@ function update(dt){
   }else{
     let ax=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
     let ay=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+    const jOn=joy.on&&joy.m>0;
+    if(jOn){ax=joy.x;ay=joy.y;}
     P.shield=!!(RL().shield&&(keys.cast||keys.f||mouseR)&&!dlg&&!menu&&IN===null);
     if(fishS){
       if(P.moving||IN!==null||dlg||menu||fishS.dead)fishS=null;
@@ -1884,7 +1881,7 @@ function update(dt){
     P.moving=ax!==0||ay!==0;
     if(P.moving){
       const l=Math.hypot(ax,ay);ax/=l;ay/=l;
-      const run=keys.shift&&!P.shield?1.7:1,sp=58*run*SS.ps*(P.shield?0.55:1);
+      const run=keys.shift&&!P.shield?1.7:1,sp=58*run*SS.ps*(P.shield?0.55:1)*(jOn?0.55+0.45*joy.m:1);
       if(P.aimT<=0){if(Math.abs(ax)>Math.abs(ay))P.dir=ax>0?3:2;else P.dir=ay>0?0:1;}
       const nx=P.x+ax*sp*dt,ny=P.y+ay*sp*dt;
       if(!blocked(nx,P.y)&&!npcBlock(nx,P.y))P.x=nx;
@@ -2247,7 +2244,7 @@ addEventListener('keydown',e=>{
   keys[k]=true;
 });
 addEventListener('keyup',e=>{if(e.target&&e.target.tagName==='INPUT')return;keys[e.key.toLowerCase()]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseL=mouseR=false;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseL=mouseR=false;joyEnd();});
 
 // mouse: klik kiri = serang, klik kanan = sihir, roda = ganti sihir
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')setMouse(e);});
@@ -2274,6 +2271,74 @@ document.querySelectorAll('[data-k]').forEach(b=>{
   b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);
   b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
 });
+
+/* =========================================================
+   JOYSTIK ANALOG (Android) & LAYAR PENUH
+   ========================================================= */
+const joyEl=$('joy'),knobEl=$('knob'),joyZone=$('joyzone');
+function joyLayout(){
+  joy.R=clamp(Math.round(Math.min(innerWidth,innerHeight)*0.16),44,72);
+  document.documentElement.style.setProperty('--jr',joy.R+'px');
+}
+function joyEnd(){
+  joy.on=false;joy.id=null;joy.x=joy.y=joy.m=0;
+  joyEl.classList.remove('on');
+  joyEl.style.left=joyEl.style.top=joyEl.style.bottom='';
+  knobEl.style.transform='';
+}
+function joyMove(e){
+  let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy,d=Math.hypot(dx,dy);
+  const reach=joy.R*0.8;
+  if(d>joy.R*1.25){            // pangkal ikut tergeser bila jari ditarik jauh
+    const k=(d-joy.R*1.25)/d;joy.cx+=dx*k;joy.cy+=dy*k;
+    joyEl.style.left=(joy.cx-joy.R)+'px';joyEl.style.top=(joy.cy-joy.R)+'px';
+    dx=e.clientX-joy.cx;dy=e.clientY-joy.cy;d=Math.hypot(dx,dy);
+  }
+  const m=clamp(d/reach,0,1),dead=0.18;
+  if(m<dead||d===0){joy.x=joy.y=joy.m=0;}
+  else{joy.x=dx/d;joy.y=dy/d;joy.m=(m-dead)/(1-dead);}
+  const kd=Math.min(d,reach),ux=d?dx/d:0,uy=d?dy/d:0;
+  knobEl.style.transform='translate('+(ux*kd)+'px,'+(uy*kd)+'px)';
+}
+joyZone.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'||joy.on)return;
+  if(e.clientX>innerWidth*0.55)return;           // joystik hanya di sisi kiri
+  e.preventDefault();
+  try{joyZone.setPointerCapture(e.pointerId);}catch(_){}
+  joy.on=true;joy.id=e.pointerId;
+  const R=joy.R,pad=R+10;
+  joy.cx=clamp(e.clientX,pad,innerWidth*0.55);
+  joy.cy=clamp(e.clientY,pad,innerHeight-pad);
+  joyEl.style.left=(joy.cx-R)+'px';joyEl.style.top=(joy.cy-R)+'px';joyEl.style.bottom='auto';
+  joyEl.classList.add('on');
+  joyMove(e);
+});
+joyZone.addEventListener('pointermove',e=>{if(joy.on&&e.pointerId===joy.id){e.preventDefault();joyMove(e);}});
+['pointerup','pointercancel','lostpointercapture'].forEach(t=>joyZone.addEventListener(t,e=>{if(joy.on&&e.pointerId===joy.id)joyEnd();}));
+addEventListener('resize',joyLayout);joyLayout();
+document.addEventListener('visibilitychange',()=>{if(document.hidden){joyEnd();for(const k in keys)keys[k]=false;}});
+
+const rootEl=document.documentElement;
+const fsReq=rootEl.requestFullscreen||rootEl.webkitRequestFullscreen;
+const isFS=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+function enterFS(){try{const p=fsReq.call(rootEl,{navigationUI:'hide'});if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+function exitFS(){try{const f=document.exitFullscreen||document.webkitExitFullscreen,p=f.call(document);if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+const fsBtn=$('fsBtn');
+if(!fsReq)fsBtn.style.display='none';
+else{
+  fsBtn.addEventListener('click',()=>{fsAuto=true;isFS()?exitFS():enterFS();});
+  // masuk layar penuh otomatis pada sentuhan pertama (browser mewajibkan gestur pengguna)
+  var fsAuto=false;
+  const autoFS=e=>{
+    if(fsAuto||isFS())return;
+    if(e.pointerType==='mouse'||!matchMedia('(pointer:coarse)').matches)return;
+    const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;
+    fsAuto=true;enterFS();
+  };
+  addEventListener('pointerup',autoFS,true);
+}
+const onFS=()=>{fsBtn.textContent=isFS()?'🗗':'⛶';fsBtn.title=isFS()?'Keluar layar penuh':'Layar penuh';setTimeout(resize,150);setTimeout(resize,500);};
+document.addEventListener('fullscreenchange',onFS);document.addEventListener('webkitfullscreenchange',onFS);
 
 /* sprite buatan sendiri (opsional) */
 $('spriteFile').addEventListener('change',e=>{
