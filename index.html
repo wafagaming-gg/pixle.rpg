@@ -204,7 +204,7 @@ html,body{height:100dvh}
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
-    <button id="mapBtn">Peta</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
+    <button id="mapBtn">Peta</button><button id="invBtn" title="Inventori (I)">🎒 Inv</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
   </div>
 </div>
 
@@ -348,7 +348,36 @@ const FOODS={
 const FOOD_BASE=['roti','sate','sup','jus'];
 const FOOD_EXTRA={'Desa Awal':'bubur','Desa Hijau':'salad','Desa Biru':'ikan','Desa Merah':'nasi','Desa Ungu':'kue','Desa Jingga':'jagungb','Ibu Kota Aurelia':'raja'};
 const EDIBLE={wortel:['🥕',8],jagung:['🌽',12],labu:['🎃',18],telur:['🥚',10],susu:['🥛',12],'Ikan Kecil':['🐟',8],'Ikan Mas':['🐠',14],'Ikan Besar':['🐟',22],'Ikan Emas':['🐠',30]};
+/* ---- loot buruan (bisa dijual di Guild Petualang) ---- */
+const LOOT={
+  tanduk:{n:'Tanduk',ic:'🦌',p:18},
+  daging:{n:'Daging',ic:'🥩',p:12,eat:22},
+  kulit:{n:'Kulit',ic:'🧶',p:15},
+  bulu:{n:'Bulu',ic:'🪶',p:8},
+  kulit_berbulu:{n:'Kulit Berbulu',ic:'🦊',p:28},
+  taring:{n:'Taring',ic:'🦷',p:20},
+  cakar:{n:'Cakar',ic:'🐾',p:16},
+  kulit_keras:{n:'Kulit Keras',ic:'🐊',p:32},
+  tulang:{n:'Tulang',ic:'🦴',p:10},
+  cairan_slime:{n:'Cairan Slime',ic:'🟢',p:6},
+  sayap:{n:'Sayap Kelelawar',ic:'🦇',p:14}
+};
+const MOB_DROPS={
+  rusa:[['tanduk',0.55],['daging',0.9],['kulit',0.7]],
+  kelinci:[['daging',0.85],['kulit',0.65]],
+  ayam_liar:[['bulu',0.8],['daging',0.75]],
+  kerbau:[['tanduk',0.6],['kulit',0.75],['daging',0.9]],
+  beruang:[['kulit_berbulu',0.85],['daging',0.9]],
+  serigala:[['kulit_berbulu',0.7],['daging',0.8],['taring',0.55],['cakar',0.5]],
+  harimau:[['kulit_berbulu',0.8],['daging',0.85],['taring',0.65],['cakar',0.6]],
+  buaya:[['kulit_keras',0.8],['daging',0.85],['taring',0.6]],
+  skeleton:[['tulang',0.9]],
+  slime:[['cairan_slime',0.7]],
+  bat:[['taring',0.5],['sayap',0.55]],
+  goblin:[],ghost:[],golem:[]
+};
 const FSHOPS=[];
+const GUILDS=[];
 function addFood(s,x,y,name){
   BLD.push({x,y,w:3,h:2,food:1,roof:s.col,roofD:shade(s.col,.78)});
   FSHOPS.push({name,x:x+1,y:y+2,ids:FOOD_BASE.concat(FOOD_EXTRA[s.name]||[])});}
@@ -370,19 +399,24 @@ function wallAt(x,y){
   const d=Math.hypot(dx,dy);
   return Math.abs(d-CAP_G.w1)<=0.9||Math.abs(d-CAP_G.w2)<=0.9;}
 const ROOFS=['#c0504d','#3d6fb5','#8a5db8','#d1953a','#e8e8f0',CAP.col];
+function addGuild(s,x,y){
+  BLD.push({x,y,w:3,h:2,guild:1,roof:'#8b6914',roofD:shade('#8b6914',.78)});
+  GUILDS.push({name:'Guild Petualang '+s.name.replace('Desa ','').replace('Ibu Kota ',''),x:x+1,y:y+2,s});}
 SETT.forEach(s=>{
   BAN.push(s.cap?[s.x,s.y+6,s.col,s.name]:[s.x,s.y,s.col,s.name]);
-  if(s.main){addFood(s,8,-6,'Warung Desa Awal');return;}
+  if(s.main){addFood(s,8,-6,'Warung Desa Awal');addGuild(s,-9,-6);return;}
   if(s.cap){
     BLD.push({x:s.x-4,y:s.y-3,w:8,h:4,castle:1,col:s.col,roof:s.col,roofD:shade(s.col,.78)});
     capRing(CAP_G.r1,[3,2,3,2]).forEach(([x,y],i)=>addB(x,y,ROOFS[i%ROOFS.length]));
     capRing(CAP_G.r2,[7,6,6,6]).forEach(([x,y],i)=>addB(x,y,ROOFS[(i+2)%ROOFS.length]));
     addFood(s,s.x+3,s.y+5,'Restoran Aurelia');
+    addGuild(s,s.x-8,s.y+5);
     [[-5,2],[5,2]].forEach(o=>BAN.push([s.x+o[0],s.y+o[1],s.col,null]));
     [[26,-3],[26,3],[-26,-3],[-26,3],[-3,-26],[3,-26],[-3,26],[3,26]].forEach(o=>BAN.push([s.x+o[0],s.y+o[1],s.col,null]));
   }else{
     [[-8,-6],[4,-6],[-8,3],[4,3]].forEach(o=>addB(s.x+o[0],s.y+o[1],s.col));
     addFood(s,s.x-4,s.y+3,'Warung '+s.name);
+    addGuild(s,s.x+6,s.y-6);
   }
 });
 function settDist(x,y){let m=1e9;for(const s of SETT){const d=Math.hypot(x-s.x,y-s.y)-s.r;if(d<m)m=d;}return m;}
@@ -444,6 +478,30 @@ function addSettNpcs(){
   FSHOPS.forEach(f=>{
     const n=makeNpc(f.name,SPR.cook,f.x,f.y,()=>say(f.name,['Selamat datang di '+f.name+'! Lapar? Makan di sini atau bungkus untuk bekal.','Kapan saja, tekan G untuk makan bekalmu.'],()=>shopMakan(f)));
     n.still=1;npcs.push(n);});
+  // Guild Petualang: jual loot buruan
+  GUILDS.forEach(g=>{
+    const n=makeNpc(g.name,SPR.hunter,g.x,g.y,()=>say(g.name,['Guild Petualang menerima hasil buruanmu.','Jual tanduk, kulit, daging, taring, dan barang langka lainnya di sini!','Tekan I untuk membuka inventori.'],()=>shopGuild()));
+    n.still=1;npcs.push(n);});
+  // 4 NPC pemburu per desa & ibu kota (area buruan dekat pemukiman)
+  const huntTips=[
+    'Rusa, kelinci, ayam liar, dan kerbau tidak menyerang — tapi akan kabur. Buru mereka untuk daging & kulit.',
+    'Beruang, serigala, dan harimau ganas! Siapkan senjata sebelum mendekat.',
+    'Buaya hanya tinggal di dekat air. Jangan memancing di tepi sungai tanpa waspada.',
+    'Hasil buruan masuk inventori (tombol I). Jual semuanya di Guild Petualang.',
+    'Slime menjatuhkan cairan slime, kerangka menjatuhkan tulang, kelelawar menjatuhkan taring & sayap.',
+    'Kerbau punya banyak daging. Serigala dan harimau punya taring serta cakar berharga.'
+  ];
+  SETT.forEach((s,si)=>{
+    const offs=[[s.r-2,2],[-(s.r-2),-1],[2,-(s.r-2)],[-3,s.r-3]];
+    offs.forEach(([ox,oy],j)=>{
+      const nm='Pemburu '+s.name.replace('Desa ','').replace('Ibu Kota ','')+' '+(j+1);
+      const tip=huntTips[(si*4+j)%huntTips.length];
+      npcs.push(makeNpc(nm,SPR.hunter,Math.round(s.x+ox),Math.round(s.y+oy),()=>say(nm,[
+        'Aku berjaga di sekitar '+s.name+'. Hewan liar berkeliaran tidak terlalu jauh dari sini.',
+        tip,'Guild Petualang di desa membeli semua hasil buruanmu.'
+      ])));
+    });
+  });
 }
 const ROUTES=[
  {a:'Desa Awal',b:'Desa Hijau',w:1,pts:[[0,-17],[12,-26],[24,-34],[48,-34]]},
@@ -750,6 +808,18 @@ function makeFoodShop(b){
   R(g,'#5b3a1e',13,0,22,8);R(g,'#ffe066',14,1,20,6);
   R(g,'#c0504d',20,2,8,3);R(g,'#7a1f1f',21,5,6,1);R(g,'#fff',22,2,2,1);
   return c;}
+function makeGuild(b){
+  const [c,g]=mk(48,48),col=b.roof||'#8b6914',cd=b.roofD||shade(col,.78);
+  R(g,'rgba(0,0,0,.2)',3,44,44,4);
+  R(g,'#e9d8b4',5,24,38,21);R(g,'#cdb98f',5,24,38,2);R(g,'#8f8f96',5,42,38,4);
+  R(g,'#7a5230',5,24,2,18);R(g,'#7a5230',41,24,2,18);
+  for(let y=4;y<=24;y++){const ins=Math.max(0,Math.round((24-y)*0.35));R(g,(y%4===0)?cd:col,1+ins,y,46-ins*2,1);}
+  R(g,'rgba(0,0,0,.25)',1,23,46,2);
+  R(g,'#5b3a1e',18,30,12,14);R(g,'#7a5230',19,31,10,13);R(g,'#ffd23f',26,38,1,1);
+  R(g,'#3a2412',10,28,8,8);R(g,'#ffd23f',11,29,6,6);R(g,'#8b6914',12,30,4,4);R(g,'#fff',13,31,2,2);
+  R(g,'#3a2412',30,28,8,8);R(g,'#ffd23f',31,29,6,6);R(g,'#c0504d',32,30,4,4);
+  R(g,'#5b3a1e',12,0,24,8);R(g,'#ffd23f',13,1,22,6);R(g,'#8b6914',16,2,16,3);R(g,'#fff',20,2,2,2);R(g,'#fff',26,2,2,2);
+  return c;}
 // --- karakter chibi (desain orisinal)
 const PAL={
   player :{hair:'#a8501f',hairD:'#7e3a14',hairL:'#d27a3a',skin:'#ffd9b8',eye:'#2a2b4d',tunic:'#2e8b57',tunicD:'#25724a',trim:'#f2c14e',scarf:'#d94a4a',pants:'#5b4636',boots:'#4a2f1e'},
@@ -997,6 +1067,72 @@ function makeMana(){
   return outline(c);
 }
 
+/* ---- sprite hewan liar ---- */
+function makeDeer(f){
+  const [c,g]=mk(22,20);
+  ell(g,'rgba(0,0,0,.2)',11,18,8,2);
+  R(g,'#c49a6c',6,8,12,7);R(g,'#a87850',6,8,12,2);R(g,'#c49a6c',16,6,5,5);R(g,'#a87850',18,5,2,2);
+  R(g,'#8a6040',5,14+(f?1:0),3,5);R(g,'#8a6040',14,14+(f?0:1),3,5);
+  R(g,'#e8d0a8',17,7,1,1);R(g,'#222',19,7,1,1);
+  R(g,'#8a6040',17,2,1,5);R(g,'#8a6040',19,1,1,4);R(g,'#a87850',16,2,2,1);R(g,'#a87850',18,1,2,1);
+  return outline(c);
+}
+function makeRabbit(f){
+  const [c,g]=mk(12,12);
+  ell(g,'rgba(0,0,0,.2)',6,11,4,1);
+  R(g,'#e8e0d0',3,5,7,5);R(g,'#f4f0e8',4,4,5,2);R(g,'#e8e0d0',2,2+(f?1:0),2,4);R(g,'#e8e0d0',7,1+(f?0:1),2,5);
+  R(g,'#ffb0b0',3,3,1,1);R(g,'#222',5,6,1,1);R(g,'#222',8,6,1,1);R(g,'#f0a0a0',6,8,2,1);
+  return outline(c);
+}
+function makeWildChicken(f){
+  const [c,g]=mk(14,12);
+  ell(g,'rgba(0,0,0,.2)',7,11,5,1);
+  R(g,'#f4f0e0',4,5,7,5);R(g,'#e8e0c8',9,3+(f?1:0),4,4);R(g,'#e0443e',10,2,2,2);R(g,'#ffb300',12,5,2,1);
+  R(g,'#222',6,6,1,1);R(g,'#ffb300',5,10,1,1);R(g,'#ffb300',8,10,1,1);
+  return outline(c);
+}
+function makeBuffalo(f){
+  const [c,g]=mk(28,22);
+  ell(g,'rgba(0,0,0,.2)',14,20,11,2);
+  R(g,'#5a4a3a',4,8,18,9);R(g,'#4a3a2a',4,8,18,2);R(g,'#5a4a3a',20,6,7,7);R(g,'#3a2a1a',22,5,2,2);
+  R(g,'#3a2a1a',5,16+(f?1:0),4,5);R(g,'#3a2a1a',16,16+(f?0:1),4,5);
+  R(g,'#e8d0a8',24,8,1,1);R(g,'#222',25,8,1,1);
+  R(g,'#3a2a1a',21,3,2,4);R(g,'#3a2a1a',26,4,2,3);R(g,'#2a1a10',20,3,3,1);R(g,'#2a1a10',25,4,3,1);
+  return outline(c);
+}
+function makeBear(f){
+  const [c,g]=mk(26,24);
+  ell(g,'rgba(0,0,0,.2)',13,22,10,2);
+  R(g,'#6b4423',5,8,16,11);R(g,'#5a3820',5,8,16,2);R(g,'#6b4423',3,4,8,7);R(g,'#6b4423',15,4,8,7);
+  R(g,'#5a3820',4,18+(f?1:0),5,5);R(g,'#5a3820',16,18+(f?0:1),5,5);
+  R(g,'#222',7,7,2,2);R(g,'#222',17,7,2,2);R(g,'#3a2412',11,10,4,2);R(g,'#ffb300',12,9,2,1);
+  return outline(c);
+}
+function makeWolf(f){
+  const [c,g]=mk(22,16);
+  ell(g,'rgba(0,0,0,.2)',11,15,8,1);
+  R(g,'#8a8a96',5,6,13,7);R(g,'#6a6a74',5,6,13,2);R(g,'#8a8a96',16,4,5,6);R(g,'#6a6a74',18,3,2,2);
+  R(g,'#5a5a64',6,12+(f?1:0),3,4);R(g,'#5a5a64',13,12+(f?0:1),3,4);
+  R(g,'#222',18,5,1,1);R(g,'#e8e8f0',19,6,1,1);R(g,'#c0c0c8',17,2,2,3);R(g,'#c0c0c8',20,3,1,2);
+  return outline(c);
+}
+function makeTiger(f){
+  const [c,g]=mk(24,18);
+  ell(g,'rgba(0,0,0,.2)',12,17,9,1);
+  R(g,'#e0a030',5,6,14,8);R(g,'#c08020',5,6,14,2);R(g,'#e0a030',17,4,6,6);
+  R(g,'#2a1a10',7,8,2,1);R(g,'#2a1a10',11,9,2,1);R(g,'#2a1a10',15,8,2,1);R(g,'#2a1a10',8,11,2,1);
+  R(g,'#c08020',6,13+(f?1:0),4,4);R(g,'#c08020',14,13+(f?0:1),4,4);
+  R(g,'#222',19,5,1,1);R(g,'#fff',20,5,1,1);R(g,'#2a1a10',19,2,1,3);R(g,'#2a1a10',22,3,1,2);
+  return outline(c);
+}
+function makeCroc(f){
+  const [c,g]=mk(28,12);
+  ell(g,'rgba(0,0,0,.15)',14,11,12,1);
+  R(g,'#3f7a3a',2,3,22,6);R(g,'#2f5a2a',2,3,22,2);R(g,'#3f7a3a',22,4,5,4);R(g,'#2f5a2a',24,3,3,2);
+  R(g,'#2f5a2a',6,8+(f?1:0),3,3);R(g,'#2f5a2a',16,8+(f?0:1),3,3);
+  R(g,'#ffd23f',25,5,1,1);R(g,'#fff',26,5,1,1);R(g,'#2a4a22',4,4,2,1);R(g,'#2a4a22',10,5,2,1);R(g,'#2a4a22',16,4,2,1);
+  return outline(c);
+}
 function buildSprites(){
   SPR.grass=[0,1,2,3].map(makeGrass);
   SPR.water=[0,1].map(f=>[0,1].map(v=>makeWater(false,f,v)));
@@ -1008,7 +1144,7 @@ function buildSprites(){
   SPR.tree=[makeTree(0),makeTree(1)];
   SPR.bush=[makeBush(0),makeBush(1)];
   SPR.rock=makeRock();
-  SPR.house=HOUSES.map(makeHouse);SPR.road=[0,1,2,3].map(makeRoad);SPR.wall=[0,1,2,3].map(makeWall);SPR.bld=BLD.map(b=>b.castle?makeCastle(b):b.food?makeFoodShop(b):makeHouse(b));
+  SPR.house=HOUSES.map(makeHouse);SPR.road=[0,1,2,3].map(makeRoad);SPR.wall=[0,1,2,3].map(makeWall);SPR.bld=BLD.map(b=>b.castle?makeCastle(b):b.food?makeFoodShop(b):b.guild?makeGuild(b):makeHouse(b));
   SPR.player=makeSet(PAL.player);
   SPR.elder=makeSet(PAL.elder);
   SPR.merchant=makeSet(PAL.merchant);
@@ -1023,6 +1159,14 @@ function buildSprites(){
   SPR.golem=[makeGolem(0),makeGolem(1)];
   SPR.ghost=[makeGhost(0),makeGhost(1)];
   SPR.crystal=makeCrystal();SPR.coin=makeCoin();SPR.heart=makeHeart();SPR.mana=makeMana();
+  SPR.rusa=[makeDeer(0),makeDeer(1)];
+  SPR.kelinci=[makeRabbit(0),makeRabbit(1)];
+  SPR.ayam_liar=[makeWildChicken(0),makeWildChicken(1)];
+  SPR.kerbau=[makeBuffalo(0),makeBuffalo(1)];
+  SPR.beruang=[makeBear(0),makeBear(1)];
+  SPR.serigala=[makeWolf(0),makeWolf(1)];
+  SPR.harimau=[makeTiger(0),makeTiger(1)];
+  SPR.buaya=[makeCroc(0),makeCroc(1)];
 }
 buildSprites();
 
@@ -1036,7 +1180,16 @@ const MOBS={
   goblin  :{name:'Goblin',   rad:6, cy:9,  h:22,reach:11,weak:'tanah', col:'#7fc24f',hp:8, dmg:2,xp:12},
   skeleton:{name:'Kerangka', rad:6, cy:9,  h:22,reach:0, weak:'cahaya',res:{gelap:0.5},col:'#e8e4d4',hp:10,dmg:2,xp:16},
   golem   :{name:'Golem',    rad:11,cy:14, h:28,reach:16,weak:'air',  res:{api:0.3},kbMul:0.15,col:'#ff7a1a',hp:24,dmg:3,xp:40},
-  ghost   :{name:'Hantu',    rad:6, cy:12, h:22,reach:10,weak:'cahaya',res:{gelap:0.5},col:'#d9e4ff',hp:8, dmg:2,xp:18,fly:true,alt:5}
+  ghost   :{name:'Hantu',    rad:6, cy:12, h:22,reach:10,weak:'cahaya',res:{gelap:0.5},col:'#d9e4ff',hp:8, dmg:2,xp:18,fly:true,alt:5},
+  /* hewan liar */
+  rusa    :{name:'Rusa',     rad:7, cy:10, h:20,reach:0,  weak:null, col:'#c49a6c',hp:8, dmg:0,xp:10, passive:1},
+  kelinci :{name:'Kelinci',  rad:4, cy:5,  h:10,reach:0,  weak:null, col:'#e8e0d0',hp:3, dmg:0,xp:4,  passive:1},
+  ayam_liar:{name:'Ayam Liar',rad:4, cy:6,  h:12,reach:0,  weak:null, col:'#f4f0e0',hp:3, dmg:0,xp:4,  passive:1},
+  kerbau  :{name:'Kerbau',   rad:10,cy:12, h:22,reach:0,  weak:null, col:'#5a4a3a',hp:18,dmg:0,xp:20, passive:1},
+  beruang :{name:'Beruang',  rad:10,cy:12, h:24,reach:14, weak:'api', col:'#6b4423',hp:22,dmg:3,xp:28},
+  serigala:{name:'Serigala', rad:7, cy:9,  h:18,reach:12, weak:'api', col:'#8a8a96',hp:12,dmg:2,xp:16},
+  harimau :{name:'Harimau',  rad:8, cy:10, h:20,reach:13, weak:'api', col:'#e0a030',hp:20,dmg:3,xp:30},
+  buaya   :{name:'Buaya',    rad:9, cy:7,  h:14,reach:13, weak:'api', col:'#3f7a3a',hp:16,dmg:3,xp:22, water:1}
 };
 const SPELLS=[
   {id:'angin', name:'Angin',    mp:4,cd:0.55,col:'#9fe8c0',icon:'🌪️'},
@@ -1142,14 +1295,14 @@ const FISH=[{k:'Ikan Kecil',sell:6,xp:4,w:50},{k:'Ikan Mas',sell:14,xp:8,w:30},{
 const RL=()=>ROLES[(typeof P!=='undefined'&&P&&P.role)||'warga'];
 const xpNeed=l=>Math.round((15+l*6+0.04*l*l)*RL().xpMul);   // Lv1: 21, Lv50: 415, Lv100: 1015, Lv149: 1797 (Warga x0.5)
 const randRound=x=>Math.floor(x)+(Math.random()<x-Math.floor(x)?1:0);
-const freshStats=()=>({crystal:0,kill:0,slime:0,bat:0,goblin:0,skeleton:0,golem:0,ghost:0,arrow:0,flower:0,far:0,coin:0});
+const freshStats=()=>({crystal:0,kill:0,slime:0,bat:0,goblin:0,skeleton:0,golem:0,ghost:0,rusa:0,kelinci:0,ayam_liar:0,kerbau:0,beruang:0,serigala:0,harimau:0,buaya:0,arrow:0,flower:0,far:0,coin:0});
 
 function freshPlayer(){
   return {kind:'player',x:8,y:44,dir:0,anim:0,moving:false,aimA:0,aimT:0,
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
     weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false],
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook()};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook()};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
@@ -1199,7 +1352,7 @@ function loadGame(){
       if(!isFinite(P.x)||!isFinite(P.y)){P.x=8;P.y=44;}
       if(!isFinite(P.hp)||P.hp<=0)P.hp=P.maxHp||10;
       if(!P.bag||!P.bag.seed||!P.bag.tool||!P.bag.furn||!P.bag.prod)P.bag=freshPlayer().bag;
-      if(!P.bag.food)P.bag.food={};if(!isFinite(P.food))P.food=100;P.food=clamp(P.food,0,100);
+      if(!P.bag.food)P.bag.food={};if(!P.bag.loot)P.bag.loot={};if(!isFinite(P.food))P.food=100;P.food=clamp(P.food,0,100);
       if(!Array.isArray(P.animals))P.animals=[];if(!P.crops||typeof P.crops!=='object')P.crops={};if(!P.hf||typeof P.hf!=='object')P.hf={};if(!Array.isArray(P.vis))P.vis=[];
       if(!Array.isArray(P.land)||P.land.length!==4)P.land=[false,false,false,false];if(!Array.isArray(P.homes)||P.homes.length!==4)P.homes=[false,false,false,false];
       if(!(P.selSeed>=0&&P.selSeed<3))P.selSeed=0;if(!(P.selF>=0&&P.selF<FURN.length))P.selF=0;
@@ -1332,6 +1485,28 @@ function pickMob(d,r){
   for(const e of tbl){v-=e[1];if(v<0)return e[0];}
   return 'slime';
 }
+function nearWater(tx,ty){
+  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+    const t=tileAt(tx+dx,ty+dy);if(t.t===TY.WATER||t.t===TY.DEEP)return true;
+  }
+  return false;
+}
+function pickWild(d,r,nearW){
+  // dekat desa (14-40): hewan pasif; lebih jauh: predator
+  if(d<40){
+    const tbl=[['rusa',30],['kelinci',28],['ayam_liar',22],['kerbau',12]];
+    if(nearW)tbl.push(['buaya',8]);
+    let tot=0;for(const e of tbl)tot+=e[1];
+    let v=r*tot;for(const e of tbl){v-=e[1];if(v<0)return e[0];}
+    return 'rusa';
+  }
+  const tbl=[['serigala',28],['beruang',18],['harimau',12],['rusa',14],['kelinci',10]];
+  if(nearW)tbl.push(['buaya',20]);
+  if(d>55)tbl.push(['serigala',10]);
+  let tot=0;for(const e of tbl)tot+=e[1];
+  let v=r*tot;for(const e of tbl){v-=e[1];if(v<0)return e[0];}
+  return 'serigala';
+}
 function spawnChunk(cx,cy){
   const key=chunkKey(cx,cy);loaded.add(key);
   const n=Math.floor(rnd(cx,cy,31)*3.2);
@@ -1343,6 +1518,18 @@ function spawnChunk(cx,cy){
     if(!MOBS[type].fly&&(t.solid||t.t!==TY.GRASS))continue;
     const tier=Math.min(3,Math.floor((d-14)/45));
     mobs.push(makeMob(type,tx*T+8,ty*T+12,tier,key,cx,cy));
+  }
+  // hewan liar (buruan)
+  const wn=Math.floor(rnd(cx,cy,33)*2.4);
+  for(let i=0;i<wn;i++){
+    const tx=cx*CH+Math.floor(rnd(cx,cy,110+i)*CH),ty=cy*CH+Math.floor(rnd(cx+77,cy,120+i)*CH);
+    const d=Math.hypot(tx,ty);if(d<16||inSafe(tx*T,ty*T,1.5))continue;
+    const t=tileAt(tx,ty);if(t.solid||(t.t!==TY.GRASS&&t.t!==TY.SAND&&t.t!==TY.PATH))continue;
+    const nw=nearWater(tx,ty);
+    const type=pickWild(d,rnd(cx,cy,130+i),nw);
+    if(MOBS[type].water&&!nw)continue;
+    if(type==='buaya'&&t.t!==TY.SAND&&t.t!==TY.GRASS)continue;
+    mobs.push(makeMob(type,tx*T+8,ty*T+12,0,key,cx,cy));
   }
   const cn=rnd(cx,cy,61)<0.6?(rnd(cx,cy,62)<0.25?2:1):0;
   for(let i=0;i<cn;i++){
@@ -1663,6 +1850,50 @@ function eatMenu(){
       r.push({t:e[0]+' <b>'+k+'</b> x'+n+'<br><small style="color:#9ad">+'+e[1]+' kenyang (mentah)</small>',b:'Makan',f:()=>{if(P.bag.prod[k]>0&&eatGain(e[1],0,0,k))P.bag.prod[k]--;}});}
     if(!any)r.push({t:'Belum ada makanan. Beli di warung/restoran, atau pakai hasil panen & ikan.',b:'—',off:true,f:()=>{}});
     return r;});}
+function shopGuild(){
+  openMenu('Guild Petualang — Jual Hasil Buruan',()=>{
+    const r=[];
+    let any=false;
+    for(const id in LOOT){
+      const n=P.bag.loot[id]||0;if(!n)continue;any=true;
+      const it=LOOT[id];
+      r.push({t:it.ic+' <b>'+it.n+'</b> x'+n+' <small style="color:#9ad">@'+it.p+'🪙</small>',
+        b:'Jual 1',f:()=>{if((P.bag.loot[id]||0)>0){P.bag.loot[id]--;P.coins+=it.p;toast('Terjual '+it.n+' +'+it.p+'🪙');}},
+        b2:'Jual semua',f2:()=>{const q=P.bag.loot[id]||0;if(q>0){P.bag.loot[id]=0;P.coins+=q*it.p;toast('Terjual '+q+'x '+it.n+' +'+(q*it.p)+'🪙');}}});
+    }
+    if(!any)r.push({t:'Belum ada hasil buruan. Bunuh hewan liar & monster untuk mendapat loot.',b:'—',off:true,f:()=>{}});
+    return r;
+  });
+}
+function invMenu(){
+  if(dlg||dying)return;
+  if(menu){closeMenu();return;}
+  openMenu('Inventori (I)',()=>{
+    const r=[];
+    // loot
+    let lootAny=false;
+    for(const id in LOOT){
+      const n=P.bag.loot[id]||0;if(!n)continue;lootAny=true;
+      const it=LOOT[id];
+      const canEat=!!it.eat;
+      r.push({t:it.ic+' <b>'+it.n+'</b> x'+n+(canEat?' <small style="color:#9ad">makan +'+it.eat+' kenyang</small>':''),
+        b:canEat?'Makan':'—',off:!canEat,f:()=>{
+          if(!canEat)return;
+          if((P.bag.loot[id]||0)<=0)return;
+          if(eatGain(it.eat,0.05,0,it.n))P.bag.loot[id]--;
+        }});
+    }
+    if(!lootAny)r.push({t:'📦 Hasil buruan kosong. Berburu hewan liar di luar desa.',b:'—',off:true,f:()=>{}});
+    // ringkas makanan bungkus
+    let foodN=0;for(const id in FOODS)foodN+=P.bag.food[id]||0;
+    r.push({t:'🍖 Makanan bungkus: '+foodN+' (tekan G untuk menu makan)',b:'Buka G',f:()=>{closeMenu();eatMenu();}});
+    // produk
+    let prodLines=[];
+    for(const k in P.bag.prod){const n=P.bag.prod[k]||0;if(n)prodLines.push(k+' x'+n);}
+    if(prodLines.length)r.push({t:'🌾 Hasil panen/ternak/ikan: '+prodLines.join(', '),b:'—',off:true,f:()=>{}});
+    return r;
+  });
+}
 function showMap(){
   if(dlg||dying)return;if(menu){closeMenu();return;}
   const A=['→','↘','↓','↙','←','↖','↑','↗'];
@@ -1872,12 +2103,24 @@ function killMob(m,by){
   const d=MOBS[m.type];
   burst(m.x,mc(m),m.type==='slime'?SL[m.tier][0]:d.col);
   floatText(m.x,mc(m)-16,'+'+m.xp+' XP','#8fe3ff');
-  const cv_={slime:1+m.tier,bat:1,goblin:3,skeleton:4,golem:12,ghost:3}[m.type];
+  const cv_={slime:1+m.tier,bat:1,goblin:3,skeleton:4,golem:12,ghost:3,rusa:2,kelinci:1,ayam_liar:1,kerbau:4,beruang:5,serigala:3,harimau:6,buaya:4}[m.type]||1;
   const drop=(type,val,life)=>pickups.push({kind:'pickup',type,x:m.x+(Math.random()*10-5),y:m.y,val,ck:null,t:0,life:life||25});
   if(Math.random()<0.65)drop('coin',cv_);
   if(Math.random()<0.2)drop('heart');
   if(Math.random()<0.25)drop('mana');
   if(m.type==='golem')drop('crystal',1,60);
+  // loot buruan langsung ke inventori
+  const drops=MOB_DROPS[m.type];
+  if(drops){
+    const got=[];
+    for(const [id,ch] of drops){
+      if(Math.random()<ch){
+        P.bag.loot[id]=(P.bag.loot[id]||0)+1;
+        got.push((LOOT[id]?LOOT[id].ic+' ':'')+(LOOT[id]?LOOT[id].n:id));
+      }
+    }
+    if(got.length)toast('Loot: '+got.join(', '));
+  }
 }
 function hurt(n,fromX,fromY){
   n=Math.max(1,Math.round(n*RL().def));
@@ -2071,6 +2314,37 @@ function updateMob(m,dt){
       const a=Math.atan2(dy,dx)+Math.sin(m.t*2)*0.9,sp=(dist>14?22:8)*sm;
       moveFly(m,Math.cos(a)*sp*dt,Math.sin(a)*sp*dt);
       m.dir=dirFromVec(dx,dy);
+      break;}
+    case 'rusa':case 'kelinci':case 'ayam_liar':case 'kerbau':{
+      // pasif: lari jika pemain dekat, kalau tidak jalan-jalan
+      const fleeR=m.type==='kerbau'?28:40,spW=m.type==='kerbau'?12:m.type==='rusa'?22:18;
+      if(dist<fleeR&&!dying){
+        moveEnt(m,-ca*spW*1.4*sm*dt,-sa*spW*1.4*sm*dt,true);
+        m.dir=dirFromVec(-dx,-dy);m.walkT=0.15;m.anim+=dt*8;
+      }else wander(m,dt,spW*0.7,sm,false);
+      break;}
+    case 'beruang':case 'serigala':case 'harimau':{
+      const chaseR=m.type==='beruang'?120:m.type==='harimau'?140:110;
+      const spC=m.type==='beruang'?20:m.type==='harimau'?36:30;
+      if(dist<chaseR&&!dying){
+        if(dist>d.reach-2)moveEnt(m,ca*spC*sm*dt,sa*spC*sm*dt,true);
+        m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*7;
+      }else wander(m,dt,14,sm,false);
+      break;}
+    case 'buaya':{
+      // tetap dekat air
+      const tx=Math.floor(m.x/T),ty=Math.floor(m.y/T);
+      if(!nearWater(tx,ty)){
+        // cari air terdekat
+        let bx=0,by=0,bd=99;
+        for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+          const t=tileAt(tx+dx,ty+dy);if(t.t===TY.WATER||t.t===TY.DEEP){const dd=Math.hypot(dx,dy);if(dd<bd){bd=dd;bx=dx;by=dy;}}
+        }
+        if(bd<99)moveEnt(m,Math.sign(bx)*18*sm*dt,Math.sign(by)*18*sm*dt,true);
+      }else if(dist<100&&!dying){
+        if(dist>d.reach-2)moveEnt(m,ca*22*sm*dt,sa*22*sm*dt,true);
+        m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*5;
+      }else wander(m,dt,10,sm,false);
       break;}
   }
   if(d.reach&&dist<d.reach&&P.inv<=0&&!dying){
@@ -2289,6 +2563,30 @@ function drawEntity(e,now){
           ctx.drawImage(SPR.ghost[Math.floor(e.t*4)%2],sx-8,sy-18-alt+bob+2);
           ctx.globalAlpha=1;
           break;}
+        case 'rusa':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.rusa[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'kelinci':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.kelinci[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'ayam_liar':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.ayam_liar[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'kerbau':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.kerbau[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'beruang':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.beruang[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'serigala':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.serigala[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'harimau':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.harimau[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
+        case 'buaya':{
+          const fr=e.walkT>0?Math.floor(e.anim)%2:0;
+          const img=SPR.buaya[fr];ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2);break;}
       }
     }
     if(e.type==='skeleton'&&e.aim>0){
@@ -2506,7 +2804,7 @@ function drawMini(dt){
    INPUT
    ========================================================= */
 function press(k){
-  if(menu){if(k==='e'||k==='escape'||k==='m'||k==='g')closeMenu();return;}
+  if(menu){if(k==='e'||k==='escape'||k==='m'||k==='g'||k==='i')closeMenu();return;}
   if(dlg){if(k==='e'||k==='enter'||k===' ')advance();return;}
   if(k==='e'||k==='enter')interact();
   else if(k==='attack')attack();
@@ -2514,6 +2812,7 @@ function press(k){
   else if(k==='weapon'||k==='q')swapWeapon();
   else if(k==='z')cycleSel();
   else if(k==='m')showMap();
+  else if(k==='i')invMenu();
   else if(k==='g')eatMenu();
   else if(k==='p'){gtime=(Math.floor(gtime/SEAS_LEN)+1)*SEAS_LEN;}
   else if(k==='x')pickF();
@@ -2636,7 +2935,7 @@ $('spriteClr').addEventListener('click',()=>{customImg=null;toast('Karakter bawa
 $('resetBtn').addEventListener('click',()=>{
   if(confirm('Hapus progres dan pilih peran dari awal? (akun tetap ada)')){const k=SAVE_KEY;SAVE_KEY=null;try{localStorage.removeItem(k);}catch(e){}location.reload();}
 });
-$('mapBtn').addEventListener('click',showMap);$('eatBtn').addEventListener('click',()=>press('g'));addEventListener('beforeunload',saveGame);
+$('mapBtn').addEventListener('click',showMap);$('invBtn').addEventListener('click',()=>press('i'));$('eatBtn').addEventListener('click',()=>press('g'));addEventListener('beforeunload',saveGame);
 setInterval(saveGame,5000);
 
 /* =========================================================
@@ -2849,7 +3148,8 @@ if(!shownIntro){
     'Ibu Kota Aurelia dikelilingi 2 lapis benteng bulat dengan kastil Raja di tengahnya. Masuk lewat salah satu dari 4 gerbang.',
     'Rasa lapar: bar 🍖 turun seiring waktu. Beli makanan di Warung/Restoran (ada di tiap desa & ibu kota), lalu tekan G untuk makan. Kenyang ≥60% memulihkan HP perlahan; kelaparan membuatmu lemas.',
     'Bertani & beternak: beli lahan di Agen Properti, bibit/alat di toko, lalu hadapi petak/hewan dan tekan E. Z ganti bibit. Masuk rumah: E di depan pintu.',
-    'Mulai dari Tetua Desa. Selesaikan misi untuk membuka busur dan 6 sihir. Tiap musuh punya kelemahan elemen!'
+    'Mulai dari Tetua Desa. Selesaikan misi untuk membuka busur dan 6 sihir. Tiap musuh punya kelemahan elemen!',
+    'Hewan liar: rusa, kelinci, ayam, kerbau (jinak), serta beruang, serigala, harimau, buaya (ganas). Hasil buruan masuk inventori (I) dan bisa dijual di Guild Petualang di setiap desa.'
   ]);
 }
 }
