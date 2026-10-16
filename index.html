@@ -3689,11 +3689,11 @@ $('acctDel').onclick=async()=>{
 
 
 /* ===== MAIN ONLINE DENGAN TEMAN (opsional; PeerJS hanya dimuat saat dipakai, jadi mode offline tetap utuh) ===== */
-const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=null,MPcode='';
+const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=null,MPcode='';let MPnr=null,MPunsub=null,MProom=null;
 const MPLIBS=['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 {const s=document.createElement('style');s.textContent='#mp{display:none;position:absolute;inset:0;z-index:48;background:rgba(10,14,28,.85);align-items:center;justify-content:center}#mp.on{display:flex}#mp .abox{touch-action:auto}#mpmsg{color:#ffe066;font-size:12px;min-height:34px;white-space:pre-wrap;margin-bottom:6px}#mpchat{position:absolute;left:8px;bottom:64px;width:min(270px,62vw);z-index:15;pointer-events:none;font-size:12px;text-shadow:1px 1px #000}#mpchat div{background:rgba(10,14,28,.7);padding:2px 6px;margin-top:2px;word-break:break-word}#mpchat input{display:none;pointer-events:auto;width:100%;font:inherit;font-size:14px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:4px;user-select:text;-webkit-user-select:text;touch-action:auto}#mpchat.open input{display:block}@media (pointer:coarse){#mpchat{bottom:250px}}';document.head.appendChild(s);}
 const mpPanel=document.createElement('div');mpPanel.id='mp';
-mpPanel.innerHTML='<div class="abox"><h2>\ud83c\udf10 Main Online</h2><p>Mainkan dunia yang sama bersama teman. Main sendiri tetap bisa offline.</p><div id="mpmsg"></div><div id="mpoff"><button id="mpHost" type="button">Buat Ruangan</button><input id="mpCode" maxlength="5" placeholder="Kode ruangan teman" autocomplete="off" style="text-transform:uppercase;margin-top:8px"><button id="mpJoin" class="sec" type="button">Gabung</button><button id="mpMan" class="sec" type="button" style="margin-top:8px">Cara manual (tanpa server)</button><div id="mpmanbox" style="display:none"><textarea id="mpTa" rows="4" placeholder="Kode undangan/jawaban tampil & ditempel di sini" style="width:100%;font:inherit;font-size:11px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:6px;user-select:text;-webkit-user-select:text;touch-action:auto"></textarea><button id="mpM1" type="button">1. Buat undangan (host)</button><button id="mpM2" class="sec" type="button">2. Balas undangan (teman)</button><button id="mpM3" class="sec" type="button">3. Sambungkan jawaban (host)</button></div></div><button id="mpLeave" class="dng" type="button" style="display:none">Keluar dari ruangan</button><button id="mpX" class="sec" type="button">Tutup</button></div>';
+mpPanel.innerHTML='<div class="abox"><h2>\ud83c\udf10 Main Online</h2><p>Mainkan dunia yang sama bersama teman. Main sendiri tetap bisa offline.</p><div id="mpmsg"></div><div id="mproom" style="display:none"><input id="mpRoomName" maxlength="20" placeholder="Nama ruangan (kosong = umum)" autocomplete="off"><button id="mpRoomGo" type="button">Masuk Online</button><p style="font-size:11px">Semua orang yang membuka link game ini dan masuk ke nama ruangan yang sama akan bertemu di dunia yang sama.</p></div><div id="mpoff"><button id="mpHost" type="button">Buat Ruangan</button><input id="mpCode" maxlength="5" placeholder="Kode ruangan teman" autocomplete="off" style="text-transform:uppercase;margin-top:8px"><button id="mpJoin" class="sec" type="button">Gabung</button><button id="mpMan" class="sec" type="button" style="margin-top:8px">Cara manual (tanpa server)</button><div id="mpmanbox" style="display:none"><textarea id="mpTa" rows="4" placeholder="Kode undangan/jawaban tampil & ditempel di sini" style="width:100%;font:inherit;font-size:11px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:6px;user-select:text;-webkit-user-select:text;touch-action:auto"></textarea><button id="mpM1" type="button">1. Buat undangan (host)</button><button id="mpM2" class="sec" type="button">2. Balas undangan (teman)</button><button id="mpM3" class="sec" type="button">3. Sambungkan jawaban (host)</button></div></div><button id="mpLeave" class="dng" type="button" style="display:none">Keluar dari ruangan</button><button id="mpX" class="sec" type="button">Tutup</button></div>';
 document.body.appendChild(mpPanel);
 const mpChat=document.createElement('div');mpChat.id='mpchat';mpChat.innerHTML='<input id="mpin" maxlength="80" placeholder="Ketik pesan, Enter kirim" autocomplete="off">';document.body.appendChild(mpChat);
 const MPbtn=document.createElement('button'),MPchatBtn=document.createElement('button');
@@ -3701,7 +3701,7 @@ MPbtn.type=MPchatBtn.type='button';MPchatBtn.textContent='\ud83d\udcac';MPchatBt
 {const t=$('tools')||document.body;t.appendChild(MPchatBtn);t.appendChild(MPbtn);}
 const mpMsg=s=>{$('mpmsg').textContent=s;};
 function mpUi(){const n=MPpeers.size+1;MPbtn.textContent=MPon?'\ud83c\udf10 '+MPcode+' ('+n+')':'\ud83c\udf10 Online';
-  $('mpoff').style.display=MPon&&!MPhost?'none':'block';$('mpLeave').style.display=MPon?'block':'none';MPchatBtn.style.display=MPon?'':'none';
+  $('mpoff').style.display=(!MProom&&!(MPon&&!MPhost))?'block':'none';$('mproom').style.display=(MProom&&!MPon)?'block':'none';$('mpLeave').style.display=MPon?'block':'none';MPchatBtn.style.display=MPon?'':'none';
   if(MPon)mpMsg(MPhost?'Kode ruangan: '+MPcode+'\nBagikan kode ini ke temanmu.':'Terhubung ke ruangan '+MPcode+'.');else mpChat.classList.remove('open');}
 function mpLoad(cb){
   if(window.Peer)return cb();
@@ -3710,11 +3710,11 @@ function mpLoad(cb){
   const next=()=>{if(i>=MPLIBS.length){mpMsg('Pustaka online tidak bisa dimuat (internet/diblokir). Coba "Cara manual" di bawah.');return;}
     const s=document.createElement('script');s.src=MPLIBS[i++];let d=false;const t=setTimeout(()=>{if(d)return;d=true;s.remove();next();},8000);s.onload=()=>{if(d)return;d=true;clearTimeout(t);cb();};s.onerror=()=>{if(d)return;d=true;clearTimeout(t);s.remove();next();};document.head.appendChild(s);};
   next();}
-function mpCleanup(){try{MPpeer&&MPpeer.destroy();}catch(e){}MPpcs.forEach(c=>{try{c.close();}catch(e){}});MPpcs.length=0;MPpeer=null;MPconns.clear();MPpeers.clear();MPon=false;MPhost=false;MPcode='';mpUi();}
+function mpCleanup(){try{MPpeer&&MPpeer.destroy();}catch(e){}MPpcs.forEach(c=>{try{c.close();}catch(e){}});MPpcs.length=0;if(MPnr){try{MPunsub&&MPunsub();MPnr.leave();}catch(e){}MPnr=null;MPunsub=null;}MPpeer=null;MPconns.clear();MPpeers.clear();MPon=false;MPhost=false;MPcode='';mpUi();}
 function mpSend(m){MPconns.forEach(c=>{try{if(c.open)c.send(m);}catch(e){}});}
 function mpLog(name,txt){const d=document.createElement('div');d.textContent=name+': '+txt;mpChat.insertBefore(d,$('mpin'));
   while(mpChat.children.length>7)mpChat.removeChild(mpChat.firstChild);setTimeout(()=>d.remove(),12000);}
-function mpSay(txt){txt=String(txt).trim().slice(0,80);if(!txt||!MPon)return;mpSend({t:'c',x:txt});mpLog(P.name||'Aku',txt);}
+function mpSay(txt){txt=String(txt).trim().slice(0,80);if(!txt||!MPon)return;if(MPnr)MPnr.presence({c:{t:txt,n:Date.now()}}).catch(()=>{});else mpSend({t:'c',x:txt});mpLog(P.name||'Aku',txt);}
 function mpDrop(id){const r=MPpeers.get(id);if(r)toast('\ud83c\udf10 '+r.name+' keluar');MPpeers.delete(id);MPconns.delete(id);if(MPhost)mpSend({t:'bye',f:id});mpUi();}
 function mpMsgIn(from,m){
   if(!m||typeof m!=='object')return;
@@ -3753,8 +3753,8 @@ function mpJoin(){
 function mpAdd(list){
   if(!MPon||IN!==null)return;const now=performance.now();
   MPpeers.forEach((r,id)=>{
-    if(now-r.seen>6000){MPpeers.delete(id);mpUi();return;}
-    if(r.ind||!r.set)return;
+    if(!MPnr&&now-r.seen>6000){MPpeers.delete(id);mpUi();return;}
+    if(r.ind)return;if(!r.set)r.set=SPR.player;
     r.x+=(r.tx-r.x)*.3;r.y+=(r.ty-r.y)*.3;
     if(r.x>camX-24&&r.x<camX+VW+24&&r.y>camY-10&&r.y<camY+VH+40)list.push({y:r.y,k:5,e:r});
   });}
@@ -3779,8 +3779,26 @@ async function mpM3(){try{if(!MPman){mpMsg('Tekan tombol 1 dulu.');return;}const
   dc.onopen=()=>{MPon=true;MPhost=true;MPcode=MPcode||'LOKAL';mpWire(mpShim(dc,id));MPman=null;$('mpTa').value='';mpUi();};mpMsg('Menyambungkan...');}catch(e){mpMsg('Kode jawaban tidak valid.');}}
 $('mpMan').onclick=()=>{const b=$('mpmanbox');b.style.display=b.style.display==='none'?'block':'none';};
 $('mpM1').onclick=mpM1;$('mpM2').onclick=mpM2;$('mpM3').onclick=mpM3;
+const mpOut=m=>{if(MPnr)MPnr.presence(m).catch(()=>{});else mpSend(m);};
+function mpRoomPeers(ch){
+  for(const p of ch.left)MPpeers.delete(p.peer);
+  for(const p of [...ch.joined,...ch.updated]){
+    if(p.isMe||typeof p.presence.x!=='number')continue;
+    const m=Object.assign({},p.presence,{t:'s'});delete m.f;mpMsgIn(p.peer,m);
+    const r=MPpeers.get(p.peer),c=p.presence.c;
+    if(r&&c&&typeof c.t==='string'){if(r.cn===undefined)r.cn=c.n;else if(r.cn!==c.n){r.cn=c.n;const tx=c.t.slice(0,80);r.say=tx;r.sayT=performance.now()+6000;mpLog(r.name,tx);}}
+  }
+  mpUi();}
+async function mpRoomJoin(){
+  if(MPon||!MProom)return;
+  let name=($('mpRoomName').value||'umum').toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,20);if(!/^[a-z0-9]/.test(name))name='umum';
+  mpMsg('Masuk ruangan...');
+  try{const nr=await MProom.join('rpg-'+name);MPnr=nr;MPunsub=nr.onPeers(mpRoomPeers,()=>{});MPon=true;MPhost=false;MPcode=name.toUpperCase();mpUi();}
+  catch(e){mpMsg('Gagal masuk ruangan ('+((e&&e.code)||'error')+'). Pastikan kamu sudah login dan diundang ke game ini.');}}
+$('mpRoomGo').onclick=mpRoomJoin;
+(async()=>{try{if(window.claude&&claude.use){const r=await claude.use('room');if(r){MProom=r;mpUi();}}}catch(e){}})();
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
-  mpSend({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:IN===null?0:1});},100);
+  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:IN===null?0:1});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
 $('mpX').onclick=()=>$('mp').classList.remove('on');
 $('mpHost').onclick=mpHost;$('mpJoin').onclick=mpJoin;
