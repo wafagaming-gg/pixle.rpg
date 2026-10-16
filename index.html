@@ -622,6 +622,91 @@ function drawWeather(now){
 }
 function inHouse(x,y){for(const h of BLD)if(x>=h.x&&x<h.x+h.w&&y>=h.y&&y<h.y+h.h)return true;for(const h of HOUSES)if(x>=h.x&&x<h.x+h.w&&y>=h.y&&y<h.y+h.h)return true;return false;}
 
+/* ---- Penerangan: tiang lampu di desa, ibu kota & sepanjang jalan ---- */
+const LAMPS=new Set();
+(function(){
+  const add=(x,y)=>LAMPS.add(Math.floor(x+1e-6)*65536+Math.floor(y+1e-6));
+  SETT.forEach(s=>{
+    const ds=s.cap?[7,11,15,19,23,27]:s.r>=18?[5,9,13]:[5,9];
+    ds.forEach(d=>[-1,1].forEach(a=>[-1,1].forEach(b=>{add(s.x+2*a,s.y+d*b);add(s.x+d*b,s.y+2*a);})));
+    if(s.cap)[[13,16],[23.5,24]].forEach(([R_,n])=>{for(let i=0;i<n;i++){const th=(i+0.5)/n*6.283;add(s.x+Math.cos(th)*R_,s.y+Math.sin(th)*R_);}});
+  });
+  ROUTES.forEach(r=>{
+    const off=r.w===2?3.6:2.5;let next=4,acc=0,side=1;
+    for(let i=1;i<r.pts.length;i++){
+      const [ax,ay]=r.pts[i-1],[bx,by]=r.pts[i],L=Math.hypot(bx-ax,by-ay)||1;
+      while(next-acc<=L){
+        const t=(next-acc)/L,x=ax+(bx-ax)*t,y=ay+(by-ay)*t,nx=-(by-ay)/L,ny=(bx-ax)/L;
+        const lx=x+nx*off*side,ly=y+ny*off*side;
+        if(!SETT.some(s=>Math.hypot(lx-s.x,ly-s.y)<s.r+1))add(lx,ly);
+        side=-side;next+=7;
+      }
+      acc+=L;
+    }
+  });
+})();
+/* ---- Jembatan: jalan yang melintasi air ---- */
+function bridgeAxis(tx,ty){
+  const t=tileAt(tx,ty);if(t.bd)return t.bd;
+  const wd=(dx,dy)=>{for(let i=1;i<=8;i++){const q=tileAt(tx+dx*i,ty+dy*i);if(!q.br)return q.t<=TY.WATER?i:99;}return 99;};
+  const ext=(dx,dy)=>{let n=0;while(n<12&&tileAt(tx+dx*(n+1),ty+dy*(n+1)).br)n++;return n;};
+  const dv=Math.min(wd(0,-1),wd(0,1)),dh=Math.min(wd(-1,0),wd(1,0));
+  let ax;
+  if(dv<dh)ax='H';else if(dh<dv)ax='V';else ax=(ext(-1,0)+ext(1,0))>=(ext(0,-1)+ext(0,1))?'H':'V';
+  return t.bd=ax;
+}
+const BR_SPR={};
+function makeBridge(axis,v){
+  const [c,g]=mk(T,T);R(g,'#9a6b3a',0,0,T,T);const r=seedRand(900+v*7+(axis==='H'?0:3));
+  for(let i=0;i<T;i+=4){
+    if(axis==='H'){R(g,'#6e4a24',i,0,1,T);R(g,'#b8864c',i+1,0,1,T);}
+    else{R(g,'#6e4a24',0,i,T,1);R(g,'#b8864c',0,i+1,T,1);}
+  }
+  for(let k=0;k<5;k++){R(g,'#84592e',(r()*T)|0,(r()*T)|0,2,1);}
+  return c;
+}
+const isWaterT=(x,y)=>{const q=tileAt(x,y);return q.t<=TY.WATER&&!q.br;};
+function drawBridge(tile,tx,ty,sx,sy){
+  const ax=bridgeAxis(tx,ty),k=ax+(tile.v&3);
+  const sp=BR_SPR[k]||(BR_SPR[k]=makeBridge(ax,tile.v&3));
+  ctx.drawImage(sp,sx,sy);
+  const rail='#5b3a1a',hi='#a87238',post='#3a220e';
+  if(isWaterT(tx,ty-1)){ctx.fillStyle=rail;ctx.fillRect(sx,sy,T,3);ctx.fillStyle=hi;ctx.fillRect(sx,sy,T,1);ctx.fillStyle=post;ctx.fillRect(sx,sy,2,5);ctx.fillRect(sx+T-2,sy,2,5);}
+  if(isWaterT(tx,ty+1)){ctx.fillStyle=rail;ctx.fillRect(sx,sy+T-3,T,3);ctx.fillStyle=hi;ctx.fillRect(sx,sy+T-3,T,1);ctx.fillStyle=post;ctx.fillRect(sx,sy+T-5,2,5);ctx.fillRect(sx+T-2,sy+T-5,2,5);}
+  if(isWaterT(tx-1,ty)){ctx.fillStyle=rail;ctx.fillRect(sx,sy,3,T);ctx.fillStyle=hi;ctx.fillRect(sx,sy,1,T);ctx.fillStyle=post;ctx.fillRect(sx,sy,5,2);ctx.fillRect(sx,sy+T-2,5,2);}
+  if(isWaterT(tx+1,ty)){ctx.fillStyle=rail;ctx.fillRect(sx+T-3,sy,3,T);ctx.fillStyle=hi;ctx.fillRect(sx+T-3,sy,1,T);ctx.fillStyle=post;ctx.fillRect(sx+T-5,sy,5,2);ctx.fillRect(sx+T-5,sy+T-2,5,2);}
+}
+function bridgeLamp(tile,tx,ty,sx,sy){      // tiang lampu di sudut ujung jembatan
+  const ax=bridgeAxis(tx,ty),isBr=(dx,dy)=>!!tileAt(tx+dx,ty+dy).br;
+  if(ax==='H'){
+    const eL=!isBr(-1,0),eR=!isBr(1,0);if(!eL&&!eR)return null;
+    const top=isWaterT(tx,ty-1),bot=isWaterT(tx,ty+1);if(!top&&!bot)return null;
+    return {x:sx+(eL?3:T-3),y:sy+(top?5:T-1)};
+  }
+  const eT=!isBr(0,-1),eB=!isBr(0,1);if(!eT&&!eB)return null;
+  const l=isWaterT(tx-1,ty),r=isWaterT(tx+1,ty);if(!l&&!r)return null;
+  return {x:sx+(l?3:T-3),y:sy+(eT?5:T-1)};
+}
+/* ---- gambar tiang lampu & cahaya malam ---- */
+function drawLampPost(bx,by,on){
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(bx-3,by,6,2);
+  ctx.fillStyle='#2b2b33';ctx.fillRect(bx-2,by-2,4,2);
+  ctx.fillStyle='#4a4a56';ctx.fillRect(bx-1,by-14,2,12);
+  ctx.fillStyle='#2b2b33';ctx.fillRect(bx-3,by-19,6,1);ctx.fillRect(bx-3,by-14,6,1);ctx.fillRect(bx-1,by-20,2,1);
+  ctx.fillStyle=on?'#fff2a8':'#9a9a88';ctx.fillRect(bx-2,by-18,4,4);
+  if(on){ctx.fillStyle='#ffffff';ctx.fillRect(bx-1,by-17,2,2);}
+}
+let NCV=null,NCX=null,LCUT=null,LWARM=null;
+function mkLight(r,stops){
+  const [c,g]=mk(r*2,r*2),gr=g.createRadialGradient(r,r,0,r,r,r);
+  stops.forEach(([o,col])=>gr.addColorStop(o,col));g.fillStyle=gr;g.fillRect(0,0,r*2,r*2);return c;
+}
+const LR=52;
+function initLights(){
+  if(LCUT)return;
+  LCUT=mkLight(LR,[[0,'rgba(0,0,0,0.95)'],[0.45,'rgba(0,0,0,0.65)'],[1,'rgba(0,0,0,0)']]);
+  LWARM=mkLight(LR,[[0,'rgba(255,196,90,0.40)'],[0.55,'rgba(255,170,60,0.14)'],[1,'rgba(255,170,60,0)']]);
+}
 function genTile(x,y){
   const d=Math.hypot(x,y),sd=settDist(x,y);
   let e=fbm(x,y,11);
@@ -629,7 +714,7 @@ function genTile(x,y){
   const k=clamp((sd+4)/10,0,1);          // area desa dipaksa jadi rumput
   e=0.55+(e-0.55)*k;
   const r1=rnd(x,y,7),r2=rnd(x,y,8),r3=rnd(x,y,9);
-  let t=TY.GRASS,dec=0,dv=0;
+  let t=TY.GRASS,dec=0,dv=0,br=false;
   if(e<0.30)t=TY.DEEP;
   else if(e<0.36)t=TY.WATER;
   else if(e<0.40)t=TY.SAND;
@@ -644,13 +729,15 @@ function genTile(x,y){
     if(!dec&&r3>0.88){dec=4;dv=(r1*3)|0;}
   }
   if(t===TY.GRASS&&onPath(x,y)){t=TY.PATH;dec=0;}
-  const rd=roadAt(x+.5,y+.5);if(rd){t=rd===2?TY.ROAD:TY.PATH;dec=0;}
+  const rd=roadAt(x+.5,y+.5);if(rd){br=(t===TY.DEEP||t===TY.WATER);t=rd===2?TY.ROAD:TY.PATH;dec=0;}
   const house=inHouse(x,y);
   if(house){t=TY.GRASS;dec=0;}
   if(plotAt(x,y)){t=TY.GRASS;dec=0;}
   if(wallAt(x,y)){t=TY.WALL;dec=0;}
-  const solid=house||t<=TY.WATER||t===TY.STONE||t===TY.WALL||dec===1||dec===3;   // semak (dec 2) bisa dilewati
-  return {t,v:(r1*4)|0,dec,dv,solid};
+  if(t!==TY.PATH&&t!==TY.ROAD)br=false;
+  if(LAMPS.has(x*65536+y)&&(t===TY.GRASS||t===TY.SAND)&&!house&&!plotAt(x,y))dec=5;   // tiang lampu
+  const solid=house||t<=TY.WATER||t===TY.STONE||t===TY.WALL||dec===1||dec===3||dec===5;   // semak (dec 2) bisa dilewati
+  return {t,v:(r1*4)|0,dec,dv,solid,br};
 }
 const tileCache=new Map();
 function tileAt(x,y){
@@ -3062,11 +3149,12 @@ function render(now){
   const tx0=Math.floor(camX/T)-1,ty0=Math.floor(camY/T)-1;
   const tx1=Math.floor((camX+VW)/T)+1,ty1=Math.floor((camY+VH)/T)+3;
   const wf=Math.floor(now*2)%2;
-  const list=[];
+  const list=[],lamps=[],lampOn=nightF()>0.1;
   for(let ty=ty0;ty<=ty1;ty++){
     for(let tx=tx0;tx<=tx1;tx++){
       const tile=tileAt(tx,ty),sx=tx*T-camX,sy=ty*T-camY;
-      switch(tile.t){
+      if(tile.br){drawBridge(tile,tx,ty,sx,sy);const bl=bridgeLamp(tile,tx,ty,sx,sy);if(bl){list.push({y:bl.y+1,k:9,a:bl.x,b:bl.y});lamps.push({x:bl.x,y:bl.y-16});}}
+      else switch(tile.t){
         case TY.DEEP:ctx.drawImage(SPR.deep[wf][tile.v&1],sx,sy);break;
         case TY.WATER:ctx.drawImage(SPR.water[wf][tile.v&1],sx,sy);break;
         case TY.SAND:ctx.drawImage(SPR.sand[tile.v],sx,sy);break;
@@ -3090,6 +3178,7 @@ function render(now){
       else if(tile.dec===1)list.push({y:(ty+1)*T,k:1,a:sx,b:sy-16,i:tile.dv});
       else if(tile.dec===2)list.push({y:ty*T,k:2,a:sx,b:sy,i:tile.dv});
       else if(tile.dec===3)list.push({y:(ty+1)*T,k:3,a:sx,b:sy});
+      else if(tile.dec===5){list.push({y:(ty+1)*T,k:9,a:sx+8,b:sy+14});lamps.push({x:sx+8,y:sy-2});}
     }
   }
   drawPlots();HOUSES.forEach((h,i)=>{
@@ -3119,6 +3208,7 @@ function render(now){
       case 6:drawAnimal(o.a);break;
       case 7:ctx.drawImage(SPR.bld[o.i],o.a,o.b);if(!BLD[o.i].castle&&!BLD[o.i].food)roofSnow(o.a,o.b);break;
       case 8:drawBanner(o.p,now);break;
+      case 9:drawLampPost(o.a,o.b,lampOn);break;
     }
   }
   fx.forEach(drawFx);doorHint();
@@ -3126,7 +3216,24 @@ function render(now){
   drawWeather(now);
   // siang-malam
   const night=nightF();
-  if(night>0){ctx.fillStyle='rgba(12,16,60,'+(night*0.6).toFixed(3)+')';ctx.fillRect(0,0,VW,VH);}
+  if(night>0){
+    if(!NCV||NCV.width!==VW||NCV.height!==VH){NCV=document.createElement('canvas');NCV.width=VW;NCV.height=VH;NCX=NCV.getContext('2d');}
+    NCX.globalCompositeOperation='source-over';NCX.globalAlpha=1;NCX.clearRect(0,0,VW,VH);
+    NCX.fillStyle='rgba(12,16,60,'+(night*0.6).toFixed(3)+')';NCX.fillRect(0,0,VW,VH);
+    const lit=lamps.length&&night>0.08;
+    if(lit){
+      initLights();
+      NCX.globalCompositeOperation='destination-out';
+      for(const l of lamps){NCX.globalAlpha=Math.min(1,night*1.6)*(0.92+0.08*Math.sin(now*5+l.x*0.7));NCX.drawImage(LCUT,Math.round(l.x-LR),Math.round(l.y-LR));}
+      NCX.globalAlpha=1;NCX.globalCompositeOperation='source-over';
+    }
+    ctx.drawImage(NCV,0,0);
+    if(lit){
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,night*1.6);
+      for(const l of lamps)ctx.drawImage(LWARM,Math.round(l.x-LR),Math.round(l.y-LR));
+      ctx.restore();
+    }
+  }
   if(dying){ctx.fillStyle='rgba(0,0,0,'+clamp(deathT/1.2,0,0.85)+')';ctx.fillRect(0,0,VW,VH);}
 }
 
@@ -3141,6 +3248,7 @@ function drawMini(dt){
   for(let y=0;y<64;y++)for(let x=0;x<64;x++){
     const tile=tileAt(ox+x,oy+y);
     let c=MC[tile.t];
+    if(tile.br)c=[140,100,55];
     if(tile.dec===1)c=[40,105,45];
     if(inHouse(ox+x,oy+y))c=[176,74,58];
     const i=(y*64+x)*4;img.data[i]=c[0];img.data[i+1]=c[1];img.data[i+2]=c[2];img.data[i+3]=255;
@@ -3500,6 +3608,7 @@ if(!cleanName(P.name))P.name=lobbyKnownName()||chosenName||'Petualang';
 applyLook();P.stam=P.maxSt;P.exh=false;
 buildHotbar();setupRoleUI();
 try{initNpcs();initVillageCrystals();}catch(e){showErr(e);}
+try{npcs.forEach(n=>{[n.y-1,n.y-8].forEach(yy=>{const tx=Math.floor(n.x/T),ty=Math.floor(yy/T);if(tileAt(tx,ty).dec===5){LAMPS.delete(tx*65536+ty);tileCache.delete(tx*65536+ty);}});});}catch(e){}
 if(newRole&&shownIntro)setTimeout(()=>toast(RL().hint),600);
 if(!shownIntro){
   say('Pixel RPG',[
