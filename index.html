@@ -16,7 +16,7 @@
   #hud .row{white-space:nowrap}
   .bar{display:inline-block;width:92px;height:9px;background:#222;border:1px solid #fff;vertical-align:middle}
   .bar i{display:block;height:100%;width:0}
-  .hp{background:#e0443e}.mp{background:#5b7bff}.xp{background:#4fc3f7}.fd{background:#e0a030}
+  .hp{background:#e0443e}.stm{background:#4cc46a}.mp{background:#5b7bff}.xp{background:#4fc3f7}.fd{background:#e0a030}
   #quest{margin-top:3px;color:#ffe066;max-width:210px;line-height:1.35}
   #quest div{margin-top:2px;white-space:normal}
   #quest .new{color:#9ad}
@@ -192,9 +192,11 @@ html,body{height:100dvh}
   <div class="row" id="rolet" style="color:#ffe066"></div>
   <div class="row">HP <span class="bar"><i id="hpbar" class="hp"></i></span> <span id="hptxt"></span></div>
   <div class="row">MP <span class="bar"><i id="mpbar" class="mp"></i></span> <span id="mptxt"></span></div>
+  <div class="row">ST <span class="bar"><i id="stbar" class="stm"></i></span> <span id="sttxt"></span></div>
   <div class="row">XP <span class="bar"><i id="xpbar" class="xp"></i></span> <span id="xptxt"></span></div>
   <div class="row">🍖 <span class="bar"><i id="fdbar" class="fd"></i></span> <span id="fdtxt"></span></div>
   <div class="row">🪙 <span id="coins">0</span> &nbsp; 💎 <span id="crys">0</span> &nbsp; ⚔ <span id="kills">0</span></div>
+  <div class="row" id="ptsrow" style="color:#7dffb0"></div>
   <div class="row" id="selrow" style="color:#9ad"></div><div id="quest"></div>
 </div>
 
@@ -204,7 +206,7 @@ html,body{height:100dvh}
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
-    <button id="mapBtn">Peta</button><button id="invBtn" title="Inventori (I)">🎒 Inv</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
+    <button id="mapBtn">Peta</button><button id="invBtn" title="Inventori (I)">🎒 Inv</button><button id="statBtn" title="Stat (C)">📊 Stat</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="resetBtn">Reset</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
   </div>
 </div>
 
@@ -1199,6 +1201,36 @@ const SPELLS=[
   {id:'cahaya',name:'Cahaya',   mp:8,cd:1.4, col:'#fff3a0',icon:'✨'},
   {id:'gelap', name:'Kegelapan',mp:8,cd:1.0, col:'#9b59d0',icon:'🌑'}
 ];
+const SPELL_DESC={
+  angin:'Hembusan angin menembus & mendorong musuh.',
+  api:'Bola api meledak, membakar musuh.',
+  air:'Peluru air, memperlambat musuh.',
+  tanah:'Duri tanah menyembul, membuat musuh pingsan sebentar.',
+  cahaya:'Ledakan cahaya di sekitarmu, melukai & memulihkan sedikit HP.',
+  gelap:'Bola gelap pengejar, menyedot nyawa musuh.'};
+SPELLS.forEach(s=>s.desc=SPELL_DESC[s.id]);
+SPELLS.push({id:'heal',name:'Cahaya Penyembuh',mp:12,cd:6,col:'#7dffb0',icon:'💚',desc:'Sihir penyembuh AREA: memulihkan 30% HP maks semua yang ada dalam radius 56.'});
+const SKILLS={
+  prajurit:[
+    {id:'tebas',name:'Tebasan Berat',icon:'🗡️',mp:3,cd:4,col:'#ff7a6a',desc:'Tebasan tunggal ke arah kursor, damage 3x pedang + dorongan kuat.'},
+    {id:'putar',name:'Putaran Pedang',icon:'🌀',mp:4,cd:6,col:'#ff9a6a',desc:'Menebas SEMUA musuh di sekitarmu (damage 1.8x).'},
+    {id:'lompat',name:'Lompat Hantam',icon:'💥',mp:5,cd:9,col:'#ffb36a',desc:'Melompat ke arah kursor, menghantam area & membuat musuh pingsan 1,5 dtk.'},
+    {id:'teriak',name:'Teriakan Perang',icon:'📢',mp:4,cd:20,col:'#ffd23f',desc:'Damage semua seranganmu +40% selama 8 dtk.'},
+    {id:'tekad',name:'Tekad Baja',icon:'🩹',mp:6,cd:30,col:'#ff6b8b',desc:'Memulihkan 25% HP maks (45% bila HP di bawah 30%).'}],
+  pemanah:[
+    {id:'presisi',name:'Tembakan Presisi',icon:'🎯',mp:3,cd:4,col:'#9fd86a',desc:'Satu panah cepat berdamage 3x, selalu kritikal.'},
+    {id:'hujan',name:'Hujan Panah',icon:'🌧️',mp:6,cd:12,col:'#8fd0a0',desc:'Hujan panah di titik kursor (maks 100 jauhnya), damage berulang selama 3 dtk.'},
+    {id:'jerat',name:'Panah Jerat',icon:'🕸️',mp:3,cd:7,col:'#6ab8ff',desc:'Panah yang memperlambat musuh 50% selama 4 dtk.'},
+    {id:'ganda',name:'Tembakan Ganda',icon:'↠',mp:3,cd:5,col:'#e8dcc0',desc:'Dua panah beruntun ke arah kursor.'},
+    {id:'bayangan',name:'Langkah Bayangan',icon:'💨',mp:4,cd:10,col:'#b8c0d8',desc:'Melompat mundur, kebal sesaat, lalu bergerak +40% lebih cepat 4 dtk.'}],
+  tanker:[
+    {id:'dinding',name:'Dinding Perisai',icon:'🧱',mp:4,cd:16,col:'#6ab8ff',desc:'Damage yang diterima -60% selama 5 dtk.'},
+    {id:'pancing',name:'Pancingan',icon:'📣',mp:3,cd:12,col:'#ff8a5a',desc:'Memaksa musuh jarak dekat (radius 100) mendekat & menyerangmu selama 5 dtk.'},
+    {id:'hantam',name:'Hantaman Perisai',icon:'🛡️',mp:3,cd:6,col:'#8ad0ff',desc:'Menghantam musuh di depan, damage + pingsan 1,5 dtk.'},
+    {id:'aura',name:'Aura Pelindung',icon:'✨',mp:5,cd:18,col:'#fff3a0',desc:'10 dtk: damage diterima -25% dan HP pulih 1,5%/dtk.'},
+    {id:'kulit',name:'Kulit Batu',icon:'🪨',mp:5,cd:22,col:'#c9b28a',desc:'6 dtk: menyerap damage hingga 30% HP maks & kebal terhempas.'}]
+};
+const POOL=()=>P.role==='penyihir'?SPELLS:(SKILLS[P.role]||[]);
 const QUESTS=[
   {id:'kristal1',npc:'Tetua Desa',title:'Kristal Desa',st:'crystal',need:5,req:[],
     offer:['Selamat datang, petualang!','Dunia ini luas dan tak bertepi. Kristal biru tersebar di mana-mana.','Tolong kumpulkan 5 kristal untukku. Cari di sekitar desa!'],
@@ -1271,26 +1303,26 @@ const WALK=[0,1,0,3];
 const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
 const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
 let SAVE_KEY=null;                             // diisi setelah login
-const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look'];
+const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq'];
 const ROLES={
-  warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.5,bow:0,spell:0,maxLvl:50,farm:true,xpMul:0.5,
+  warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:Infinity,farm:true,xpMul:0.5,
     ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
-    desc:'Bisa menanam, memancing, dan beternak (panen & ternak berlimpah makin banyak seiring level). Bertarung sedikit dengan pedang lemah. Level hanya naik dari bertani/memancing/beternak. Maks Lv 50.'},
-  prajurit:{id:'prajurit',n:'Prajurit',ic:'⚔️',col:'#ff7a6a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:2.5,bow:0,spell:0,maxLvl:150,farm:false,xpMul:1,
-    ket:3,atk:5,hint:'⚔️ Prajurit: klik kiri untuk menebas dengan pedang.',
-    desc:'Pengguna pedang. Ketahanan sedang, serangan pedang sangat kuat. Hanya bertarung. Maks Lv 150.'},
-  pemanah:{id:'pemanah',n:'Pemanah',ic:'🏹',col:'#9fd86a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.3,bow:2.5,spell:0,maxLvl:150,farm:false,xpMul:1,
-    ket:3,atk:5,hint:'🏹 Pemanah: klik kiri menembak busur. Q ganti ke pedang (sangat lemah).',
-    desc:'Pengguna busur. Ketahanan sedang, panah sangat kuat, serangan jarak dekat sangat lemah. Hanya bertarung. Maks Lv 150.'},
-  penyihir:{id:'penyihir',n:'Penyihir',ic:'🔮',col:'#b48cff',hp0:14,hpl:2.5,def:0.8,mp0:40,mpl:6,mpr:1.7,sword:0,bow:0,spell:2.5,maxLvl:150,farm:false,xpMul:1,
-    ket:3,atk:5,hint:'🔮 Penyihir: klik kiri/kanan atau F untuk sihir. 1-6 pilih sihir (terbuka seiring level).',
-    desc:'Hanya memakai sihir. Ketahanan sedang, sihir sangat kuat. 6 sihir terbuka seiring level. Maks Lv 150.'},
-  tanker:{id:'tanker',n:'Tanker',ic:'🛡️',col:'#6ab8ff',hp0:28,hpl:5,def:0.5,mp0:10,mpl:1,mpr:1,sword:1.4,bow:0,spell:0,maxLvl:150,farm:false,xpMul:1,shield:true,
-    ket:5,atk:3,hint:'🛡️ Tanker: TAHAN klik kanan / F untuk mengangkat perisai (damage -85%, jalan lebih lambat). Klik kiri: pedang.',
-    desc:'Pengguna perisai. Ketahanan sangat kuat, serangan sedang. Tahan klik kanan/F untuk bertahan. Sedikit bertarung dengan pedang. Maks Lv 150.'}
+    desc:'Bisa menanam, memancing, dan beternak (panen & ternak berlimpah makin banyak seiring level). Bertarung sedikit dengan pedang lemah. Level hanya naik dari bertani/memancing/beternak.'},
+  prajurit:{id:'prajurit',n:'Prajurit',ic:'⚔️',col:'#ff7a6a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.5,bow:0,spell:0,maxLvl:Infinity,farm:false,xpMul:1,
+    ket:3,atk:5,hint:'⚔️ Prajurit: klik kiri menebas. Tombol 1-3 = skill, K = pilih 3 dari 5 skill.',
+    desc:'Pengguna pedang. Ketahanan sedang, serangan pedang sangat kuat. Punya 5 skill, pasang 3 sekaligus. Hanya bertarung.'},
+  pemanah:{id:'pemanah',n:'Pemanah',ic:'🏹',col:'#9fd86a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.1,bow:0.5,spell:0,maxLvl:Infinity,farm:false,xpMul:1,
+    ket:3,atk:5,hint:'🏹 Pemanah: klik kiri menembak. Tombol 1-3 = skill, K = pilih 3 dari 5 skill.',
+    desc:'Pengguna busur. Ketahanan sedang, panah sangat kuat, serangan jarak dekat sangat lemah. Punya 5 skill, pasang 3 sekaligus. Hanya bertarung.'},
+  penyihir:{id:'penyihir',n:'Penyihir',ic:'🔮',col:'#b48cff',hp0:14,hpl:2.5,def:0.8,mp0:40,mpl:6,mpr:1.7,sword:0,bow:0,spell:0.5,maxLvl:Infinity,farm:false,xpMul:1,
+    ket:3,atk:5,hint:'🔮 Penyihir: klik kiri/kanan atau F untuk sihir. 1-3 pilih sihir, K = pasang 3 dari 7 sihir.',
+    desc:'Hanya memakai sihir. Ketahanan sedang, sihir sangat kuat. 7 sihir (termasuk sihir penyembuh area) terbuka seiring level; pasang 3 sekaligus.'},
+  tanker:{id:'tanker',n:'Tanker',ic:'🛡️',col:'#6ab8ff',hp0:28,hpl:5,def:0.5,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:Infinity,farm:false,xpMul:1,shield:true,
+    ket:5,atk:3,hint:'🛡️ Tanker: TAHAN klik kanan / F = perisai. Tombol 1-3 = skill, K = pilih 3 dari 5 skill.',
+    desc:'Pengguna perisai. Ketahanan sangat kuat, serangan sedang. Tahan klik kanan/F untuk bertahan. Punya 5 skill, pasang 3 sekaligus.'}
 };
 const ROLE_IDS=['warga','prajurit','pemanah','penyihir','tanker'];
-const SPELL_LV=[1,5,12,25,40,60];
+const SPELL_LV=[1,5,12,25,40,60,3];   // sihir ke-7 (Cahaya Penyembuh) terbuka di Lv 3
 const FISH=[{k:'Ikan Kecil',sell:6,xp:4,w:50},{k:'Ikan Mas',sell:14,xp:8,w:30},{k:'Ikan Besar',sell:30,xp:15,w:15},{k:'Ikan Emas',sell:90,xp:40,w:5}];
 const RL=()=>ROLES[(typeof P!=='undefined'&&P&&P.role)||'warga'];
 const xpNeed=l=>Math.round((15+l*6+0.04*l*l)*RL().xpMul);   // Lv1: 21, Lv50: 415, Lv100: 1015, Lv149: 1797 (Warga x0.5)
@@ -1300,15 +1332,16 @@ const freshStats=()=>({crystal:0,kill:0,slime:0,bat:0,goblin:0,skeleton:0,golem:
 function freshPlayer(){
   return {kind:'player',x:8,y:44,dir:0,anim:0,moving:false,aimA:0,aimT:0,
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
-    weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false],
+    weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false,false],eq:null,buf:{},absorb:0,
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook()};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,stam:50,maxSt:50,exh:false,stT:0};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
 let gtime=0;                 // waktu permainan (detik)
 let mobs=[],pickups=[],fx=[],npcs=[],proj=[];
-const cds=[0,0,0,0,0,0];
+const cds=[0,0,0,0,0,0,0];
+const timers=[];
 const loaded=new Set();
 let dlg=null,dying=false,deathT=0,customImg=null,msgT=0;
 let shownIntro=false;
@@ -1322,20 +1355,29 @@ const HP=[200,300,400,500];
 const PLOTS=[{k:'farm',x:8,y:-2,w:4,h:3,p:150},{k:'farm',x:8,y:2,w:4,h:3,p:250},{k:'ranch',x:-11,y:-2,w:4,h:3,p:200},{k:'ranch',x:-11,y:2,w:4,h:3,p:300}];
 function plotAt(x,y){return PLOTS.find(p=>x>=p.x&&x<p.x+p.w&&y>=p.y&&y<p.y+p.h);}
 
+const STATK=['str','spd','def','sta'];
+const stv=k=>((P&&P.stats&&P.stats[k])|0);
+const statSum=()=>STATK.reduce((a,k)=>a+stv(k),0);
+const strMul=()=>(1+stv('str')*0.04)*((P&&P.buf&&P.buf.cry>0)?1.4:1);
+const atkCdMul=()=>1/(1+stv('spd')*0.004);
+function useStam(n){P.stam-=n;P.stT=1;if(P.stam<=0){P.stam=0;P.exh=true;}}
 function recalc(){
   const R=RL();
   P.lvl=Math.min(Math.max(1,Math.floor(P.lvl)||1),R.maxLvl);
-  P.maxHp=Math.round(R.hp0+R.hpl*(P.lvl-1))+(P.bhp||0);
+  P.maxHp=Math.round(R.hp0+R.hpl*(P.lvl-1))+(P.bhp||0)+stv('def')*2;
   P.maxMp=Math.round(R.mp0+R.mpl*(P.lvl-1))+(P.bmp||0);
   if(R.id!=='pemanah'){P.hasBow=false;P.weapon='sword';}else P.hasBow=true;
   if(R.id==='penyihir'){SPELL_LV.forEach((l,i)=>{if(P.lvl>=l)P.sp[i]=true;});if(!P.sp[P.sel])P.sel=0;}
-  P.hp=Math.min(P.hp,P.maxHp);P.mp=Math.min(P.mp,P.maxMp);
+  P.maxSt=50+stv('sta')*3;if(!isFinite(P.stam))P.stam=P.maxSt;
+  P.hp=Math.min(P.hp,P.maxHp);P.mp=Math.min(P.mp,P.maxMp);P.stam=Math.min(P.stam,P.maxSt);
+  fixEq(false);
 }
 function initRole(id){
   P.role=id;const R=RL();
   if(id==='warga')P.bag.tool.cangkul=true;
   if(id==='pemanah')P.weapon='bow';
-  P.lvl=1;P.xp=0;
+  P.eq=null;P.buf={};P.absorb=0;
+  P.lvl=1;P.xp=0;P.stats={str:0,spd:0,def:0,sta:0};P.pts=5;
   if(P.bhp===0&&P.bmp===0){/* sudah dihitung saat load */}
   recalc();P.hp=P.maxHp;P.mp=P.maxMp;
 }
@@ -1345,7 +1387,7 @@ function loadGame(){
     if(s&&s.p){
       SAVE_FIELDS.forEach(k=>{if(s.p[k]!==undefined)P[k]=s.p[k];});
       P.st=Object.assign(freshStats(),P.st||{});
-      if(!Array.isArray(P.sp)||P.sp.length!==6)P.sp=[false,false,false,false,false,false];
+      if(!Array.isArray(P.sp))P.sp=[];while(P.sp.length<7)P.sp.push(false);P.sp.length=7;
       if(!Array.isArray(P.qdone))P.qdone=[];
       if(!P.qact||typeof P.qact!=='object')P.qact={};
       if(P.weapon==='bow'&&!P.hasBow)P.weapon='sword';
@@ -1359,6 +1401,9 @@ function loadGame(){
       if(s.p.bhp===undefined){P.bhp=Math.max(0,(s.p.maxHp||10)-(10+2*((s.p.lvl||1)-1)));P.bmp=Math.max(0,(s.p.maxMp||20)-(20+3*((s.p.lvl||1)-1)));}
       if(!ROLES[P.role])P.role=null;
       P.look=sanitizeLook(P.look);P.name=cleanName(P.name);
+      {const st=(P.stats&&typeof P.stats==='object')?P.stats:{};P.stats={};STATK.forEach(k=>P.stats[k]=clamp(Math.floor(+st[k])||0,0,100));
+       const sp=Math.floor(+s.p.pts);
+       P.pts=(s.p.stats===undefined||!isFinite(sp))?Math.max(0,5+Math.max(0,(P.lvl||1)-1)-statSum()):Math.max(0,sp);}
       P.bhp=P.bhp||0;P.bmp=P.bmp||0;
       collected=new Set(s.col||[]);picked=new Set(s.flw||[]);gtime=s.time||0;shownIntro=true;
     }
@@ -1392,12 +1437,12 @@ function giveReward(q){
   if(r.spell!==undefined&&isMage){P.sp[r.spell]=true;P.sel=r.spell;}
   if(r.hp)P.bhp+=r.hp;
   if(r.mp)P.bmp+=r.mp;
-  recalc();
+  recalc();if(isMage)fixEq(true);
   if(r.hp||r.mp||r.heal){P.hp=P.maxHp;P.mp=P.maxMp;}
   if(r.xp)gainXp(r.xp);
   let msg='Misi selesai: '+q.title+'! +'+(r.c||0)+' koin';
   if(r.bow&&P.role==='pemanah')msg+=' | Busurmu makin terasah';
-  if(r.spell!==undefined&&isMage)msg+=' | Sihir '+SPELLS[r.spell].name+' terbuka (tekan '+(r.spell+1)+')';
+  if(r.spell!==undefined&&isMage)msg+=' | Sihir '+SPELLS[r.spell].name+' terbuka'+(P.eq.includes(r.spell)?' (terpasang)':' (tekan K untuk memasang)');
   toast(msg);
 }
 // true bila NPC sudah menangani pembicaraan lewat misi
@@ -1466,11 +1511,16 @@ function initNpcs(){
    ========================================================= */
 const CH=12;
 const chunkKey=(cx,cy)=>cx*4096+cy;
+function mobLevel(x,y){return 1+Math.floor(Math.max(0,settDist(x/T,y/T))/5);}
 function makeMob(type,x,y,tier,ck,cx,cy){
   const d=MOBS[type];
   let hp=d.hp,dmg=d.dmg,xp=d.xp;
   if(type==='slime'){hp=2+tier*2;dmg=1+tier;xp=4+tier*4;}
-  return {kind:'mob',type,tier,x,y,hp,maxHp:hp,dmg,xp,dir:0,anim:0,walkT:0,t:Math.random()*5,cd:0.5+Math.random(),
+  const lvl=mobLevel(x,y);
+  hp=Math.max(1,Math.round(hp*(1+(lvl-1)*0.12)));
+  if(dmg>0)dmg=Math.max(1,Math.round(dmg*(1+(lvl-1)*0.08)));
+  xp=Math.max(1,Math.round(xp*(1+(lvl-1)*0.1)));
+  return {kind:'mob',type,tier,lvl,x,y,hp,maxHp:hp,dmg,xp,dir:0,anim:0,walkT:0,t:Math.random()*5,cd:0.5+Math.random(),
     hop:0,vx:0,vy:0,flash:0,kbT:0,kx:0,ky:0,slow:0,stun:0,burn:0,burnT:0,wt:0,wm:false,wa:Math.random()*6.283,
     sd:Math.random()<0.5?1:-1,rt:0,lunge:0,aim:0,wind:0,fade:1,hit:0,dead:false,ck,cx,cy};
 }
@@ -1593,37 +1643,46 @@ $('dialog').addEventListener('pointerdown',e=>{e.preventDefault();advance();});
 
 const hbSlots={};
 function buildHotbar(){
-  const hb=$('hotbar');
+  const hb=$('hotbar');hb.innerHTML='';
   const w=document.createElement('div');w.className='slot';w.title='Ganti senjata (Q)';
   w.innerHTML='<span class="ic">⚔️</span><small>Q</small>';
   w.addEventListener('pointerdown',e=>{e.preventDefault();swapWeapon();});
-
   hb.appendChild(w);hbSlots.w=w;
   const sep=document.createElement('div');sep.className='sep';hb.appendChild(sep);
-  const isMage=P.role==='penyihir';
+  const isMage=P.role==='penyihir',hasSk=isMage||!!SKILLS[P.role];
   sep.style.display='none';
   if(isMage)w.style.display='none';
   if(P.role==='warga'){w.style.display='none';}
   w.title=P.role==='pemanah'?'Ganti busur/pedang (Q)':'Senjata';
-  SPELLS.forEach((s,i)=>{
-    const el=document.createElement('div');el.className='slot';el.style.setProperty('--c',s.col);
-    el.title=s.name+' (MP '+s.mp+')';
-    el.innerHTML='<span class="ic">'+s.icon+'</span><small>'+(i+1)+'</small><i class="cdv"></i>';
-    el.addEventListener('pointerdown',e=>{e.preventDefault();selectSpell(i);});
-    if(!isMage)el.style.display='none';
-    hb.appendChild(el);hbSlots[i]=el;el._cd=el.querySelector('.cdv');
-  });
+  for(let n=0;n<3;n++){
+    const el=document.createElement('div');el.className='slot lock';
+    el.innerHTML='<span class="ic">·</span><small>'+(n+1)+'</small><i class="cdv"></i>';
+    el.addEventListener('pointerdown',e=>{e.preventDefault();slotPress(n);});
+    if(!hasSk)el.style.display='none';
+    hb.appendChild(el);hbSlots[n]=el;el._cd=el.querySelector('.cdv');el._ic=el.querySelector('.ic');el._k=null;
+  }
+  const mg=document.createElement('div');mg.className='slot';mg.title='Atur skill aktif (K)';
+  mg.innerHTML='<span class="ic">⚙️</span><small>K</small>';
+  mg.addEventListener('pointerdown',e=>{e.preventDefault();skillMenu();});
+  if(!hasSk)mg.style.display='none';
+  hb.appendChild(mg);hbSlots.m=mg;
 }
 function updateHotbar(){
   hbSlots.w.firstChild.textContent=RL().shield?'🛡️':P.weapon==='bow'?'🏹':'⚔️';
   hbSlots.w.classList.toggle('sel',!!P.shield);
-  SPELLS.forEach((s,i)=>{
-    const el=hbSlots[i];
-    el.classList.toggle('sel',P.sel===i);
-    el.classList.toggle('lock',!P.sp[i]);
-    el.classList.toggle('nomp',!!P.sp[i]&&P.mp<s.mp);
-    el._cd.style.height=(cds[i]>0?Math.min(100,cds[i]/s.cd*100):0)+'%';
-  });
+  const pool=POOL(),mage=P.role==='penyihir',eq=P.eq||[-1,-1,-1];
+  for(let n=0;n<3;n++){
+    const el=hbSlots[n];if(!el)continue;
+    const idx=eq[n],s=pool[idx];
+    if(!s){
+      if(el._k!==-1){el._k=-1;el._ic.textContent='·';el.title='Slot kosong (tekan K)';el.classList.add('lock');el.classList.remove('sel','nomp');el.style.setProperty('--c','transparent');el._cd.style.height='0%';}
+      continue;
+    }
+    if(el._k!==idx){el._k=idx;el._ic.textContent=s.icon;el.title=s.name+' (MP '+s.mp+')';el.style.setProperty('--c',s.col);el.classList.remove('lock');}
+    el.classList.toggle('sel',mage&&P.sel===idx);
+    el.classList.toggle('nomp',P.mp<s.mp);
+    el._cd.style.height=(cds[idx]>0?Math.min(100,cds[idx]/s.cd*100):0)+'%';
+  }
 }
 let lastQ='';
 function updateHUD(){
@@ -1632,7 +1691,9 @@ function updateHUD(){
   $('hptxt').textContent=Math.max(0,Math.ceil(P.hp))+'/'+P.maxHp;
   $('mpbar').style.width=clamp(P.mp/P.maxMp,0,1)*100+'%';
   $('mptxt').textContent=Math.floor(P.mp)+'/'+P.maxMp;
-  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('xptxt').textContent=P.lvl>=RL().maxLvl?'MAKS':Math.floor(P.xp)+'/'+xpNeed(P.lvl);$('pname').textContent='👤 '+(P.name||'');$('rolet').textContent=RL().ic+' '+RL().n+(P.lvl>=RL().maxLvl?' · MAKS':' · maks Lv '+RL().maxLvl);
+  $('stbar').style.width=clamp(P.stam/P.maxSt,0,1)*100+'%';$('stbar').style.background=P.exh?'#e0443e':'#4cc46a';$('sttxt').textContent=Math.floor(P.stam)+'/'+P.maxSt+(P.exh?' LELAH':'');
+  $('ptsrow').textContent=P.pts>0?'📊 Poin stat: '+P.pts+' (tekan C)':'';
+  $('xpbar').style.width=(P.lvl>=RL().maxLvl?100:clamp(P.xp/xpNeed(P.lvl),0,1)*100)+'%';$('xptxt').textContent=P.lvl>=RL().maxLvl?'MAKS':Math.floor(P.xp)+'/'+xpNeed(P.lvl);$('pname').textContent='👤 '+(P.name||'');$('rolet').textContent=RL().ic+' '+RL().n+buffTxt();
   $('fdbar').style.width=clamp(P.food,0,100)+'%';$('fdbar').style.background=P.food<20?'#e0443e':'#e0a030';
   $('fdtxt').textContent=Math.ceil(P.food)+'/100'+(P.food<=0?' LAPAR!':P.food<20?' lapar':P.food>=60?' kenyang':'');
   $('coins').textContent=P.coins;$('crys').textContent=P.st.crystal;$('kills').textContent=P.st.kill;
@@ -1666,10 +1727,10 @@ function gainXp(n,farm){
   if(P.lvl>=R.maxLvl){P.xp=0;return;}
   P.xp+=n;
   while(P.lvl<R.maxLvl&&P.xp>=xpNeed(P.lvl)){
-    P.xp-=xpNeed(P.lvl);P.lvl++;recalc();P.hp=P.maxHp;P.mp=P.maxMp;
-    toast('LEVEL UP! Lv '+P.lvl+(P.lvl>=R.maxLvl?' (MAKSIMAL)':''));
+    P.xp-=xpNeed(P.lvl);P.lvl++;P.pts=(P.pts||0)+1;recalc();P.hp=P.maxHp;P.mp=P.maxMp;P.stam=P.maxSt;P.exh=false;
+    toast('LEVEL UP! Lv '+P.lvl+(P.lvl>=R.maxLvl?' (MAKSIMAL)':'')+' · +1 poin stat (tekan C)');
     fx.push({k:'text',x:P.x,y:P.y-26,txt:'LEVEL UP!',col:'#ffe066',t:0,life:1.4});
-    if(R.id==='penyihir'){const i=SPELL_LV.indexOf(P.lvl);if(i>=0)toast('Sihir '+SPELLS[i].name+' terbuka! (tombol '+(i+1)+')');}
+    if(R.id==='penyihir'){const i=SPELL_LV.indexOf(P.lvl);if(i>=0){fixEq(true);toast('Sihir '+SPELLS[i].name+' terbuka! '+(P.eq.includes(i)?'(terpasang di tombol '+(P.eq.indexOf(i)+1)+')':'(tekan K untuk memasang)'));}}
   }
   if(P.lvl>=R.maxLvl)P.xp=0;
 }
@@ -1865,6 +1926,34 @@ function shopGuild(){
     return r;
   });
 }
+function statMenu(){
+  if(dlg||dying)return;
+  if(menu){closeMenu();return;}
+  const INFO=[
+    ['str','💪','Kekuatan',v=>'Damage serangan +'+(v*4)+'%'],
+    ['spd','⚡','Kecepatan',v=>'Gerak +'+(v*0.6).toFixed(1)+'% · Laju serang +'+(v*0.4).toFixed(1)+'%'],
+    ['def','🛡️','Ketahanan',v=>'Damage diterima -'+(v*0.5).toFixed(1)+'% · Maks HP +'+(v*2)],
+    ['sta','🔋','Stamina',v=>'Maks stamina '+(50+v*3)+' · Pulih +'+(v*0.25).toFixed(1)+'/dtk']
+  ];
+  const spend=(k,n)=>{
+    n=Math.min(n,P.pts||0,100-stv(k));if(n<=0)return;
+    const mh=P.maxHp,ms=P.maxSt;
+    P.stats[k]=stv(k)+n;P.pts-=n;recalc();
+    if(P.maxHp>mh)P.hp+=P.maxHp-mh;
+    if(P.maxSt>ms)P.stam+=P.maxSt-ms;
+    P.hp=Math.min(P.hp,P.maxHp);P.stam=Math.min(P.stam,P.maxSt);
+  };
+  openMenu('Stat Karakter (C)',()=>{
+    const r=[{t:'📊 Poin tersedia: <b>'+(P.pts||0)+'</b><br><small style="color:#9ad">Awal 5 poin, +1 poin tiap naik level. Maks tiap stat 100.</small>',b:'—',off:true,f:()=>{}}];
+    INFO.forEach(([k,ic,n,fn])=>{
+      const v=stv(k);
+      r.push({t:ic+' <b>'+n+'</b> '+v+'/100<br><small style="color:#9ad">'+fn(v)+'</small>',
+        b:v>=100?'MAKS':'+1',off:v>=100||(P.pts||0)<1,f:()=>spend(k,1),
+        b2:'+5',f2:()=>spend(k,5)});
+    });
+    return r;
+  });
+}
 function invMenu(){
   if(dlg||dying)return;
   if(menu){closeMenu();return;}
@@ -1996,18 +2085,21 @@ function attack(){
   if(P.atk>0||dying||dlg||menu||IN!==null)return;
   if(P.role==='penyihir'){cast();return;}
   if(P.shield)return;
+  const stc=(P.weapon==='bow'&&P.hasBow)?5:6;
+  if(P.exh||P.stam<stc){if(msgT<=0){toast('Stamina habis! ⚡');msgT=0.8;}return;}
+  useStam(stc);
   fishS=null;
   const a=aimAngle();faceAngle(a);
   const ca=Math.cos(a),sa=Math.sin(a);
   if(P.weapon==='bow'&&P.hasBow){
-    P.atk=0.5;
-    proj.push({t:'arrow',x:P.x+ca*8,y:P.y-7+sa*8,vx:ca*230,vy:sa*230,life:0.65,dmg:Math.max(1,Math.round((3+Math.floor((P.lvl-1)/2))*RL().bow)),r:3});
+    P.atk=0.5*atkCdMul();
+    proj.push({t:'arrow',x:P.x+ca*8,y:P.y-7+sa*8,vx:ca*230,vy:sa*230,life:0.65,dmg:Math.max(1,Math.round((3+Math.floor((P.lvl-1)/4))*RL().bow*strMul())),r:3});
     return;
   }
-  P.atk=0.3;
+  P.atk=0.3*atkCdMul();
   fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.2});
   const cx=P.x+ca*13,cy=P.y-7+sa*13;
-  const dmg=Math.max(1,Math.round((2+Math.floor((P.lvl-1)/2))*RL().sword));
+  const dmg=Math.max(1,Math.round((2+Math.floor((P.lvl-1)/4))*RL().sword*strMul()));
   for(const m of mobs){
     if(m.dead)continue;
     if(Math.hypot(m.x-cx,mc(m)-cy)<15+MOBS[m.type].rad){
@@ -2020,25 +2112,243 @@ function attack(){
 function selectSpell(i){
   if(P.role!=='penyihir')return;
   if(!P.sp[i]){toast('Sihir '+SPELLS[i].name+' belum terbuka');return;}
+  if(!(P.eq||[]).includes(i)){toast('Sihir belum terpasang. Tekan K.');return;}
   P.sel=i;
 }
 function cycleSpell(dir){
   if(P.role!=='penyihir')return;
-  for(let k=1;k<=6;k++){
-    const i=((P.sel+dir*k)%6+6)%6;
-    if(P.sp[i]){P.sel=i;return;}
+  const eq=(P.eq||[]).filter(v=>v>=0);if(!eq.length)return;
+  const k=eq.indexOf(P.sel);
+  P.sel=eq[(((k<0?0:k)+dir)%eq.length+eq.length)%eq.length];
+}
+/* ---- sistem skill: 3 slot aktif dari kumpulan skill ---- */
+function fixEq(fill){
+  const pool=POOL(),n=pool.length,mage=P.role==='penyihir';
+  if(!Array.isArray(P.eq)){P.eq=[-1,-1,-1];fill=true;}
+  let e=P.eq.slice(0,3);while(e.length<3)e.push(-1);
+  e=e.map(v=>(Number.isInteger(v)&&v>=0&&v<n)?v:-1);
+  e=e.map((v,i)=>(v>=0&&e.indexOf(v)!==i)?-1:v);
+  if(mage)e=e.map(v=>(v>=0&&!P.sp[v])?-1:v);
+  if(fill)for(let i=0;i<3;i++){
+    if(e[i]>=0)continue;
+    for(let j=0;j<n;j++){if(!e.includes(j)&&(!mage||P.sp[j])){e[i]=j;break;}}
+  }
+  P.eq=e;
+  if(mage&&!e.includes(P.sel)){const o=e.find(v=>v>=0);P.sel=o===undefined?0:o;}
+}
+function slotPress(n){
+  if(dlg||dying||menu)return;
+  const idx=(P.eq||[])[n];
+  if(P.role==='penyihir'){
+    if(idx>=0)P.sel=idx;else toast('Slot kosong. Tekan K untuk memasang sihir.');
+    return;
+  }
+  if(!SKILLS[P.role])return;
+  if(idx===undefined||idx<0){toast('Slot kosong. Tekan K untuk memilih skill.');return;}
+  useSkill(idx);
+}
+function buffTxt(){
+  const B=P.buf||{},N={wall:'🧱Dinding',aura:'✨Aura',stone:'🪨Kulit Batu',cry:'📢Perang',haste:'💨Cepat'};
+  let s='';for(const k in N)if(B[k]>0)s+=' '+N[k]+' '+Math.ceil(B[k])+'d';
+  return s;
+}
+function tickBuffs(dt){
+  const B=P.buf;
+  if(B){
+    for(const k in B)if(B[k]>0)B[k]=Math.max(0,B[k]-dt);
+    if(!(B.stone>0))P.absorb=0;
+    if(B.aura>0&&!dying){
+      if(P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.015*dt);
+      if(Math.random()<dt*10)sparkFx(P.x+(Math.random()-0.5)*14,P.y-4,'#fff3a0',0.5,0,-18,1);
+    }
+  }
+  for(const t of timers)if(!t.done){t.t-=dt;if(t.t<=0){t.done=true;try{t.fn();}catch(_){}}}
+  for(let i=timers.length-1;i>=0;i--)if(timers[i].done)timers.splice(i,1);
+}
+function drawBuffFx(sx,sy,now){
+  const B=P.buf;if(!B)return;
+  const col=B.stone>0?'#c9b28a':B.wall>0?'#6ab8ff':B.aura>0?'#fff3a0':B.cry>0?'#ff7a6a':B.haste>0?'#cfe3ff':null;
+  if(!col)return;
+  ctx.save();ctx.globalAlpha=0.35+0.2*Math.sin(now*8);ctx.strokeStyle=col;ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(sx,sy-9,10,13,0,0,6.283);ctx.stroke();ctx.restore();
+}
+function skillDmg(mult,minD){
+  const R=RL(),w=R.id==='pemanah'?R.bow:R.sword,base=R.id==='pemanah'?3:2;
+  return Math.max(minD===undefined?2:minD,Math.round((base+Math.floor((P.lvl-1)/4))*w*strMul()*mult));
+}
+function aimPoint(maxD){
+  const cx=P.x,cy=P.y-7;let tx,ty;
+  if(mouse.has){tx=mouse.sx+camX;ty=mouse.sy+camY;}
+  else{const a=aimAngle();tx=cx+Math.cos(a)*70;ty=cy+Math.sin(a)*70;}
+  const d=Math.hypot(tx-cx,ty-cy);
+  if(d>maxD){tx=cx+(tx-cx)/d*maxD;ty=cy+(ty-cy)/d*maxD;}
+  return [tx,ty+7];
+}
+function dashP(a,maxD){
+  const ca=Math.cos(a),sa=Math.sin(a);let d=0;
+  for(let s=4;s<=maxD;s+=4){const nx=P.x+ca*s,ny=P.y+sa*s;if(blocked(nx,ny)||npcBlock(nx,ny))break;d=s;}
+  return d;
+}
+function ringFx(x,y,r1,col,life){fx.push({k:'ring',x,y,r0:3,r1,col,life:life||0.35});}
+function rainHit(f){
+  for(let k=0;k<5;k++)sparkFx(f.x+(Math.random()-0.5)*f.r*1.6,f.y-6,'#e8dcc0',0.3,0,40,1);
+  for(const m of mobs){
+    if(m.dead)continue;
+    if(Math.hypot(m.x-f.x,mc(m)-(f.y-4))<f.r+MOBS[m.type].rad)hitMob(m,f.dmg,null,{by:'arrow',kx:0,ky:0,kb:0.05});
   }
 }
+function arrowProj(a,dmg,o){
+  const ca=Math.cos(a),sa=Math.sin(a),sp=(o&&o.sp)||230;
+  proj.push(Object.assign({t:'arrow',x:P.x+ca*8,y:P.y-7+sa*8,vx:ca*sp,vy:sa*sp,life:0.7,dmg,r:3},o||{}));
+}
+const SK_FN={
+  /* ===== PRAJURIT ===== */
+  tebas(a,ca,sa){
+    fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.25});
+    const cx=P.x+ca*16,cy=P.y-7+sa*16,dmg=skillDmg(3);
+    ringFx(cx,cy,18,'#ffb0a0',0.25);
+    for(const m of mobs){if(m.dead)continue;
+      if(Math.hypot(m.x-cx,mc(m)-cy)<20+MOBS[m.type].rad)hitMob(m,dmg,null,{by:'sword',kx:ca*220,ky:sa*220,kb:0.25});}
+    P.atk=0.3;return true;
+  },
+  putar(a,ca,sa){
+    const cx=P.x,cy=P.y-7,dmg=skillDmg(1.8);
+    ringFx(cx,cy,32,'#ff9a6a',0.3);ringFx(cx,cy,20,'#ffffff',0.22);
+    for(let k=0;k<14;k++){const b=k/14*6.283;sparkFx(cx,cy,k%2?'#ffd0b0':'#ffffff',0.35,Math.cos(b)*80,Math.sin(b)*80,1);}
+    for(const m of mobs){if(m.dead)continue;
+      const dx=m.x-cx,dy=mc(m)-cy;
+      if(Math.hypot(dx,dy)<32+MOBS[m.type].rad)hitMob(m,dmg,null,{by:'sword',kx:dx*4,ky:dy*4,kb:0.2});}
+    P.atk=0.3;return true;
+  },
+  lompat(a,ca,sa){
+    const d=dashP(a,46);
+    if(d<8){toast('Tidak ada ruang untuk melompat');return false;}
+    sparkBurst(P.x,P.y,'#d9c9a8');
+    P.x+=ca*d;P.y+=sa*d;P.inv=Math.max(P.inv,0.45);
+    const cx=P.x,cy=P.y-3,dmg=skillDmg(1.6);
+    ringFx(cx,cy,26,'#ffb36a',0.35);ringFx(cx,cy,14,'#ffffff',0.25);sparkBurst(P.x,P.y,'#d9c9a8');
+    for(const m of mobs){if(m.dead)continue;
+      const dx=m.x-cx,dy=mc(m)-cy;
+      if(Math.hypot(dx,dy)<26+MOBS[m.type].rad){hitMob(m,dmg,null,{by:'sword',kx:dx*3,ky:dy*3,kb:0.15});if(!m.dead)m.stun=1.5;}}
+    P.atk=0.3;return true;
+  },
+  teriak(){
+    P.buf.cry=8;floatText(P.x,P.y-30,'DAMAGE +40%!','#ffd23f');
+    ringFx(P.x,P.y-7,40,'#ffd23f',0.5);ringFx(P.x,P.y-7,24,'#ff7a6a',0.4);return true;
+  },
+  tekad(){
+    const pct=P.hp<P.maxHp*0.3?0.45:0.25,n=Math.max(1,Math.round(P.maxHp*pct));
+    P.hp=Math.min(P.maxHp,P.hp+n);floatText(P.x,P.y-30,'+'+n+' HP','#ff9ab0');
+    ringFx(P.x,P.y-7,26,'#ff6b8b',0.45);
+    for(let k=0;k<8;k++)sparkFx(P.x+(Math.random()-0.5)*14,P.y-4,'#ff9ab0',0.6,0,-24,2);return true;
+  },
+  /* ===== PEMANAH ===== */
+  presisi(a){
+    arrowProj(a,skillDmg(3),{sp:320,life:0.8,crit:true});
+    for(let k=0;k<4;k++)sparkFx(P.x+Math.cos(a)*10,P.y-7+Math.sin(a)*10,'#ffe066',0.3,(Math.random()-0.5)*40,(Math.random()-0.5)*40,1);
+    P.atk=0.25;return true;
+  },
+  hujan(){
+    const [x,y]=aimPoint(100);
+    fx.push({k:'rain',x,y,t:0,life:3,r:28,dmg:skillDmg(0.9,1),tk:0});
+    ringFx(x,y,28,'#9fd86a',0.4);P.atk=0.3;return true;
+  },
+  jerat(a){
+    arrowProj(a,skillDmg(1.2,1),{sp:250,slow:4});P.atk=0.3;return true;
+  },
+  ganda(a){
+    arrowProj(a,skillDmg(1.3,1),{sp:260});
+    timers.push({t:0.15,fn:()=>{if(dying||IN!==null)return;const a2=aimAngle();faceAngle(a2);arrowProj(a2,skillDmg(1.3,1),{sp:260});}});
+    P.atk=0.4;return true;
+  },
+  bayangan(a){
+    const b=a+Math.PI,d=dashP(b,48);
+    if(d<8){toast('Tidak ada ruang untuk mundur');return false;}
+    sparkBurst(P.x,P.y,'#b8c0d8');
+    P.x+=Math.cos(b)*d;P.y+=Math.sin(b)*d;P.inv=Math.max(P.inv,0.5);P.buf.haste=4;
+    floatText(P.x,P.y-30,'Cepat!','#cfe3ff');sparkBurst(P.x,P.y,'#b8c0d8');return true;
+  },
+  /* ===== TANKER ===== */
+  dinding(){
+    P.buf.wall=5;floatText(P.x,P.y-30,'Dinding Perisai','#9ad8ff');ringFx(P.x,P.y-7,30,'#6ab8ff',0.45);return true;
+  },
+  pancing(){
+    let n=0;
+    for(const m of mobs){if(m.dead)continue;
+      if(MOBS[m.type].reach>0&&Math.hypot(m.x-P.x,m.y-P.y)<100){m.taunt=5;n++;}}
+    ringFx(P.x,P.y-7,100,'#ff8a5a',0.5);ringFx(P.x,P.y-7,50,'#ffd23f',0.35);
+    floatText(P.x,P.y-30,n?('Pancing '+n+' musuh!'):'Tidak ada musuh dekat','#ff8a5a');return true;
+  },
+  hantam(a,ca,sa){
+    const cx=P.x+ca*14,cy=P.y-7+sa*14,dmg=skillDmg(4);
+    ringFx(cx,cy,18,'#8ad0ff',0.3);fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.2});
+    for(const m of mobs){if(m.dead)continue;
+      if(Math.hypot(m.x-cx,mc(m)-cy)<17+MOBS[m.type].rad){hitMob(m,dmg,null,{by:'sword',kx:ca*200,ky:sa*200,kb:0.2});if(!m.dead)m.stun=1.5;}}
+    P.atk=0.3;return true;
+  },
+  aura(){
+    P.buf.aura=10;floatText(P.x,P.y-30,'Aura Pelindung','#fff3a0');ringFx(P.x,P.y-7,44,'#fff3a0',0.5);return true;
+  },
+  kulit(){
+    P.buf.stone=6;P.absorb=Math.max(1,Math.round(P.maxHp*0.3));
+    floatText(P.x,P.y-30,'Kulit Batu (+'+P.absorb+')','#c9b28a');ringFx(P.x,P.y-7,28,'#c9b28a',0.45);return true;
+  }
+};
+function sparkBurst(x,y,col){for(let k=0;k<7;k++)sparkFx(x,y-2,col,0.4,(Math.random()-0.5)*60,-10-Math.random()*25,2);}
+function useSkill(i){
+  if(dying||dlg||menu||IN!==null)return;
+  const s=(SKILLS[P.role]||[])[i];if(!s)return;
+  if(cds[i]>0){if(msgT<=0){toast(s.name+' belum siap ('+Math.ceil(cds[i])+' dtk)');msgT=0.6;}return;}
+  if(P.mp<s.mp){if(msgT<=0){toast('MP tidak cukup!');msgT=0.8;}return;}
+  if(P.exh||P.stam<6){if(msgT<=0){toast('Stamina habis! ⚡');msgT=0.8;}return;}
+  if(!P.buf)P.buf={};
+  fishS=null;
+  const a=aimAngle();faceAngle(a);
+  if(!SK_FN[s.id](a,Math.cos(a),Math.sin(a)))return;
+  P.mp-=s.mp;cds[i]=s.cd*atkCdMul();useStam(6);
+  if(msgT<=0){toast(s.icon+' '+s.name+'!');msgT=0.35;}
+}
+function skillMenu(){
+  if(dlg||dying)return;
+  if(menu){closeMenu();return;}
+  const pool=POOL();
+  if(!pool.length){toast('Perananmu tidak memakai skill');return;}
+  const mage=P.role==='penyihir';
+  openMenu('Skill Aktif (K) — pasang maks. 3',()=>{
+    const used=(P.eq||[]).filter(v=>v>=0).length;
+    const r=[{t:'Terpasang: <b>'+used+'/3</b><br><small style="color:#9ad">'+(mage?'Tombol 1-3 / roda mouse memilih sihir, klik kanan/F melepas sihir.':'Tombol 1-3 langsung memakai skill. Hanya skill terpasang yang bisa dipakai.')+'</small>',b:'—',off:true,f:()=>{}}];
+    pool.forEach((s,i)=>{
+      const on=(P.eq||[]).includes(i),locked=mage&&!P.sp[i];
+      r.push({t:s.icon+' <b>'+s.name+'</b> '+(on?'<span style="color:#7dffb0">[tombol '+(P.eq.indexOf(i)+1)+']</span>':'')+' <small style="color:#9ad">MP '+s.mp+' · CD '+s.cd+'d'+(locked?' · 🔒 Lv '+SPELL_LV[i]:'')+'</small><br><small style="color:#9ad">'+s.desc+'</small>',
+        b:locked?'Terkunci':on?'Lepas':'Pasang',off:locked,
+        f:()=>{
+          if(on){P.eq[P.eq.indexOf(i)]=-1;}
+          else{
+            const k=P.eq.indexOf(-1);
+            if(k<0){toast('Slot penuh (3/3). Lepas satu skill dulu.');return;}
+            P.eq[k]=i;
+          }
+          if(mage&&!P.eq.includes(P.sel)){const o=P.eq.find(v=>v>=0);P.sel=o===undefined?0:o;}
+        }});
+    });
+    return r;
+  });
+}
+
+/* ---- sihir ---- */
 function cast(){
   if(dying||dlg||menu)return;
   if(P.role!=='penyihir')return;        // tanker memakai perisai (ditahan), peran lain tidak bersihir
   if(IN!==null)return;const i=P.sel,s=SPELLS[i];
+  if(!s||!(P.eq||[]).includes(i)){if(msgT<=0){toast('Pasang sihir dulu: tekan K');msgT=0.8;}return;}
   if(!P.sp[i]){if(msgT<=0){toast('Sihir '+s.name+' belum terbuka');msgT=0.8;}return;}
   if(cds[i]>0)return;
   if(P.mp<s.mp){if(msgT<=0){toast('MP tidak cukup!');msgT=0.8;}return;}
-  P.mp-=s.mp;cds[i]=s.cd;
+  if(P.exh||P.stam<4){if(msgT<=0){toast('Stamina habis! ⚡');msgT=0.8;}return;}
+  useStam(4);
+  P.mp-=s.mp;cds[i]=s.cd*atkCdMul();
   const a=aimAngle();faceAngle(a);
-  const ca=Math.cos(a),sa=Math.sin(a),ox=P.x+ca*8,oy=P.y-8+sa*8,pw=(1+(P.lvl-1)*0.1)*RL().spell;
+  const ca=Math.cos(a),sa=Math.sin(a),ox=P.x+ca*8,oy=P.y-8+sa*8,pw=(1+(P.lvl-1)*0.05)*RL().spell*strMul();
   switch(s.id){
     case 'angin':
       proj.push({t:'angin',x:ox,y:oy,vx:ca*135,vy:sa*135,life:0.8,dmg:1*pw,r:10,hit:new Set()});
@@ -2073,6 +2383,13 @@ function cast(){
     case 'gelap':
       proj.push({t:'gelap',x:ox,y:oy,vx:ca*70,vy:sa*70,life:2.8,dmg:4*pw,r:6,homing:true});
       break;
+    case 'heal':{
+      const cx=P.x,cy=P.y-7,R0=56,n=Math.max(3,Math.round(P.maxHp*0.3));
+      fx.push({k:'ring',x:cx,y:cy,r0:4,r1:R0,col:'#7dffb0',life:0.55});
+      fx.push({k:'ring',x:cx,y:cy,r0:2,r1:R0*0.6,col:'#ffffff',life:0.4});
+      for(let k=0;k<18;k++){sparkFx(cx+(Math.random()-0.5)*R0*1.4,cy+(Math.random()-0.5)*R0*0.9,k%2?'#7dffb0':'#d6ffe6',0.8,0,-22-Math.random()*16,2);}
+      P.hp=Math.min(P.maxHp,P.hp+n);floatText(P.x,P.y-26,'+'+n+' HP','#7dffb0');
+      break;}
   }
 }
 
@@ -2103,7 +2420,8 @@ function killMob(m,by){
   const d=MOBS[m.type];
   burst(m.x,mc(m),m.type==='slime'?SL[m.tier][0]:d.col);
   floatText(m.x,mc(m)-16,'+'+m.xp+' XP','#8fe3ff');
-  const cv_={slime:1+m.tier,bat:1,goblin:3,skeleton:4,golem:12,ghost:3,rusa:2,kelinci:1,ayam_liar:1,kerbau:4,beruang:5,serigala:3,harimau:6,buaya:4}[m.type]||1;
+  const lvm=1+((m.lvl||1)-1)*0.08;
+  const cv_=Math.max(1,Math.round(lvm*({slime:1+m.tier,bat:1,goblin:3,skeleton:4,golem:12,ghost:3,rusa:2,kelinci:1,ayam_liar:1,kerbau:4,beruang:5,serigala:3,harimau:6,buaya:4}[m.type]||1)));
   const drop=(type,val,life)=>pickups.push({kind:'pickup',type,x:m.x+(Math.random()*10-5),y:m.y,val,ck:null,t:0,life:life||25});
   if(Math.random()<0.65)drop('coin',cv_);
   if(Math.random()<0.2)drop('heart');
@@ -2123,12 +2441,22 @@ function killMob(m,by){
   }
 }
 function hurt(n,fromX,fromY){
-  n=Math.max(1,Math.round(n*RL().def));
+  n=Math.max(1,Math.round(n*RL().def*(1-stv('def')*0.005)));
   if(P.shield){n=Math.max(1,Math.round(n*0.15));floatText(P.x,P.y-32,'Tangkis!','#6ab8ff');}
+  const B=P.buf||{};
+  if(B.wall>0){n=Math.max(1,Math.round(n*0.4));floatText(P.x,P.y-38,'Dinding!','#9ad8ff');}
+  if(B.aura>0)n=Math.max(1,Math.round(n*0.75));
+  if(B.stone>0&&P.absorb>0){
+    const ab=Math.min(n,P.absorb);P.absorb-=ab;n-=ab;
+    floatText(P.x,P.y-32,'Serap '+ab,'#c9b28a');
+    if(n<=0){P.inv=0.35;return;}
+  }
   P.hp-=n;P.inv=P.shield?0.35:1;
   floatText(P.x,P.y-24,'-'+n,'#ff6b6b');
-  const a=Math.atan2(P.y-fromY,P.x-fromX);
-  for(let i=0;i<3;i++)moveEnt(P,Math.cos(a)*3,Math.sin(a)*3,false);
+  if(!(B.stone>0)){
+    const a=Math.atan2(P.y-fromY,P.x-fromX);
+    for(let i=0;i<3;i++)moveEnt(P,Math.cos(a)*3,Math.sin(a)*3,false);
+  }
   if(P.hp<=0&&!dying){dying=true;deathT=0;toast('Kamu pingsan...');}
 }
 function explode(p){
@@ -2150,6 +2478,8 @@ function projHit(p,m){
   switch(p.t){
     case 'arrow':
       hitMob(m,p.dmg,null,{by:'arrow',kx:ca*90,ky:sa*90,kb:0.1});
+      if(p.slow&&!m.dead){m.slow=p.slow;floatText(m.x,mc(m)-18,'Lambat','#6ab8ff');}
+      if(p.crit)floatText(m.x,mc(m)-22,'KRITIKAL!','#ffe066');
       for(let k=0;k<4;k++)sparkFx(p.x,p.y,'#e8dcc0',0.25,(Math.random()-0.5)*50,(Math.random()-0.5)*50,1);
       p.dead=true;break;
     case 'angin':
@@ -2191,6 +2521,7 @@ function updateProj(dt){
       else if(p.t==='api')sparkFx(p.x,p.y,Math.random()<0.5?'#ff7a1a':'#ffd23f',0.35,rv(),-10-Math.random()*15,2);
       else if(p.t==='air')sparkFx(p.x,p.y,'#6ab8ff',0.3,rv(),rv(),1);
       else if(p.t==='gelap')sparkFx(p.x,p.y,Math.random()<0.5?'#6a2fa0':'#2a1040',0.4,rv(),rv(),2);
+      else if(p.t==='arrow'&&(p.slow||p.crit))sparkFx(p.x,p.y,p.slow?'#6ab8ff':'#ffe066',0.25,rv(),rv(),1);
     }
     if(solidAt(p.x,p.y+4)){
       if(p.t==='api')explode(p);
@@ -2244,7 +2575,15 @@ function updateMob(m,dt){
   const sm=m.slow>0?0.5:1;
   const dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);
   const ca=dist>0?dx/dist:0,sa=dist>0?dy/dist:0;
-  switch(m.type){
+  if(m.taunt>0){
+    m.taunt-=dt;
+    if(!d.reach||dying)m.taunt=0;
+    else{
+      const tsp=34*sm*dt;
+      if(dist>d.reach-3){if(d.fly)moveFly(m,ca*tsp,sa*tsp);else moveEnt(m,ca*tsp,sa*tsp,true);}
+      m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*8;
+    }
+  }else switch(m.type){
     case 'slime':
       m.cd-=dt;
       if(m.hop>0){m.hop-=dt;moveEnt(m,m.vx*dt*sm,m.vy*dt*sm,true);}
@@ -2398,11 +2737,12 @@ function update(dt){
   if(P.inv>0)P.inv-=dt;
   if(P.atk>0)P.atk-=dt;
   if(P.aimT>0)P.aimT-=dt;
-  for(let i=0;i<6;i++)if(cds[i]>0)cds[i]-=dt;
+  for(let i=0;i<7;i++)if(cds[i]>0)cds[i]-=dt;
+  tickBuffs(dt);
   if(dying){
     deathT+=dt;
     if(deathT>1.6){
-      fishS=null;P.shield=false;dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;P.coins=Math.floor(P.coins*0.8);P.inv=2;P.food=Math.max(P.food,40);
+      P.buf={};P.absorb=0;fishS=null;P.shield=false;dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;P.coins=Math.floor(P.coins*0.8);P.inv=2;P.food=Math.max(P.food,40);P.stam=P.maxSt;P.exh=false;
       toast('Kamu bangun di desa. Koin berkurang 20%.');
     }
   }else{
@@ -2410,7 +2750,7 @@ function update(dt){
     let ay=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
     const jOn=joy.on&&joy.m>0;
     if(jOn){ax=joy.x;ay=joy.y;}
-    P.shield=!!(RL().shield&&(keys.cast||keys.f||mouseR)&&!dlg&&!menu&&IN===null);
+    P.shield=!!(RL().shield&&(keys.cast||keys.f||mouseR)&&!dlg&&!menu&&IN===null&&!P.exh&&P.stam>0);
     if(fishS){
       if(P.moving||IN!==null||dlg||menu||fishS.dead)fishS=null;
       else{fishS.t-=dt;
@@ -2419,13 +2759,18 @@ function update(dt){
     P.moving=ax!==0||ay!==0;
     if(P.moving){
       const l=Math.hypot(ax,ay);ax/=l;ay/=l;
-      const run=keys.shift&&!P.shield?1.7:1,sp=58*run*SS.ps*(P.shield?0.55:1)*(P.food<=0?0.85:1)*(jOn?0.55+0.45*joy.m:1);
+      const run=(keys.shift&&!P.shield&&!P.exh&&P.stam>0)?1.7:1,sp=58*(1+stv('spd')*0.006)*run*SS.ps*(P.shield?0.55:1)*((P.buf&&P.buf.haste>0)?1.4:1)*(P.food<=0?0.85:1)*(jOn?0.55+0.45*joy.m:1);
       if(P.aimT<=0){if(Math.abs(ax)>Math.abs(ay))P.dir=ax>0?3:2;else P.dir=ay>0?0:1;}
       const nx=P.x+ax*sp*dt,ny=P.y+ay*sp*dt;
       if(!blocked(nx,P.y)&&!npcBlock(nx,P.y))P.x=nx;
       if(!blocked(P.x,ny)&&!npcBlock(P.x,ny))P.y=ny;
       P.anim+=dt*(run>1?11:7.5);
+      if(run>1)useStam(14*dt);
     }
+    if(P.shield)useStam(8*dt);
+    if(P.stT>0)P.stT-=dt;
+    else{P.stam=Math.min(P.maxSt,P.stam+(14+stv('sta')*0.25)*(P.food<20?0.5:1)*(P.moving?0.8:1)*dt);}
+    if(P.exh&&P.stam>=P.maxSt*0.2)P.exh=false;
     P.food=Math.max(0,P.food-FOOD_DRAIN*dt);
     P.mp=Math.min(P.maxMp,P.mp+(2+P.lvl*0.15)*RL().mpr*SS.mr*(P.food<20?0.5:1)*dt);
     if(P.food>=60&&P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.004*dt);
@@ -2455,6 +2800,7 @@ function update(dt){
   for(const f of fx){
     f.t+=dt;
     if(f.k==='spike'&&!f.done&&f.t>=f.delay){f.done=true;spikeHit(f);}
+    if(f.k==='rain'){f.tk-=dt;if(f.tk<=0){f.tk=0.5;rainHit(f);}}
   }
   fx=fx.filter(f=>f.t<f.life);
 }
@@ -2485,6 +2831,7 @@ function drawNameTag(sx,sy){
 }
 function drawStatus(e,sx,sy,h,alt){
   const top=sy-h-alt;
+  if(e.taunt>0)txt('!',sx,top-2,'#ff5050',9);
   if(e.burn>0){
     for(let i=0;i<3;i++){
       ctx.fillStyle=(i+Math.floor(e.t*12))%2?'#ffd23f':'#ff7a1a';
@@ -2518,6 +2865,7 @@ function drawEntity(e,now){
       ctx.drawImage(SPR.player[P.dir][P.moving?WALK[Math.floor(P.anim)%4]:0],sx-9,sy-21);
     }
     if(P.weapon==='bow'&&P.hasBow)drawBow(sx,sy);
+    drawBuffFx(sx,sy,now);
     drawNameTag(sx,sy);
     if(P.shield){const v=DIRS[P.dir],cx_=sx+v[0]*8,cy_=sy-9+v[1]*6;
       ctx.fillStyle='#fff';ctx.fillRect(cx_-5,cy_-6,10,12);ctx.fillStyle='#3a78d8';ctx.fillRect(cx_-4,cy_-5,8,10);ctx.fillStyle='#ffe066';ctx.fillRect(cx_-1,cy_-4,2,8);ctx.fillRect(cx_-3,cy_-1,6,2);}
@@ -2595,6 +2943,10 @@ function drawEntity(e,now){
       for(let i=10;i<Math.min(l,120);i+=6)ctx.fillRect(Math.round(sx+tx/l*i),Math.round(sy-8+ty/l*i),1,1);
     }
     drawStatus(e,sx,sy,d.h,alt);
+    if(e.hit>0||Math.hypot(e.x-P.x,e.y-P.y)<100){
+      const lc=e.lvl>P.lvl+5?'#ff6b6b':e.lvl>P.lvl?'#ffd23f':'#ffffff';
+      txt('Lv '+e.lvl,sx,sy-d.h-alt-(e.hit>0?9:4),lc,6);
+    }
     if(e.hit>0){
       const w=d.rad>8?20:14,by=sy-d.h-alt-5;
       ctx.fillStyle='#000';ctx.fillRect(sx-w/2-1,by,w+2,3);
@@ -2653,6 +3005,17 @@ function drawFx(f){
       ctx.fillStyle=i%5===4?'#6b4a2a':'#a67c4e';ctx.fillRect(x0,by-i,w,1);
       ctx.fillStyle='#d2a672';ctx.fillRect(x0,by-i,1,1);
     }
+  }else if(f.k==='rain'){
+    const fade=f.t<0.2?f.t/0.2:f.t>f.life-0.3?Math.max(0,(f.life-f.t)/0.3):1;
+    ctx.globalAlpha=0.14*fade;ctx.fillStyle='#9fd86a';
+    ctx.beginPath();ctx.ellipse(sx,sy,f.r,f.r*0.7,0,0,6.283);ctx.fill();
+    ctx.globalAlpha=fade;
+    for(let i=0;i<10;i++){
+      const ph=(f.t*2.6+i*0.37)%1,ax=sx+Math.sin(i*12.9+Math.floor(f.t*2.6+i*0.37)*7.3)*f.r*0.85,ay=sy-34+ph*34+Math.cos(i*7.7)*f.r*0.25;
+      ctx.fillStyle='#e8dcc0';ctx.fillRect(Math.round(ax),Math.round(ay),1,4);
+      ctx.fillStyle='#c0504d';ctx.fillRect(Math.round(ax),Math.round(ay-1),1,1);
+    }
+    ctx.globalAlpha=1;
   }
 }
 function drawProj(p){
@@ -2804,7 +3167,7 @@ function drawMini(dt){
    INPUT
    ========================================================= */
 function press(k){
-  if(menu){if(k==='e'||k==='escape'||k==='m'||k==='g'||k==='i')closeMenu();return;}
+  if(menu){if(k==='e'||k==='escape'||k==='m'||k==='g'||k==='i'||k==='c'||k==='k')closeMenu();return;}
   if(dlg){if(k==='e'||k==='enter'||k===' ')advance();return;}
   if(k==='e'||k==='enter')interact();
   else if(k==='attack')attack();
@@ -2813,10 +3176,12 @@ function press(k){
   else if(k==='z')cycleSel();
   else if(k==='m')showMap();
   else if(k==='i')invMenu();
+  else if(k==='c')statMenu();
   else if(k==='g')eatMenu();
   else if(k==='p'){gtime=(Math.floor(gtime/SEAS_LEN)+1)*SEAS_LEN;}
   else if(k==='x')pickF();
-  else if(k.length===1&&k>='1'&&k<='6')selectSpell(+k-1);
+  else if(k==='k')skillMenu();
+  else if(k.length===1&&k>='1'&&k<='3')slotPress(+k-1);
 }
 addEventListener('keydown',e=>{
   if(e.target&&e.target.tagName==='INPUT')return;
@@ -2935,7 +3300,7 @@ $('spriteClr').addEventListener('click',()=>{customImg=null;toast('Karakter bawa
 $('resetBtn').addEventListener('click',()=>{
   if(confirm('Hapus progres dan pilih peran dari awal? (akun tetap ada)')){const k=SAVE_KEY;SAVE_KEY=null;try{localStorage.removeItem(k);}catch(e){}location.reload();}
 });
-$('mapBtn').addEventListener('click',showMap);$('invBtn').addEventListener('click',()=>press('i'));$('eatBtn').addEventListener('click',()=>press('g'));addEventListener('beforeunload',saveGame);
+$('mapBtn').addEventListener('click',showMap);$('invBtn').addEventListener('click',()=>press('i'));$('statBtn').addEventListener('click',()=>press('c'));$('eatBtn').addEventListener('click',()=>press('g'));addEventListener('beforeunload',saveGame);
 setInterval(saveGame,5000);
 
 /* =========================================================
@@ -2999,7 +3364,7 @@ function roleCardHtml(R,pick){
   return '<div class="ic">'+R.ic+'</div><b style="color:'+R.col+'">'+R.n+'</b>'+
    '<div class="st"><span>Ketahanan</span><span>'+bars(R.ket)+'</span></div>'+
    '<div class="st"><span>Serangan</span><span>'+bars(R.atk)+'</span></div>'+
-   '<div class="st"><span>Level maks</span><span style="letter-spacing:0">'+R.maxLvl+'</span></div>'+
+   '<div class="st"><span>Level maks</span><span style="letter-spacing:0">Tanpa batas</span></div>'+
    '<p>'+R.desc+'</p>';
 }
 function lobbyKnownName(){
@@ -3018,7 +3383,7 @@ function paintHeroN(){drawPrev($('lprevN'),pendingLook,0,0,4);}
 function paintHeroS(){
   const sv=lobbySaved;if(!sv)return;
   drawPrev($('lprevS'),sv.look,0,0,4);
-  const R=ROLES[sv.role];$('lhsub').textContent='Level '+Math.min(sv.lvl||1,R.maxLvl)+' \u00b7 '+R.n;
+  const R=ROLES[sv.role];$('lhsub').textContent='Level '+(sv.lvl||1)+' \u00b7 '+R.n;
 }
 function showPick(){
   $('lcont').style.display='none';$('lpick').style.display='block';pendingRole=null;
@@ -3042,7 +3407,7 @@ function openLobby(){
   if(saved){
     saved.look=sanitizeLook(saved.look);
     const R=ROLES[saved.role];
-    $('lsaved').innerHTML=roleCardHtml(R)+'<p style="color:#ffe066;text-align:center;font-size:13px">Level '+Math.min(saved.lvl||1,R.maxLvl)+' / '+R.maxLvl+'</p>';
+    $('lsaved').innerHTML=roleCardHtml(R)+'<p style="color:#ffe066;text-align:center;font-size:13px">Level '+(saved.lvl||1)+'</p>';
     $('lcont').style.display='block';$('lpick').style.display='none';
     refreshNameBox();paintHeroS();
   }else showPick();
@@ -3132,7 +3497,7 @@ let newRole=false;
 if(!P.role){newRole=true;P.look=sanitizeLook(pendingLook);initRole(pendingRole||'warga');}else recalc();
 P.look=sanitizeLook(P.look);
 if(!cleanName(P.name))P.name=lobbyKnownName()||chosenName||'Petualang';
-applyLook();
+applyLook();P.stam=P.maxSt;P.exh=false;
 buildHotbar();setupRoleUI();
 try{initNpcs();initVillageCrystals();}catch(e){showErr(e);}
 if(newRole&&shownIntro)setTimeout(()=>toast(RL().hint),600);
@@ -3142,12 +3507,13 @@ if(!shownIntro){
     'Selamat datang di dunia terbuka! Gerak: WASD / panah. Lari: tahan Shift.',
     'Namamu, levelmu, dan perananmu tampil di atas kepala karakter. Ubah penampilan kapan saja lewat tombol 🎨.',
     'Klik kiri: serang ke arah kursor (tahan untuk terus menyerang). Q: ganti pedang/busur (khusus Pemanah).',
-    'Klik kanan atau F: pakai sihir. Tombol 1-6 atau roda mouse: pilih sihir. E: bicara dengan NPC.',
+    'Penyihir: klik kanan/F pakai sihir terpilih (1-3 atau roda mouse untuk memilih). Prajurit, Pemanah, Tanker: tombol 1-3 langsung memakai skill. K: atur 3 skill aktif. E: bicara dengan NPC.',
     'Musim berganti: semi, panas, hujan, salju. Tiap musim memengaruhi tanaman, ternak, dan gerakmu. (P: lompat musim)',
     'Dunia punya 5 desa dan Ibu Kota Aurelia, masing-masing berwarna beda. Tekan M atau tombol Peta untuk melihat arah dan jarak.',
     'Ibu Kota Aurelia dikelilingi 2 lapis benteng bulat dengan kastil Raja di tengahnya. Masuk lewat salah satu dari 4 gerbang.',
     'Rasa lapar: bar 🍖 turun seiring waktu. Beli makanan di Warung/Restoran (ada di tiap desa & ibu kota), lalu tekan G untuk makan. Kenyang ≥60% memulihkan HP perlahan; kelaparan membuatmu lemas.',
     'Bertani & beternak: beli lahan di Agen Properti, bibit/alat di toko, lalu hadapi petak/hewan dan tekan E. Z ganti bibit. Masuk rumah: E di depan pintu.',
+    'Stat: kamu punya 5 poin awal, +1 poin tiap naik level. Tekan C untuk membagi ke Kekuatan, Kecepatan, Ketahanan, Stamina (maks 100 per stat). Lari, menyerang, sihir, dan perisai memakai stamina (bar ST hijau).',
     'Mulai dari Tetua Desa. Selesaikan misi untuk membuka busur dan 6 sihir. Tiap musuh punya kelemahan elemen!',
     'Hewan liar: rusa, kelinci, ayam, kerbau (jinak), serta beruang, serigala, harimau, buaya (ganas). Hasil buruan masuk inventori (I) dan bisa dijual di Guild Petualang di setiap desa.'
   ]);
