@@ -3688,8 +3688,11 @@ $('acctDel').onclick=async()=>{
 };
 
 
+/* ====== ISI DI SINI UNTUK ONLINE VIA SUPABASE (lihat panduan) ====== */
+const SUPABASE_URL='https://djyqbwmnwpvxgmnrkzcp.supabase.co/';   // contoh: 'https://abcdxyz.supabase.co'
+const SUPABASE_KEY='sb_publishable_1LiNLJFMmlLJOjCBaPTgRA_hm8A6taK';   // Publishable key atau anon key (BUKAN service_role / secret key)
 /* ===== MAIN ONLINE DENGAN TEMAN (opsional; PeerJS hanya dimuat saat dipakai, jadi mode offline tetap utuh) ===== */
-const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=null,MPcode='';let MPnr=null,MPunsub=null,MProom=null;
+const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=null,MPcode='';let MPnr=null,MPunsub=null,MProom=null,MPws=null,MPwsAvail=false,MPsb=null;
 const MPLIBS=['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 {const s=document.createElement('style');s.textContent='#mp{display:none;position:absolute;inset:0;z-index:48;background:rgba(10,14,28,.85);align-items:center;justify-content:center}#mp.on{display:flex}#mp .abox{touch-action:auto}#mpmsg{color:#ffe066;font-size:12px;min-height:34px;white-space:pre-wrap;margin-bottom:6px}#mpchat{position:absolute;left:8px;bottom:64px;width:min(270px,62vw);z-index:15;pointer-events:none;font-size:12px;text-shadow:1px 1px #000}#mpchat div{background:rgba(10,14,28,.7);padding:2px 6px;margin-top:2px;word-break:break-word}#mpchat input{display:none;pointer-events:auto;width:100%;font:inherit;font-size:14px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:4px;user-select:text;-webkit-user-select:text;touch-action:auto}#mpchat.open input{display:block}@media (pointer:coarse){#mpchat{bottom:250px}}';document.head.appendChild(s);}
 const mpPanel=document.createElement('div');mpPanel.id='mp';
@@ -3710,11 +3713,11 @@ function mpLoad(cb){
   const next=()=>{if(i>=MPLIBS.length){mpMsg('Pustaka online tidak bisa dimuat (internet/diblokir). Coba "Cara manual" di bawah.');return;}
     const s=document.createElement('script');s.src=MPLIBS[i++];let d=false;const t=setTimeout(()=>{if(d)return;d=true;s.remove();next();},8000);s.onload=()=>{if(d)return;d=true;clearTimeout(t);cb();};s.onerror=()=>{if(d)return;d=true;clearTimeout(t);s.remove();next();};document.head.appendChild(s);};
   next();}
-function mpCleanup(){try{MPpeer&&MPpeer.destroy();}catch(e){}MPpcs.forEach(c=>{try{c.close();}catch(e){}});MPpcs.length=0;if(MPnr){try{MPunsub&&MPunsub();MPnr.leave();}catch(e){}MPnr=null;MPunsub=null;}MPpeer=null;MPconns.clear();MPpeers.clear();MPon=false;MPhost=false;MPcode='';mpUi();}
+function mpCleanup(){try{MPpeer&&MPpeer.destroy();}catch(e){}MPpcs.forEach(c=>{try{c.close();}catch(e){}});MPpcs.length=0;if(MPnr){try{MPunsub&&MPunsub();MPnr.leave();}catch(e){}MPnr=null;MPunsub=null;}if(MPws){const w=MPws;MPws=null;try{w.close();}catch(e){}}if(MPsb){const z=MPsb;MPsb=null;try{z.sb.removeChannel(z.ch);}catch(e){}}MPpeer=null;MPconns.clear();MPpeers.clear();MPon=false;MPhost=false;MPcode='';mpUi();}
 function mpSend(m){MPconns.forEach(c=>{try{if(c.open)c.send(m);}catch(e){}});}
 function mpLog(name,txt){const d=document.createElement('div');d.textContent=name+': '+txt;mpChat.insertBefore(d,$('mpin'));
   while(mpChat.children.length>7)mpChat.removeChild(mpChat.firstChild);setTimeout(()=>d.remove(),12000);}
-function mpSay(txt){txt=String(txt).trim().slice(0,80);if(!txt||!MPon)return;if(MPnr)MPnr.presence({c:{t:txt,n:Date.now()}}).catch(()=>{});else mpSend({t:'c',x:txt});mpLog(P.name||'Aku',txt);}
+function mpSay(txt){txt=String(txt).trim().slice(0,80);if(!txt||!MPon)return;if(MPnr)MPnr.presence({c:{t:txt,n:Date.now()}}).catch(()=>{});else mpOut({t:'c',x:txt});mpLog(P.name||'Aku',txt);}
 function mpDrop(id){const r=MPpeers.get(id);if(r)toast('\ud83c\udf10 '+r.name+' keluar');MPpeers.delete(id);MPconns.delete(id);if(MPhost)mpSend({t:'bye',f:id});mpUi();}
 function mpMsgIn(from,m){
   if(!m||typeof m!=='object')return;
@@ -3732,7 +3735,7 @@ function mpMsgIn(from,m){
 }
 function mpWire(c){MPconns.set(c.peer,c);c.on('data',m=>mpMsgIn(c.peer,m));
   c.on('close',()=>{if(MPhost)mpDrop(c.peer);else{toast('\ud83c\udf10 Host keluar dari ruangan');mpCleanup();}});c.on('error',()=>{});}
-function mpHost(){if(MPon)return;mpLoad(()=>{
+function mpHost(){if(MPon)return;if(SUPABASE_URL&&SUPABASE_KEY){mpSb(true);return;}if(MPwsAvail){mpWs(true);return;}mpLoad(()=>{
   const code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
   const p=new Peer('pxrpg-'+code);MPpeer=p;mpMsg('Menghubungi server perantara...');
   const to=setTimeout(()=>{if(!MPon){mpCleanup();mpMsg('Server perantara tidak terjangkau dari jaringanmu. Coba "Cara manual" di bawah.');}},12000);
@@ -3744,6 +3747,7 @@ function mpHost(){if(MPon)return;mpLoad(()=>{
 function mpJoin(){
   if(MPon)return;const code=$('mpCode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(code.length!==5){mpMsg('Masukkan kode 5 karakter dari temanmu.');return;}
+  if(SUPABASE_URL&&SUPABASE_KEY){mpSb(false,code);return;}if(MPwsAvail){mpWs(false,code);return;}
   mpLoad(()=>{
     const p=new Peer();MPpeer=p;mpMsg('Menghubungkan...');
     const to=setTimeout(()=>{if(!MPon){mpCleanup();mpMsg('Waktu habis. Pastikan kode benar dan host masih online. Beberapa jaringan (mis. data seluler) kadang memblokir koneksi langsung antar pemain.');}},15000);
@@ -3779,7 +3783,7 @@ async function mpM3(){try{if(!MPman){mpMsg('Tekan tombol 1 dulu.');return;}const
   dc.onopen=()=>{MPon=true;MPhost=true;MPcode=MPcode||'LOKAL';mpWire(mpShim(dc,id));MPman=null;$('mpTa').value='';mpUi();};mpMsg('Menyambungkan...');}catch(e){mpMsg('Kode jawaban tidak valid.');}}
 $('mpMan').onclick=()=>{const b=$('mpmanbox');b.style.display=b.style.display==='none'?'block':'none';};
 $('mpM1').onclick=mpM1;$('mpM2').onclick=mpM2;$('mpM3').onclick=mpM3;
-const mpOut=m=>{if(MPnr)MPnr.presence(m).catch(()=>{});else mpSend(m);};
+const mpOut=m=>{if(MPsb){mpSbOut(m);return;}if(MPnr)MPnr.presence(m).catch(()=>{});else if(MPws){if(MPws.readyState===1)MPws.send(JSON.stringify(m));}else mpSend(m);};
 function mpRoomPeers(ch){
   for(const p of ch.left)MPpeers.delete(p.peer);
   for(const p of [...ch.joined,...ch.updated]){
@@ -3797,6 +3801,57 @@ async function mpRoomJoin(){
   catch(e){mpMsg('Gagal masuk ruangan ('+((e&&e.code)||'error')+'). Pastikan kamu sudah login dan diundang ke game ini.');}}
 $('mpRoomGo').onclick=mpRoomJoin;
 (async()=>{try{if(window.claude&&claude.use){const r=await claude.use('room');if(r){MProom=r;mpUi();}}}catch(e){}})();
+function mpWs(create,code){
+  if(create)code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+  mpMsg('Menghubungkan ke server...');
+  let ws;try{ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?room='+code+(create?'&create=1':''));}catch(e){mpMsg('Gagal terhubung ke server.');return;}
+  MPws=ws;let ok=false;
+  const to=setTimeout(()=>{if(!ok){mpCleanup();mpMsg('Server tidak merespons. Coba lagi sebentar (server gratis butuh waktu untuk bangun).');}},25000);
+  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(x){return;}
+    if(m.t==='ok'){ok=true;clearTimeout(to);MPon=true;MPhost=false;MPcode=code;mpUi();}
+    else if(m.t==='err'){clearTimeout(to);mpCleanup();mpMsg(m.m==='notfound'?'Ruangan "'+code+'" tidak ditemukan.':'Ruangan penuh.');}
+    else mpMsgIn('srv',m);};
+  ws.onclose=()=>{clearTimeout(to);if(MPws===ws&&MPon){toast('\ud83c\udf10 Koneksi terputus');mpCleanup();}};
+  ws.onerror=()=>{};}
+(function(){if(!/^https?:$/.test(location.protocol))return;
+  try{const w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?probe=1');
+    const t=setTimeout(()=>{try{w.close();}catch(e){}},15000);
+    w.onopen=()=>{clearTimeout(t);MPwsAvail=true;try{w.close();}catch(e){}
+      const l=document.createElement('link');l.rel='manifest';l.href='/manifest.webmanifest';document.head.appendChild(l);
+      if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});mpUi();};
+    w.onerror=()=>{};}catch(e){}})();
+const MPSBLIBS=['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'];
+function mpLoadSb(cb){
+  if(window.supabase&&window.supabase.createClient)return cb();
+  if(!navigator.onLine){mpMsg('Tidak ada internet. Main online butuh koneksi; mode offline tetap bisa dimainkan.');return;}
+  let i=0;const next=()=>{if(i>=MPSBLIBS.length){mpMsg('Pustaka Supabase tidak bisa dimuat. Periksa internet lalu coba lagi.');return;}
+    const sc=document.createElement('script');sc.src=MPSBLIBS[i++];let d=false;
+    const t=setTimeout(()=>{if(d)return;d=true;sc.remove();next();},8000);
+    sc.onload=()=>{if(d)return;d=true;clearTimeout(t);cb();};sc.onerror=()=>{if(d)return;d=true;clearTimeout(t);sc.remove();next();};document.head.appendChild(sc);};
+  next();}
+let sbLast=0,sbKey='';
+function mpSbOut(m){
+  if(!MPsb)return;const now=performance.now();
+  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
+  MPsb.ch.send({type:'broadcast',event:'m',payload:Object.assign({},m,{f:MPsb.id})}).catch(()=>{});}
+function mpSb(create,code){
+  if(create)code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+  mpMsg('Menghubungkan ke Supabase...');
+  mpLoadSb(()=>{
+    let sb;try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:10}}});}catch(e){mpMsg('Konfigurasi Supabase salah (cek URL dan key).');return;}
+    const id=Math.random().toString(36).slice(2,10);
+    const ch=sb.channel('pxrpg-'+code,{config:{broadcast:{self:false},presence:{key:id}}});
+    MPsb={sb,ch,id};sbKey='';sbLast=0;let ok=false;
+    const to=setTimeout(()=>{if(!ok){mpCleanup();mpMsg('Gagal terhubung ke Supabase. Periksa URL, key, dan internet.');}},15000);
+    ch.on('broadcast',{event:'m'},({payload})=>mpMsgIn('sb',payload))
+      .on('presence',{event:'leave'},({key})=>{MPpeers.delete(key);mpUi();})
+      .subscribe(st=>{
+        if(st==='SUBSCRIBED'){ok=true;clearTimeout(to);try{ch.track({});}catch(e){}MPon=true;MPhost=false;MPcode=code;mpUi();}
+        else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!ok){clearTimeout(to);mpCleanup();mpMsg('Gagal ('+st+'). Cek URL dan key Supabase.');}
+        else if(st==='CLOSED'&&ok&&MPsb&&MPsb.ch===ch){toast('\ud83c\udf10 Koneksi terputus');mpCleanup();}
+      });
+  });}
+if(SUPABASE_URL&&SUPABASE_KEY)$('mpMan').style.display='none';
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
   mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:IN===null?0:1});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
