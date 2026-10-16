@@ -1392,19 +1392,19 @@ const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_
 let SAVE_KEY=null;                             // diisi setelah login
 const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq'];
 const ROLES={
-  warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:Infinity,farm:true,xpMul:0.5,
+  warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:700,farm:true,xpMul:0.5,
     ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
     desc:'Bisa menanam, memancing, dan beternak (panen & ternak berlimpah makin banyak seiring level). Bertarung sedikit dengan pedang lemah. Level hanya naik dari bertani/memancing/beternak.'},
-  prajurit:{id:'prajurit',n:'Prajurit',ic:'⚔️',col:'#ff7a6a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.5,bow:0,spell:0,maxLvl:Infinity,farm:false,xpMul:1,
+  prajurit:{id:'prajurit',n:'Prajurit',ic:'⚔️',col:'#ff7a6a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.5,bow:0,spell:0,maxLvl:1200,farm:false,xpMul:1,
     ket:3,atk:5,hint:'⚔️ Prajurit: klik kiri menebas. Tombol 1-3 = skill, K = pilih 3 dari 5 skill.',
     desc:'Pengguna pedang. Ketahanan sedang, serangan pedang sangat kuat. Punya 5 skill, pasang 3 sekaligus. Hanya bertarung.'},
-  pemanah:{id:'pemanah',n:'Pemanah',ic:'🏹',col:'#9fd86a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.1,bow:0.5,spell:0,maxLvl:Infinity,farm:false,xpMul:1,
+  pemanah:{id:'pemanah',n:'Pemanah',ic:'🏹',col:'#9fd86a',hp0:14,hpl:2.5,def:0.8,mp0:10,mpl:1,mpr:1,sword:0.1,bow:0.5,spell:0,maxLvl:1200,farm:false,xpMul:1,
     ket:3,atk:5,hint:'🏹 Pemanah: klik kiri menembak. Tombol 1-3 = skill, K = pilih 3 dari 5 skill.',
     desc:'Pengguna busur. Ketahanan sedang, panah sangat kuat, serangan jarak dekat sangat lemah. Punya 5 skill, pasang 3 sekaligus. Hanya bertarung.'},
-  penyihir:{id:'penyihir',n:'Penyihir',ic:'🔮',col:'#b48cff',hp0:14,hpl:2.5,def:0.8,mp0:40,mpl:6,mpr:1.7,sword:0,bow:0,spell:0.5,maxLvl:Infinity,farm:false,xpMul:1,
+  penyihir:{id:'penyihir',n:'Penyihir',ic:'🔮',col:'#b48cff',hp0:14,hpl:2.5,def:0.8,mp0:40,mpl:6,mpr:1.7,sword:0,bow:0,spell:0.5,maxLvl:1200,farm:false,xpMul:1,
     ket:3,atk:5,hint:'🔮 Penyihir: klik kiri/kanan atau F untuk sihir. 1-3 pilih sihir, K = pasang 3 dari 7 sihir.',
     desc:'Hanya memakai sihir. Ketahanan sedang, sihir sangat kuat. 7 sihir (termasuk sihir penyembuh area) terbuka seiring level; pasang 3 sekaligus.'},
-  tanker:{id:'tanker',n:'Tanker',ic:'🛡️',col:'#6ab8ff',hp0:28,hpl:5,def:0.5,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:Infinity,farm:false,xpMul:1,shield:true,
+  tanker:{id:'tanker',n:'Tanker',ic:'🛡️',col:'#6ab8ff',hp0:28,hpl:5,def:0.5,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:1200,farm:false,xpMul:1,shield:true,
     ket:5,atk:3,hint:'🛡️ Tanker: TAHAN klik kanan / F = perisai. Tombol 1-3 = skill, K = pilih 3 dari 5 skill.',
     desc:'Pengguna perisai. Ketahanan sangat kuat, serangan sedang. Tahan klik kanan/F untuk bertahan. Punya 5 skill, pasang 3 sekaligus.'}
 };
@@ -1446,6 +1446,7 @@ const STATK=['str','spd','def','sta'];
 const stv=k=>((P&&P.stats&&P.stats[k])|0);
 const statSum=()=>STATK.reduce((a,k)=>a+stv(k),0);
 const strMul=()=>(1+stv('str')*0.04)*((P&&P.buf&&P.buf.cry>0)?1.4:1);
+const defMul=()=>{const v=stv('def');return v<=100?1-v*0.005:50/v;};   // linear s/d 100 (-50%), lalu terus menurun tanpa batas
 const atkCdMul=()=>1/(1+stv('spd')*0.004);
 function useStam(n){P.stam-=n;P.stT=1;if(P.stam<=0){P.stam=0;P.exh=true;}}
 function recalc(){
@@ -1488,7 +1489,7 @@ function loadGame(){
       if(s.p.bhp===undefined){P.bhp=Math.max(0,(s.p.maxHp||10)-(10+2*((s.p.lvl||1)-1)));P.bmp=Math.max(0,(s.p.maxMp||20)-(20+3*((s.p.lvl||1)-1)));}
       if(!ROLES[P.role])P.role=null;
       P.look=sanitizeLook(P.look);P.name=cleanName(P.name);
-      {const st=(P.stats&&typeof P.stats==='object')?P.stats:{};P.stats={};STATK.forEach(k=>P.stats[k]=clamp(Math.floor(+st[k])||0,0,100));
+      {const st=(P.stats&&typeof P.stats==='object')?P.stats:{};P.stats={};STATK.forEach(k=>P.stats[k]=Math.max(0,Math.floor(+st[k])||0));
        const sp=Math.floor(+s.p.pts);
        P.pts=(s.p.stats===undefined||!isFinite(sp))?Math.max(0,5+Math.max(0,(P.lvl||1)-1)-statSum()):Math.max(0,sp);}
       P.bhp=P.bhp||0;P.bmp=P.bmp||0;
@@ -2019,11 +2020,11 @@ function statMenu(){
   const INFO=[
     ['str','💪','Kekuatan',v=>'Damage serangan +'+(v*4)+'%'],
     ['spd','⚡','Kecepatan',v=>'Gerak +'+(v*0.6).toFixed(1)+'% · Laju serang +'+(v*0.4).toFixed(1)+'%'],
-    ['def','🛡️','Ketahanan',v=>'Damage diterima -'+(v*0.5).toFixed(1)+'% · Maks HP +'+(v*2)],
+    ['def','🛡️','Ketahanan',v=>'Damage diterima -'+((1-(v<=100?1-v*0.005:50/v))*100).toFixed(1)+'% · Maks HP +'+(v*2)],
     ['sta','🔋','Stamina',v=>'Maks stamina '+(50+v*3)+' · Pulih +'+(v*0.25).toFixed(1)+'/dtk']
   ];
   const spend=(k,n)=>{
-    n=Math.min(n,P.pts||0,100-stv(k));if(n<=0)return;
+    n=Math.min(n,P.pts||0);if(n<=0)return;
     const mh=P.maxHp,ms=P.maxSt;
     P.stats[k]=stv(k)+n;P.pts-=n;recalc();
     if(P.maxHp>mh)P.hp+=P.maxHp-mh;
@@ -2031,11 +2032,11 @@ function statMenu(){
     P.hp=Math.min(P.hp,P.maxHp);P.stam=Math.min(P.stam,P.maxSt);
   };
   openMenu('Stat Karakter (C)',()=>{
-    const r=[{t:'📊 Poin tersedia: <b>'+(P.pts||0)+'</b><br><small style="color:#9ad">Awal 5 poin, +1 poin tiap naik level. Maks tiap stat 100.</small>',b:'—',off:true,f:()=>{}}];
+    const r=[{t:'📊 Poin tersedia: <b>'+(P.pts||0)+'</b><br><small style="color:#9ad">Awal 5 poin, +1 poin tiap naik level. Stat tidak terbatas.</small>',b:'—',off:true,f:()=>{}}];
     INFO.forEach(([k,ic,n,fn])=>{
       const v=stv(k);
-      r.push({t:ic+' <b>'+n+'</b> '+v+'/100<br><small style="color:#9ad">'+fn(v)+'</small>',
-        b:v>=100?'MAKS':'+1',off:v>=100||(P.pts||0)<1,f:()=>spend(k,1),
+      r.push({t:ic+' <b>'+n+'</b> '+v+'<br><small style="color:#9ad">'+fn(v)+'</small>',
+        b:'+1',off:(P.pts||0)<1,f:()=>spend(k,1),
         b2:'+5',f2:()=>spend(k,5)});
     });
     return r;
@@ -2528,7 +2529,7 @@ function killMob(m,by){
   }
 }
 function hurt(n,fromX,fromY){
-  n=Math.max(1,Math.round(n*RL().def*(1-stv('def')*0.005)));
+  n=Math.max(1,Math.round(n*RL().def*defMul()));
   if(P.shield){n=Math.max(1,Math.round(n*0.15));floatText(P.x,P.y-32,'Tangkis!','#6ab8ff');}
   const B=P.buf||{};
   if(B.wall>0){n=Math.max(1,Math.round(n*0.4));floatText(P.x,P.y-38,'Dinding!','#9ad8ff');}
@@ -3472,7 +3473,7 @@ function roleCardHtml(R,pick){
   return '<div class="ic">'+R.ic+'</div><b style="color:'+R.col+'">'+R.n+'</b>'+
    '<div class="st"><span>Ketahanan</span><span>'+bars(R.ket)+'</span></div>'+
    '<div class="st"><span>Serangan</span><span>'+bars(R.atk)+'</span></div>'+
-   '<div class="st"><span>Level maks</span><span style="letter-spacing:0">Tanpa batas</span></div>'+
+   '<div class="st"><span>Level maks</span><span style="letter-spacing:0">'+R.maxLvl+'</span></div>'+
    '<p>'+R.desc+'</p>';
 }
 function lobbyKnownName(){
