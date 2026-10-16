@@ -279,7 +279,7 @@ function showErr(e){try{const el=$('err');el.style.display='block';el.textConten
 addEventListener('error',ev=>showErr(ev.error||ev.message));
 const cv=$('game'),ctx=cv.getContext('2d');
 const T=16;                       // ukuran tile (px)
-let S=4,VW=300,VH=180,camX=0,camY=0;
+let S=4,VW=300,VH=180,camX=0,camY=0;let DG=null;
 
 function resize(){
   const dpr=window.devicePixelRatio||1;
@@ -362,7 +362,7 @@ const LOOT={
   kulit_keras:{n:'Kulit Keras',ic:'🐊',p:32},
   tulang:{n:'Tulang',ic:'🦴',p:10},
   cairan_slime:{n:'Cairan Slime',ic:'🟢',p:6},
-  sayap:{n:'Sayap Kelelawar',ic:'🦇',p:14}
+  sayap:{n:'Sayap Kelelawar',ic:'🦇',p:14},bijih:{n:'Bijih Besi',ic:'⛏️',p:35},permata:{n:'Permata Gua',ic:'💠',p:70},relik:{n:'Relik Kuno',ic:'🏺',p:140},mahkota:{n:'Mahkota Penjaga',ic:'👑',p:300}
 };
 const MOB_DROPS={
   rusa:[['tanduk',0.55],['daging',0.9],['kulit',0.7]],
@@ -421,8 +421,21 @@ SETT.forEach(s=>{
     addGuild(s,s.x+6,s.y-6);
   }
 });
+/* ---- DUNGEON: definisi (1 per desa) ---- */
+const DG_DEF=[
+ {s:'Desa Awal',name:'Gua Pemula',dn:'Mudah',floors:3,base:1,step:2,diff:1,off:[12,7],fav:'slime',fl:'#5b5a66',wl:'#3a3945'},
+ {s:'Desa Hijau',name:'Gua Lumut Hijau',dn:'Normal',floors:4,base:5,step:3,diff:2,off:[8,5],fav:'goblin',fl:'#4a5a3a',wl:'#2c3a24'},
+ {s:'Desa Biru',name:'Gua Kristal Biru',dn:'Sulit',floors:5,base:9,step:4,diff:3,off:[8,5],fav:'ghost',fl:'#3c5a70',wl:'#223a50'},
+ {s:'Desa Merah',name:'Tambang Merah',dn:'Sangat Sulit',floors:6,base:15,step:5,diff:4,off:[8,5],fav:'golem',fl:'#6a4a3a',wl:'#44281e'},
+ {s:'Desa Ungu',name:'Makam Ungu',dn:'Mimpi Buruk',floors:7,base:23,step:6,diff:5,off:[8,5],fav:'skeleton',fl:'#54406a',wl:'#32244a'},
+ {s:'Desa Jingga',name:'Sarang Magma',dn:'Neraka',floors:8,base:33,step:7,diff:6,off:[8,5],fav:'harimau',fl:'#6a5030',wl:'#40301a'},
+ {s:'Ibu Kota Aurelia',name:'Labirin Aurelia',dn:'Legendaris',floors:10,base:45,step:8,diff:7,off:[7,-4],fav:'golem',fl:'#5a5a72',wl:'#2e2e48'}
+];
+const DUNGEONS=DG_DEF.map((d,i)=>{const s=SETT.find(q=>q.name===d.s);return Object.assign({},d,{i,ex:Math.round(s.x+d.off[0]),ey:Math.round(s.y+d.off[1]),col:s.col});});
+function dentAt(x,y){for(const d of DUNGEONS)if(x>=d.ex&&x<d.ex+2&&y>=d.ey&&y<d.ey+2)return d;return null;}
+function dentNear(x,y){for(const d of DUNGEONS)if(x>=d.ex-2&&x<=d.ex+3&&y>=d.ey-2&&y<=d.ey+5)return true;return false;}
 function settDist(x,y){let m=1e9;for(const s of SETT){const d=Math.hypot(x-s.x,y-s.y)-s.r;if(d<m)m=d;}return m;}
-function inSafe(x,y,m){m=m||0;for(const s of SETT)if(Math.hypot(x/T-s.x,y/T-s.y)<s.r+m)return true;return false;}
+function inSafe(x,y,m){if(DG)return false;m=m||0;for(const s of SETT)if(Math.hypot(x/T-s.x,y/T-s.y)<s.r+m)return true;return false;}
 function onPath(x,y){for(const s of SETT){const dx=x-s.x,dy=y-s.y,d=Math.hypot(dx,dy);if(d<(s.cap?CAP_G.w2+4:s.r-1)&&(Math.abs(dx)<=1||Math.abs(dy)<=1))return true;if(s.cap&&d<6)return true;}return false;}
 function nearSett(){const px=IN!==null?OX:P.x,py=IN!==null?OY:P.y;let b=null,bd=1e9;for(const s of SETT){const d=Math.hypot(px/T-s.x,py/T-s.y);if(d-s.r<bd){bd=d-s.r;b={s,d};}}return b;}
 function makeCastle(b){
@@ -523,6 +536,7 @@ ROUTES.forEach(r=>{
     SEG.push({ax,ay,bx,by,hw,w:r.w,x0:Math.min(ax,bx)-hw-1,x1:Math.max(ax,bx)+hw+1,y0:Math.min(ay,by)-hw-1,y1:Math.max(ay,by)+hw+1});}
 });
 function roadAt(x,y){
+  if(DG)return 0;
   let m=0;
   for(const s of SEG){
     if(x<s.x0||x>s.x1||y<s.y0||y>s.y1||s.w<=m)continue;
@@ -721,7 +735,7 @@ function genTile(x,y){
   else if(e>0.70)t=TY.STONE;
   else{
     const treeP=m>0.56?0.36:m>0.5?0.12:0.025;
-    if(sd>-2){
+    if(sd>-2&&!dentNear(x,y)){
       if(r2<treeP){dec=1;dv=(r3*2)|0;}
       else if(r2<treeP+0.035){dec=2;dv=(r3*2)|0;}
       else if(r3<0.012){dec=3;}
@@ -730,7 +744,7 @@ function genTile(x,y){
   }
   if(t===TY.GRASS&&onPath(x,y)){t=TY.PATH;dec=0;}
   const rd=roadAt(x+.5,y+.5);if(rd){br=(t===TY.DEEP||t===TY.WATER);t=rd===2?TY.ROAD:TY.PATH;dec=0;}
-  const house=inHouse(x,y);
+  const house=inHouse(x,y)||!!dentAt(x,y);
   if(house){t=TY.GRASS;dec=0;}
   if(plotAt(x,y)){t=TY.GRASS;dec=0;}
   if(wallAt(x,y)){t=TY.WALL;dec=0;}
@@ -741,6 +755,7 @@ function genTile(x,y){
 }
 const tileCache=new Map();
 function tileAt(x,y){
+  if(DG)return dgTile(x,y);
   const k=x*65536+y;
   let t=tileCache.get(k);
   if(!t){
@@ -1247,7 +1262,7 @@ function buildSprites(){
   SPR.bat=[makeBat(0),makeBat(1)];
   SPR.golem=[makeGolem(0),makeGolem(1)];
   SPR.ghost=[makeGhost(0),makeGhost(1)];
-  SPR.crystal=makeCrystal();SPR.coin=makeCoin();SPR.heart=makeHeart();SPR.mana=makeMana();
+  SPR.dent=DUNGEONS.map(makeDent);SPR.crystal=makeCrystal();SPR.coin=makeCoin();SPR.heart=makeHeart();SPR.mana=makeMana();
   SPR.rusa=[makeDeer(0),makeDeer(1)];
   SPR.kelinci=[makeRabbit(0),makeRabbit(1)];
   SPR.ayam_liar=[makeWildChicken(0),makeWildChicken(1)];
@@ -1390,7 +1405,7 @@ const WALK=[0,1,0,3];
 const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
 const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
 let SAVE_KEY=null;                             // diisi setelah login
-const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq'];
+const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg'];
 const ROLES={
   warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:700,farm:true,xpMul:0.5,
     ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
@@ -1421,7 +1436,7 @@ function freshPlayer(){
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
     weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false,false],eq:null,buf:{},absorb:0,
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,stam:50,maxSt:50,exh:false,stT:0};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,dg:{best:{},clr:{}},stam:50,maxSt:50,exh:false,stT:0};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
@@ -1488,7 +1503,7 @@ function loadGame(){
       if(!(P.selSeed>=0&&P.selSeed<3))P.selSeed=0;if(!(P.selF>=0&&P.selF<FURN.length))P.selF=0;
       if(s.p.bhp===undefined){P.bhp=Math.max(0,(s.p.maxHp||10)-(10+2*((s.p.lvl||1)-1)));P.bmp=Math.max(0,(s.p.maxMp||20)-(20+3*((s.p.lvl||1)-1)));}
       if(!ROLES[P.role])P.role=null;
-      P.look=sanitizeLook(P.look);P.name=cleanName(P.name);
+      P.look=sanitizeLook(P.look);P.name=cleanName(P.name);if(!P.dg||typeof P.dg!=='object')P.dg={};if(!P.dg.best||typeof P.dg.best!=='object')P.dg.best={};if(!P.dg.clr||typeof P.dg.clr!=='object')P.dg.clr={};
       {const st=(P.stats&&typeof P.stats==='object')?P.stats:{};P.stats={};STATK.forEach(k=>P.stats[k]=Math.max(0,Math.floor(+st[k])||0));
        const sp=Math.floor(+s.p.pts);
        P.pts=(s.p.stats===undefined||!isFinite(sp))?Math.max(0,5+Math.max(0,(P.lvl||1)-1)-statSum()):Math.max(0,sp);}
@@ -1500,7 +1515,7 @@ function loadGame(){
 function saveGame(){
   if(!SAVE_KEY||!started)return;
   try{
-    const p={};SAVE_FIELDS.forEach(k=>p[k]=P[k]);if(IN!==null){p.x=OX;p.y=OY;}
+    const p={};SAVE_FIELDS.forEach(k=>p[k]=P[k]);if(IN!==null){p.x=OX;p.y=OY;}if(DG){p.x=DG.ox;p.y=DG.oy;}
     (window.__ls?__ls.set:(k,v)=>localStorage.setItem(k,v))(SAVE_KEY,JSON.stringify({p,col:[...collected],flw:[...picked],time:gtime}));
   }catch(e){}
 }
@@ -1600,11 +1615,11 @@ function initNpcs(){
 const CH=12;
 const chunkKey=(cx,cy)=>cx*4096+cy;
 function mobLevel(x,y){return 1+Math.floor(Math.max(0,settDist(x/T,y/T))/5);}
-function makeMob(type,x,y,tier,ck,cx,cy){
+function makeMob(type,x,y,tier,ck,cx,cy,fl){
   const d=MOBS[type];
   let hp=d.hp,dmg=d.dmg,xp=d.xp;
   if(type==='slime'){hp=2+tier*2;dmg=1+tier;xp=4+tier*4;}
-  const lvl=mobLevel(x,y);
+  const lvl=fl!==undefined?fl:mobLevel(x,y);
   hp=Math.max(1,Math.round(hp*(1+(lvl-1)*0.12)));
   if(dmg>0)dmg=Math.max(1,Math.round(dmg*(1+(lvl-1)*0.08)));
   xp=Math.max(1,Math.round(xp*(1+(lvl-1)*0.1)));
@@ -1801,7 +1816,7 @@ function updateHUD(){
   const ns=nearSett(),vd=ns.d;
   const va=Math.atan2(ns.s.y*T-(IN!==null?OY:P.y),ns.s.x*T-(IN!==null?OX:P.x)),arrows=['→','↘','↓','↙','←','↖','↑','↗'];
   const vtxt='● '+ns.s.name+(vd<ns.s.r?' (di sini)':' '+arrows[((Math.round(va/(Math.PI/4))%8)+8)%8]+' '+Math.round(vd)+' petak');$('vtag').style.color=ns.s.col;
-  if($('vtag').textContent!==vtxt)$('vtag').textContent=vtxt;
+  const vt2=DG?'🕳️ '+DG.d.name+' · Lt '+DG.f+'/'+DG.d.floors+' · musuh '+mobs.length:vtxt;if(DG)$('vtag').style.color=DG.d.col;if($('vtag').textContent!==vt2)$('vtag').textContent=vt2;
   $('selrow').textContent=(IN===null&&!RL().farm)?RL().hint:IN!==null?'🪑 '+FURN[P.selF].n+' x'+(P.bag.furn[FURN[P.selF].id]||0)+' (Z/X)':'🌱 '+CROPS[CK[P.selSeed]].n+' x'+P.bag.seed[CK[P.selSeed]]+' (Z) 🌾'+P.bag.feed;
   updateHotbar();
 }
@@ -1831,7 +1846,7 @@ function sparkFx(x,y,col,life,vx,vy,s){
   if(fx.length>500)return;
   fx.push({k:'spark',x,y,col,life,vx,vy,s:s||1,t:0});
 }
-const npcBlock=(x,y)=>IN===null&&npcs.some(n=>Math.abs(x-n.x)<9&&Math.abs(y-n.y)<6);
+const npcBlock=(x,y)=>IN===null&&!DG&&npcs.some(n=>Math.abs(x-n.x)<9&&Math.abs(y-n.y)<6);
 
 function moveEnt(e,dx,dy,safe){
   const nx=e.x+dx,ny=e.y+dy;
@@ -1839,7 +1854,7 @@ function moveEnt(e,dx,dy,safe){
   if(ok(nx,e.y))e.x=nx;
   if(ok(e.x,ny))e.y=ny;
 }
-function moveFly(e,dx,dy){
+function moveFly(e,dx,dy){if(DG){const qx=e.x+dx,qy=e.y+dy;if(!blocked(qx,e.y))e.x=qx;if(!blocked(e.x,qy))e.y=qy;return;}
   const nx=e.x+dx,ny=e.y+dy;
   if(!inSafe(nx,e.y))e.x=nx;
   if(!inSafe(e.x,ny))e.y=ny;
@@ -1854,8 +1869,9 @@ function nearestNpc(r){
 function interact(){
   if(dying)return;
   if(fishS)return fishInteract();
+  if(DG)return dgInteract();
   if(IN!==null)return inInteract();
-  const n=nearestNpc(28);if(!n){doorInteract()||farmInteract()||ranchInteract()||fishInteract();return;}
+  const n=nearestNpc(28);if(!n){doorInteract()||dgDoorInteract()||farmInteract()||ranchInteract()||fishInteract();return;}
   const dx=P.x-n.x,dy=P.y-n.y;
   n.dir=dirFromVec(dx,dy)===3?3:dirFromVec(dx,dy);n.moving=false;
   n.talk();
@@ -2075,8 +2091,8 @@ function showMap(){
   if(dlg||dying)return;if(menu){closeMenu();return;}
   const A=['→','↘','↓','↙','←','↖','↑','↗'];
   openMenu('Peta Dunia (M)',()=>SETT.map(s=>{
-    const px=IN!==null?OX:P.x,py=IN!==null?OY:P.y,dx=s.x*T-px,dy=s.y*T-py,d=Math.round(Math.hypot(dx,dy)/T),a=Math.round(Math.atan2(dy,dx)/(Math.PI/4));
-    return {t:'<b style="color:'+s.col+';font-size:16px">●</b> '+s.name+(P.vis.includes(s.name)?' ✔':''),b:A[((a%8)+8)%8]+' '+d,off:true,f:()=>{}};}));}
+    const px=IN!==null?OX:DG?DG.ox:P.x,py=IN!==null?OY:DG?DG.oy:P.y,dx=s.x*T-px,dy=s.y*T-py,d=Math.round(Math.hypot(dx,dy)/T),a=Math.round(Math.atan2(dy,dx)/(Math.PI/4));
+    return {t:'<b style="color:'+s.col+';font-size:16px">●</b> '+s.name+(P.vis.includes(s.name)?' ✔':'')+dgMapTxt(s.name),b:A[((a%8)+8)%8]+' '+d,off:true,f:()=>{}};}));}
 function drawPlots(){
   PLOTS.forEach((p,i)=>{
     const sx=p.x*T-camX,sy=p.y*T-camY,w=p.w*T,h=p.h*T;
@@ -2502,7 +2518,7 @@ function hitMob(m,dmg,elem,o){
 function killMob(m,by){
   if(m.dead)return;
   m.dead=true;
-  P.st.kill++;P.st[m.type]=(P.st[m.type]||0)+1;
+  P.st.kill++;P.st[m.type]=(P.st[m.type]||0)+1;if(m.boss&&DG)dgBossDead(m);
   if(by==='arrow')P.st.arrow++;
   gainXp(m.xp);
   const d=MOBS[m.type];
@@ -2661,7 +2677,7 @@ function updateMob(m,dt){
   if(m.kbT>0){m.kbT-=dt;moveMob(m,m.kx*dt,m.ky*dt);return;}
   if(m.stun>0)return;
   const sm=m.slow>0?0.5:1;
-  const dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);
+  const dx=P.x-m.x,dy=P.y-m.y;let dist=Math.hypot(dx,dy);if(DG&&dist<150&&!dgLOS(m.x,m.y-4,P.x,P.y-4))dist=999;
   const ca=dist>0?dx/dist:0,sa=dist>0?dy/dist:0;
   if(m.taunt>0){
     m.taunt-=dt;
@@ -2735,7 +2751,7 @@ function updateMob(m,dt){
       }else wander(m,dt,10,sm,false);
       break;
     case 'ghost':{
-      if(nightF()<0.1){m.fade-=dt*0.6;if(m.fade<=0){m.dead=true;burst(m.x,mc(m),'#d9e4ff');return;}}
+      if(!DG&&nightF()<0.1){m.fade-=dt*0.6;if(m.fade<=0){m.dead=true;burst(m.x,mc(m),'#d9e4ff');return;}}
       else m.fade=Math.min(1,m.fade+dt);
       if(dist>320){m.dead=true;return;}
       const a=Math.atan2(dy,dx)+Math.sin(m.t*2)*0.9,sp=(dist>14?22:8)*sm;
@@ -2820,7 +2836,7 @@ function update(dt){
     if(a.feed>0&&!a.ready){a.feed-=dt;a.prog+=dt*SS.am*(1+P.lvl*0.02);if(a.prog>=d.cyc){a.ready=true;a.prog=d.cyc;}}
     a.wt-=dt;if(a.wt<=0){a.wt=1+Math.random()*3;const m=Math.random()<0.6;a.vx=m?(Math.random()-0.5)*16:0;a.vy=m?(Math.random()-0.5)*12:0;}
     a.x=clamp(a.x+a.vx*dt,pl.x*T+5,(pl.x+pl.w)*T-5);a.y=clamp(a.y+a.vy*dt,pl.y*T+9,(pl.y+pl.h)*T-3);}
-  if(IN===null)for(const S_ of SETT){if(!P.vis.includes(S_.name)&&Math.hypot(P.x/T-S_.x,P.y/T-S_.y)<S_.r-2){P.vis.push(S_.name);if(!S_.main){const c=S_.cap?150:40;P.coins+=c;gainXp(S_.cap?100:30);toast('Tiba di '+S_.name+'! +'+c+' koin');}}}
+  if(IN===null&&!DG)for(const S_ of SETT){if(!P.vis.includes(S_.name)&&Math.hypot(P.x/T-S_.x,P.y/T-S_.y)<S_.r-2){P.vis.push(S_.name);if(!S_.main){const c=S_.cap?150:40;P.coins+=c;gainXp(S_.cap?100:30);toast('Tiba di '+S_.name+'! +'+c+' koin');}}}
   if(msgT>0)msgT-=dt;
   if(P.inv>0)P.inv-=dt;
   if(P.atk>0)P.atk-=dt;
@@ -2830,6 +2846,7 @@ function update(dt){
   if(dying){
     deathT+=dt;
     if(deathT>1.6){
+      if(DG)dgLeave();
       P.buf={};P.absorb=0;fishS=null;P.shield=false;dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;P.coins=Math.floor(P.coins*0.8);P.inv=2;P.food=Math.max(P.food,40);P.stam=P.maxSt;P.exh=false;
       toast('Kamu bangun di desa. Koin berkurang 20%.');
     }
@@ -2866,7 +2883,7 @@ function update(dt){
     if(P.food<20){if(!hungerWarn){hungerWarn=true;toast('Kamu lapar 🍖 Tekan G untuk makan');}}else if(P.food>=30)hungerWarn=false;
     if(keys.attack||mouseL)attack();
     if(keys.cast||keys.f||mouseR)cast();
-    if(IN===null){const dTiles=Math.hypot(P.x,P.y)/T;if(dTiles>P.st.far)P.st.far=dTiles;}
+    if(IN===null&&!DG){const dTiles=Math.hypot(P.x,P.y)/T;if(dTiles>P.st.far)P.st.far=dTiles;}
     // petik bunga
     const ftx=Math.floor(P.x/T),fty=Math.floor((P.y-2)/T),ft=tileAt(ftx,fty);
     if(IN===null&&ft.dec===4&&seasonIdx()!==3){
@@ -2878,13 +2895,13 @@ function update(dt){
     }
   }
   if(IN!==null){if(P.y>=118){P.x=OX;P.y=OY;IN=null;}for(const f of fx)f.t+=dt;fx=fx.filter(f=>f.t<f.life);return;}
-  npcs.forEach(n=>updateNpc(n,dt));
+  if(!DG)npcs.forEach(n=>updateNpc(n,dt));
   mobs.forEach(m=>updateMob(m,dt));
   mobs=mobs.filter(m=>!m.dead);
   updateProj(dt);
   updatePickups(dt);
-  updateChunks(dt);
-  ghostSpawner(dt);
+  if(!DG)updateChunks(dt);
+  if(!DG)ghostSpawner(dt);else dgUpdate(dt);
   for(const f of fx){
     f.t+=dt;
     if(f.k==='spike'&&!f.done&&f.t>=f.delay){f.done=true;spikeHit(f);}
@@ -2992,7 +3009,7 @@ function drawEntity(e,now){
         case 'golem':{
           const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0;
           const bob=e.walkT>0&&Math.floor(e.anim)%2?1:0;
-          ctx.drawImage(SPR.golem[e.wind>0?1:0],sx-14+sh,sy-27+bob);
+          if(e.boss)ctx.drawImage(SPR.golem[e.wind>0?1:0],sx-21+sh,sy-40+bob,42,42);else ctx.drawImage(SPR.golem[e.wind>0?1:0],sx-14+sh,sy-27+bob);
           break;}
         case 'ghost':{
           const bob=Math.round(Math.sin(e.t*3)*2);
@@ -3032,6 +3049,7 @@ function drawEntity(e,now){
       for(let i=10;i<Math.min(l,120);i+=6)ctx.fillRect(Math.round(sx+tx/l*i),Math.round(sy-8+ty/l*i),1,1);
     }
     drawStatus(e,sx,sy,d.h,alt);
+    if(e.boss){const w=34,by=sy-d.h-alt-18;ctx.fillStyle='#000';ctx.fillRect(sx-w/2-1,by,w+2,5);ctx.fillStyle='#e0443e';ctx.fillRect(sx-w/2,by+1,Math.max(0,w*e.hp/e.maxHp),3);txt('BOSS',sx,by-2,'#ff6b6b',7);}
     if(e.hit>0||Math.hypot(e.x-P.x,e.y-P.y)<100){
       const lc=e.lvl>P.lvl+5?'#ff6b6b':e.lvl>P.lvl?'#ffd23f':'#ffffff';
       txt('Lv '+e.lvl,sx,sy-d.h-alt-(e.hit>0?9:4),lc,6);
@@ -3146,7 +3164,7 @@ function render(now){
   ctx.setTransform(1,0,0,1,0,0);
   ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#0b1018';ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.setTransform(S,0,0,S,0,0);if(IN!==null){renderIn(now);return;}
+  ctx.setTransform(S,0,0,S,0,0);if(IN!==null){renderIn(now);return;}if(DG){renderDG(now);return;}
   camX=Math.round(P.x-VW/2);camY=Math.round(P.y-10-VH/2);
   const tx0=Math.floor(camX/T)-1,ty0=Math.floor(camY/T)-1;
   const tx1=Math.floor((camX+VW)/T)+1,ty1=Math.floor((camY+VH)/T)+3;
@@ -3192,7 +3210,7 @@ function render(now){
   npcs.forEach(addE);mobs.forEach(addE);pickups.forEach(addE);P.animals.forEach(a=>list.push({y:a.y,k:6,a}));
   BLD.forEach((b,i)=>{const sp=SPR.bld[i],bottom=(b.y+b.h)*T,bx=b.x*T;if(bx+sp.width>camX&&bx<camX+VW&&bottom>camY&&bottom-sp.height<camY+VH)list.push({y:bottom,k:7,a:bx-camX,b:bottom-sp.height-camY,i});});
   BAN.forEach(p=>{const bx=p[0]*T+8,by=p[1]*T+12;if(bx>camX-30&&bx<camX+VW+30&&by>camY&&by<camY+VH+40)list.push({y:by,k:8,p});});
-  list.push({y:P.y,k:5,e:P});
+  DUNGEONS.forEach(d=>{const bx=d.ex*T,bot=(d.ey+2)*T;if(bx+34>camX&&bx<camX+VW&&bot>camY&&bot-36<camY+VH)list.push({y:bot,k:10,d});});list.push({y:P.y,k:5,e:P});
   if(typeof mpAdd==='function')mpAdd(list);
   list.sort((a,b)=>a.y-b.y);
   for(const o of list){
@@ -3212,9 +3230,10 @@ function render(now){
       case 7:ctx.drawImage(SPR.bld[o.i],o.a,o.b);if(!BLD[o.i].castle&&!BLD[o.i].food)roofSnow(o.a,o.b);break;
       case 8:drawBanner(o.p,now);break;
       case 9:drawLampPost(o.a,o.b,lampOn);break;
+      case 10:drawDent(o.d);break;
     }
   }
-  fx.forEach(drawFx);doorHint();
+  fx.forEach(drawFx);doorHint();dgDoorHint();
   proj.forEach(drawProj);
   drawWeather(now);
   // siang-malam
@@ -3242,7 +3261,7 @@ function render(now){
 
 /* minimap */
 const mini=$('mini'),mctx=mini.getContext('2d');
-const MC={0:[27,63,138],1:[47,111,208],2:[228,207,138],3:[79,154,60],4:[125,133,144],5:[201,166,107],6:[150,142,128],7:[86,90,104]};
+const MC={0:[27,63,138],1:[47,111,208],2:[228,207,138],3:[79,154,60],4:[125,133,144],5:[201,166,107],6:[150,142,128],7:[86,90,104],8:[96,92,120],9:[18,16,26]};
 let miniT=0;
 function drawMini(dt){
   miniT-=dt;if(miniT>0)return;miniT=0.25;
@@ -3253,7 +3272,7 @@ function drawMini(dt){
     let c=MC[tile.t];
     if(tile.br)c=[140,100,55];
     if(tile.dec===1)c=[40,105,45];
-    if(inHouse(ox+x,oy+y))c=[176,74,58];
+    if(!DG&&inHouse(ox+x,oy+y))c=[176,74,58];
     const i=(y*64+x)*4;img.data[i]=c[0];img.data[i+1]=c[1];img.data[i+2]=c[2];img.data[i+3]=255;
   }
   mctx.putImageData(img,0,0);
@@ -3262,7 +3281,8 @@ function drawMini(dt){
   mctx.fillStyle='#5ee6ff';
   pickups.forEach(p=>{if(p.type!=='crystal')return;const x=Math.floor(p.x/T)-ox,y=Math.floor(p.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64)mctx.fillRect(x,y,2,2);});
   // penanda desa: ikon emas di posisi desa, atau menempel di tepi peta bila di luar jangkauan
-  SETT.forEach(S_=>{let vx=S_.x-ox,vy=S_.y-oy,inside=vx>=3&&vx<=60&&vy>=3&&vy<=60;
+  if(!DG)DUNGEONS.forEach(d=>{const x=d.ex-ox,y=d.ey-oy;if(x>=0&&x<62&&y>=0&&y<62){mctx.fillStyle='#000';mctx.fillRect(x,y,3,3);mctx.fillStyle='#ff8a3c';mctx.fillRect(x+1,y+1,1,1);}});
+  if(!DG)SETT.forEach(S_=>{let vx=S_.x-ox,vy=S_.y-oy,inside=vx>=3&&vx<=60&&vy>=3&&vy<=60;
   if(!inside){
     const ang=Math.atan2(vy-32,vx-32);
     vx=Math.round(32+Math.cos(ang)*28);vy=Math.round(32+Math.sin(ang)*28);
@@ -3417,6 +3437,296 @@ setInterval(saveGame,5000);
 /* =========================================================
    MAIN LOOP
    ========================================================= */
+/* =========================================================
+   DUNGEON: 1 per desa, lantai bervariasi, makin dalam makin kuat
+   ========================================================= */
+const DGSPR={};
+const DGT_F=[0,1,2,3].map(v=>({t:8,v,dec:0,dv:0,solid:false,br:false}));
+const DGT_W=[0,1,2,3].map(v=>({t:9,v,dec:0,dv:0,solid:true,br:false}));
+function dgTile(x,y){
+  const F=DG.F;
+  if(x<0||y<0||x>=F.W||y>=F.H)return DGT_W[0];
+  const k=(x*7+y*13)&3;
+  return F.g[y*F.W+x]?DGT_F[k]:DGT_W[k];
+}
+function dgLOS(x0,y0,x1,y1){
+  const dx=x1-x0,dy=y1-y0,n=Math.ceil(Math.hypot(dx,dy)/6);
+  for(let i=1;i<n;i++){const t=i/n;if(solidAt(x0+dx*t,y0+dy*t))return false;}
+  return true;
+}
+function dgLvl(D,f){return D.base+(f-1)*D.step;}
+function dgMapTxt(n){const q=DUNGEONS.find(z=>z.s===n);return q?'<br><small style="color:#9ad">🕳️ '+q.name+' · '+'⭐'.repeat(q.diff)+' · '+q.floors+' lantai</small>':'';}
+
+function makeDent(D){
+  const [c,g]=mk(32,34);
+  ell(g,'rgba(0,0,0,.25)',16,32,15,2);
+  ell(g,'#5f666f',16,22,15,11);ell(g,'#7d8590',16,20,13,9);ell(g,'#939ba6',12,15,5,3);ell(g,'#a6aeb8',20,14,3,2);
+  ell(g,'#4b525b',5,28,5,4);ell(g,'#4b525b',27,28,5,4);
+  R(g,'#a6aeb8',9,16,14,2);R(g,'#8f97a2',9,16,2,18);R(g,'#8f97a2',21,16,2,18);
+  R(g,'#13101a',11,18,10,16);R(g,'#13101a',12,17,8,1);
+  R(g,shade(D.col,.4),12,28,8,6);R(g,shade(D.col,.7),13,30,6,4);
+  R(g,'#2a2638',12,27,8,1);R(g,'#3a3650',12,29,8,1);R(g,'#4a4668',12,31,8,1);
+  R(g,'#e8e4d4',14,10,4,3);R(g,'#222',15,11,1,1);R(g,'#222',17,11,1,1);R(g,'#e8e4d4',15,13,2,1);
+  R(g,D.col,9,13,2,2);R(g,D.col,21,13,2,2);
+  return c;
+}
+function dgSprites(D){
+  if(DGSPR[D.i])return;
+  const fl=D.fl,wl=D.wl,S_={floor:[],wallF:[],wallT:[]};
+  for(let v=0;v<4;v++){
+    const r=seedRand(700+v*11+D.i*31);
+    const [c1,g1]=mk(T,T);R(g1,fl,0,0,T,T);
+    for(let i=0;i<9;i++)R(g1,shade(fl,.86),(r()*T)|0,(r()*T)|0,1,1);
+    for(let i=0;i<5;i++)R(g1,tint(fl,1.14),(r()*T)|0,(r()*T)|0,1,1);
+    R(g1,tint(fl,1.08),0,0,T-1,1);R(g1,shade(fl,.8),0,T-1,T,1);R(g1,shade(fl,.8),T-1,0,1,T);
+    if(v===2){R(g1,shade(fl,.7),4,5,3,1);R(g1,shade(fl,.7),6,6,2,1);R(g1,shade(fl,.7),8,7,1,2);}
+    S_.floor.push(c1);
+    const [c2,g2]=mk(T,T);R(g2,wl,0,0,T,T);R(g2,tint(wl,1.35),0,0,T,3);R(g2,shade(wl,.55),0,T-3,T,3);
+    for(let y=3;y<T-3;y+=4){R(g2,shade(wl,.66),0,y,T,1);for(let x=((y/4|0)%2)*4+(v&1)*2;x<T;x+=8)R(g2,shade(wl,.66),x,y,1,4);}
+    for(let i=0;i<4;i++)R(g2,tint(wl,1.2),(r()*T)|0,3+((r()*8)|0),2,1);
+    S_.wallF.push(c2);
+    const [c3,g3]=mk(T,T);R(g3,shade(wl,.5),0,0,T,T);
+    for(let i=0;i<6;i++)R(g3,shade(wl,.4),(r()*T)|0,(r()*T)|0,2,1);
+    for(let i=0;i<4;i++)R(g3,shade(wl,.62),(r()*T)|0,(r()*T)|0,1,1);
+    S_.wallT.push(c3);
+  }
+  {const [c,g]=mk(T,T);R(g,fl,0,0,T,T);R(g,'#0d0a14',1,1,14,14);
+    for(let i=0;i<4;i++){const col=shade('#8a86a0',1-i*0.2);R(g,col,2+i,2+i*3,12-2*i,3);R(g,tint(col,1.25),2+i,2+i*3,12-2*i,1);}
+    R(g,'#ff8a6a',7,13,2,1);S_.down=c;}
+  {const [c,g]=mk(T,T);R(g,fl,0,0,T,T);R(g,'#1a1626',1,1,14,14);
+    for(let i=0;i<4;i++){const col=shade('#a8a4c0',0.5+i*0.17);R(g,col,2+i,11-i*3,12-2*i,3);R(g,tint(col,1.25),2+i,11-i*3,12-2*i,1);}
+    R(g,'#ffe066',7,1,2,1);R(g,'#ffe066',6,2,4,1);S_.up=c;}
+  {const [c,g]=mk(T,T);ell(g,'rgba(0,0,0,.25)',8,14,6,1.5);
+    R(g,'#6b4423',2,7,12,7);R(g,'#8a5a2a',3,8,10,5);R(g,'#a87238',2,4,12,4);R(g,'#c8924a',3,4,10,1);
+    R(g,'#c9a227',2,7,12,1);R(g,'#c9a227',7,4,2,10);R(g,'#ffe066',7,7,2,2);
+    const [c2,g2]=mk(T,T);ell(g2,'rgba(0,0,0,.25)',8,14,6,1.5);
+    R(g2,'#6b4423',2,7,12,7);R(g2,'#2a1a10',3,7,10,3);R(g2,'#ffd23f',4,7,3,1);R(g2,'#ffd23f',9,8,3,1);R(g2,'#8a5a2a',3,10,10,3);
+    R(g2,'#a87238',2,1,12,3);R(g2,'#c9a227',7,1,2,3);
+    S_.chest=[c,c2];}
+  DGSPR[D.i]=S_;
+}
+
+function dgPickType(D,f,rng){
+  const fr=D.floors>1?(f-1)/(D.floors-1):0,dd=D.diff;
+  const t=[['slime',60*(1-fr*0.75)]];
+  if(fr>=0.08)t.push(['bat',24]);
+  if(fr>=0.2)t.push(['goblin',28]);
+  if(fr>=0.35)t.push(['skeleton',24]);
+  if(fr>=0.45&&dd>=2)t.push(['serigala',14]);
+  if(fr>=0.5&&dd>=2)t.push(['ghost',18]);
+  if(fr>=0.6&&dd>=2)t.push(['golem',10+fr*14]);
+  if(fr>=0.65&&dd>=3)t.push(['beruang',12],['harimau',12]);
+  t.forEach(e=>{if(e[0]===D.fav)e[1]+=34;});
+  let tot=0;t.forEach(e=>tot+=e[1]);let v=rng()*tot;
+  for(const e of t){v-=e[1];if(v<0)return e[0];}
+  return 'slime';
+}
+function dgGen(D,f){
+  const rng=seedRand((D.i+1)*100003+f*7919+777);
+  const W=Math.min(72,46+f*3),H=Math.min(52,36+f*2);
+  const g=new Uint8Array(W*H),rooms=[];
+  const carve=(x,y)=>{if(x>0&&y>0&&x<W-1&&y<H-1)g[y*W+x]=1;};
+  const nR=Math.min(13,6+Math.floor(f*0.8)+Math.floor(rng()*3));
+  for(let tr=0;tr<500&&rooms.length<nR;tr++){
+    const w=5+Math.floor(rng()*7),h=4+Math.floor(rng()*5);
+    const x=2+Math.floor(rng()*(W-w-4)),y=2+Math.floor(rng()*(H-h-4));
+    if(rooms.some(r=>x<r.x+r.w+3&&x+w+3>r.x&&y<r.y+r.h+3&&y+h+3>r.y))continue;
+    rooms.push({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)});
+    for(let j=0;j<h;j++)for(let i=0;i<w;i++)carve(x+i,y+j);
+  }
+  const cor=(a,b)=>{
+    let x=a.cx,y=a.cy;
+    const hs=()=>{while(x!==b.cx){carve(x,y);carve(x,y+1);x+=x<b.cx?1:-1;}};
+    const vs=()=>{while(y!==b.cy){carve(x,y);carve(x+1,y);y+=y<b.cy?1:-1;}};
+    if(rng()<0.5){hs();vs();}else{vs();hs();}
+    carve(x,y);carve(x+1,y);carve(x,y+1);carve(x+1,y+1);
+  };
+  for(let i=1;i<rooms.length;i++)cor(rooms[i-1],rooms[i]);
+  for(let k=0;k<Math.floor(rooms.length/3);k++){
+    const a=rooms[Math.floor(rng()*rooms.length)],b=rooms[Math.floor(rng()*rooms.length)];
+    if(a!==b)cor(a,b);
+  }
+  const st=rooms[0];let en=rooms[1]||rooms[0],bd=-1;
+  for(const r of rooms){const d=Math.hypot(r.cx-st.cx,r.cy-st.cy);if(d>bd){bd=d;en=r;}}
+  const isLast=f>=D.floors;
+  const F={W,H,g,rooms,mobs:[],pickups:[],chests:[],up:{tx:st.cx,ty:st.cy},down:isLast?null:{tx:en.cx,ty:en.cy},portal:null,bossDead:false,f,en};
+  const lvl=dgLvl(D,f),fr=D.floors>1?(f-1)/(D.floors-1):0,tier=Math.min(3,Math.floor(fr*3.99));
+  rooms.forEach(r=>{
+    if(r===st)return;
+    const isEnd=r===en;
+    let n=1+Math.floor(rng()*2)+(f>=3?1:0)+(isEnd&&!isLast?1:0);
+    if(isEnd&&isLast)n=3+Math.floor(D.floors/3);
+    for(let k=0;k<n;k++){
+      const tx=r.x+1+Math.floor(rng()*(r.w-2)),ty=r.y+1+Math.floor(rng()*(r.h-2));
+      if(isEnd&&Math.abs(tx-r.cx)<2&&Math.abs(ty-r.cy)<2)continue;
+      F.mobs.push(makeMob(dgPickType(D,f,rng),tx*T+8,ty*T+12,tier,null,0,0,lvl));
+    }
+  });
+  if(isLast){
+    const b=makeMob('golem',en.cx*T+8,en.cy*T+12,0,null,0,0,lvl+3);
+    b.boss=true;b.hp=b.maxHp=Math.round(b.hp*(5+D.diff*0.8));b.dmg=Math.round(b.dmg*1.5);b.xp=Math.round(b.xp*6);
+    F.mobs.push(b);
+  }
+  const nC=1+Math.floor(rng()*2)+(f>=4?1:0);
+  for(let k=0,tr=0;k<nC&&tr<40;tr++){
+    const r=rooms[Math.floor(rng()*rooms.length)];if(r===st)continue;
+    const tx=r.x+1+Math.floor(rng()*(r.w-2)),ty=r.y+1+Math.floor(rng()*(r.h-2));
+    if(r===en&&Math.abs(tx-r.cx)<=1&&Math.abs(ty-r.cy)<=1)continue;
+    if(F.chests.some(c=>c.tx===tx&&c.ty===ty))continue;
+    F.chests.push({tx,ty,open:false,rich:rng()<0.2});k++;
+  }
+  return F;
+}
+function dgEnter(di,fl){
+  const D=DUNGEONS[di];
+  if(DG||dying)return;
+  dgSprites(D);
+  DG={d:D,i:di,cache:{},f:0,F:null,ox:P.x,oy:P.y,sw:{mobs,pickups},t:0};
+  mobs=[];pickups=[];proj=[];fx=[];fishS=null;P.shield=false;
+  closeMenu();
+  dgLoad(fl||1,false);
+  toast('🕳️ '+D.name+' · Lantai '+DG.f+'/'+D.floors);
+}
+function dgLoad(f,goingUp){
+  if(DG.F){DG.F.mobs=mobs;DG.F.pickups=pickups;}
+  let F=DG.cache[f];if(!F)F=DG.cache[f]=dgGen(DG.d,f);
+  DG.f=f;DG.F=F;mobs=F.mobs;pickups=F.pickups;proj=[];fx=[];
+  const s=goingUp&&F.down?F.down:F.up;
+  P.x=s.tx*T+8;P.y=(s.ty+1)*T+12;P.inv=Math.max(P.inv,1);P.dir=0;
+  const b=P.dg.best;if(!(b[DG.i]>=f))b[DG.i]=f;
+  if(f===DG.d.floors&&!F.bossDead)toast('⚠️ Lantai terakhir: Boss menunggu!');
+}
+function dgLeave(){
+  if(!DG)return;
+  mobs=DG.sw.mobs;pickups=DG.sw.pickups;proj=[];fx=[];
+  P.x=DG.ox;P.y=DG.oy;DG=null;P.inv=Math.max(P.inv,1);
+}
+function dgInteract(){
+  const F=DG.F,px=P.x,py=P.y-4;
+  const near=(o,r)=>Math.hypot(o.tx*T+8-px,o.ty*T+8-py)<(r||22);
+  if(F.portal&&near(F.portal,26)){const n=DG.d.name;dgLeave();toast('Kamu keluar dari '+n+'. Selamat!');return;}
+  for(const c of F.chests)if(!c.open&&near(c,20)){dgChest(c);return;}
+  if(F.down&&near(F.down)){dgLoad(DG.f+1,false);toast('Lantai '+DG.f+' — musuh makin kuat!');return;}
+  if(near(F.up)){
+    if(DG.f===1){const n=DG.d.name;dgLeave();toast('Keluar dari '+n);}
+    else{dgLoad(DG.f-1,true);toast('Naik ke lantai '+DG.f);}
+  }
+}
+function dgChest(c){
+  c.open=true;const D=DG.d,f=DG.f,L=dgLvl(D,f);
+  const coins=Math.round((20+L*6)*(c.rich?2.5:1)*(0.8+Math.random()*0.5));
+  P.coins+=coins;P.st.coin+=coins;
+  const got=['🪙 '+coins];
+  const roll=(id,ch,q)=>{if(Math.random()<ch){P.bag.loot[id]=(P.bag.loot[id]||0)+q;got.push(LOOT[id].ic+' '+LOOT[id].n+(q>1?' x'+q:''));}};
+  roll('bijih',0.6,1+Math.floor(f/3));roll('permata',0.35+f*0.03,1);roll('relik',c.rich?0.5:0.08+D.diff*0.02,1);
+  if(Math.random()<0.4){const id=['roti','sate','jus','sup'][Math.floor(Math.random()*4)];P.bag.food[id]=(P.bag.food[id]||0)+1;got.push(FOODS[id].ic+' '+FOODS[id].n);}
+  if(Math.random()<0.25){P.st.crystal++;got.push('💎 Kristal');}
+  gainXp(Math.round(4+L*0.8));
+  toast('📦 Peti: '+got.join(', '));
+  burst(c.tx*T+8,c.ty*T+8,'#ffd23f');
+}
+function dgBossDead(m){
+  const F=DG.F,D=DG.d,en=F.en;
+  F.bossDead=true;
+  F.chests.push({tx:en.cx-2,ty:en.cy,open:false,rich:true});
+  F.portal={tx:en.cx,ty:en.cy-1};
+  const bc=D.diff*120;P.coins+=bc;P.st.coin+=bc;gainXp(D.diff*80);
+  P.bag.loot.mahkota=(P.bag.loot.mahkota||0)+1;
+  if(Math.random()<0.7)P.bag.loot.relik=(P.bag.loot.relik||0)+1;
+  for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:'crystal',x:m.x+(k-1)*10,y:m.y,ck:null,t:0});
+  const first=!P.dg.clr[D.i];P.dg.clr[D.i]=(P.dg.clr[D.i]||0)+1;
+  if(first)P.pts=(P.pts||0)+2;
+  toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota Penjaga'+(first?' · Hadiah pertama: +2 poin stat':'')+' · Portal keluar muncul');
+}
+function dgUpdate(dt){DG.t+=dt;}
+
+function dgNear(){
+  for(const d of DUNGEONS){const bot=(d.ey+2)*T;if(Math.abs(P.x-(d.ex*T+16))<22&&P.y>=bot-2&&P.y<bot+22)return d;}
+  return null;
+}
+function dgDoorInteract(){
+  const d=dgNear();if(!d)return false;
+  openMenu('🕳️ '+d.name,()=>{
+    const best=Math.max(1,P.dg.best[d.i]|0);
+    const r=[{t:'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss di lantai terakhir · Boss dikalahkan: '+(P.dg.clr[d.i]|0)+'x</small>',b:'—',off:true,f:()=>{}}];
+    for(let f=1;f<=Math.min(d.floors,best);f++)r.push({t:'Masuk lantai '+f+(f===1?' (awal)':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(d,f)+(f===d.floors?' · BOSS':'')+'</small>',b:'Masuk',f:()=>dgEnter(d.i,f)});
+    return r;});
+  return true;
+}
+function dgDoorHint(){
+  if(dlg||menu)return;const d=dgNear();
+  if(d)txt('E: Masuk '+d.name,Math.round(d.ex*T+16-camX),Math.round((d.ey+2)*T-camY-38),'#ffe066',7);
+}
+function drawDent(d){
+  const sx=Math.round(d.ex*T-camX),sy=Math.round((d.ey+2)*T-34-camY);
+  ctx.drawImage(SPR.dent[d.i],sx,sy);
+  if(Math.hypot(P.x-(d.ex*T+16),P.y-(d.ey+2)*T)<100)txt(d.name,sx+16,sy-3,d.col,6);
+}
+function drawTorch(sx,sy,now,tx,ty){
+  const fl=Math.floor(now*8+tx*3+ty)%3;
+  ctx.fillStyle='#3a2412';ctx.fillRect(sx+7,sy+6,2,6);
+  ctx.fillStyle='#555';ctx.fillRect(sx+6,sy+11,4,1);
+  ctx.fillStyle='#ff7a1a';ctx.fillRect(sx+6,sy+3+fl%2,4,4);
+  ctx.fillStyle='#ffd23f';ctx.fillRect(sx+7,sy+4+fl%2,2,2);
+}
+function drawChest(c,SP){
+  ctx.drawImage(SP.chest[c.open?1:0],c.tx*T-camX,c.ty*T-camY);
+}
+function renderDG(now){
+  const D=DG.d,F=DG.F,SP=DGSPR[D.i];
+  camX=Math.round(P.x-VW/2);camY=Math.round(P.y-10-VH/2);
+  const tx0=Math.floor(camX/T)-1,ty0=Math.floor(camY/T)-1,tx1=Math.floor((camX+VW)/T)+1,ty1=Math.floor((camY+VH)/T)+2;
+  const lamps=[],list=[];
+  for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){
+    const t=dgTile(tx,ty),sx=tx*T-camX,sy=ty*T-camY;
+    if(t.t===8)ctx.drawImage(SP.floor[t.v],sx,sy);
+    else{
+      const face=!dgTile(tx,ty+1).solid;
+      ctx.drawImage(face?SP.wallF[t.v]:SP.wallT[t.v],sx,sy);
+      if(face&&((tx*7+ty*13)%9===0)){drawTorch(sx,sy,now,tx,ty);lamps.push({x:sx+8,y:sy+6});}
+    }
+  }
+  const pxx=P.x,pyy=P.y-4,nr=(o,r)=>Math.hypot(o.tx*T+8-pxx,o.ty*T+8-pyy)<r;
+  if(F.down){ctx.drawImage(SP.down,F.down.tx*T-camX,F.down.ty*T-camY);lamps.push({x:F.down.tx*T+8-camX,y:F.down.ty*T+8-camY});}
+  ctx.drawImage(SP.up,F.up.tx*T-camX,F.up.ty*T-camY);lamps.push({x:F.up.tx*T+8-camX,y:F.up.ty*T+8-camY});
+  if(F.portal){
+    const sx=F.portal.tx*T-camX+8,sy=F.portal.ty*T-camY+8,p=now*3;
+    ctx.fillStyle='rgba(120,220,255,.35)';ctx.beginPath();ctx.ellipse(sx,sy,6,9,0,0,6.283);ctx.fill();
+    for(let i=0;i<14;i++){const a=p+i/14*6.283,r=6+Math.sin(p*2+i)*2;ctx.fillStyle=i%2?'#9fe8ff':'#ffffff';ctx.fillRect(Math.round(sx+Math.cos(a)*r),Math.round(sy+Math.sin(a)*r*1.3),2,2);}
+    lamps.push({x:sx,y:sy});
+  }
+  const vis=e=>e.x>camX-30&&e.x<camX+VW+30&&e.y>camY-10&&e.y<camY+VH+44;
+  mobs.forEach(e=>{if(vis(e))list.push({y:e.y,k:5,e});});
+  pickups.forEach(e=>{if(vis(e))list.push({y:e.y,k:5,e});});
+  F.chests.forEach(c=>list.push({y:c.ty*T+14,k:20,c}));
+  list.push({y:P.y,k:5,e:P});
+  list.sort((a,b)=>a.y-b.y);
+  for(const o of list){if(o.k===5)drawEntity(o.e,now);else drawChest(o.c,SP);}
+  fx.forEach(drawFx);proj.forEach(drawProj);
+  if(!dlg&&!menu){
+    const pr=(o,s,dy)=>txt(s,Math.round(o.tx*T+8-camX),Math.round(o.ty*T-camY-(dy||4)),'#ffe066',6);
+    if(F.down&&nr(F.down,24))pr(F.down,'E: Turun ke lantai '+(DG.f+1));
+    if(nr(F.up,24))pr(F.up,DG.f===1?'E: Keluar dungeon':'E: Naik ke lantai '+(DG.f-1));
+    if(F.portal&&nr(F.portal,28))pr(F.portal,'E: Keluar (portal)',10);
+    F.chests.forEach(c=>{if(!c.open&&nr(c,22))pr(c,'E: Buka peti');});
+  }
+  const dk=clamp(0.42+DG.f*0.035+D.diff*0.02,0.45,0.8);
+  if(!NCV||NCV.width!==VW||NCV.height!==VH){NCV=document.createElement('canvas');NCV.width=VW;NCV.height=VH;NCX=NCV.getContext('2d');}
+  NCX.globalCompositeOperation='source-over';NCX.globalAlpha=1;NCX.clearRect(0,0,VW,VH);
+  NCX.fillStyle='rgba(6,6,20,'+dk.toFixed(3)+')';NCX.fillRect(0,0,VW,VH);
+  initLights();
+  NCX.globalCompositeOperation='destination-out';
+  const px=P.x-camX,py=P.y-camY-8;
+  NCX.globalAlpha=1;NCX.drawImage(LCUT,Math.round(px-LR*1.7),Math.round(py-LR*1.7),Math.round(LR*3.4),Math.round(LR*3.4));
+  for(const l of lamps){NCX.globalAlpha=0.9*(0.9+0.1*Math.sin(now*6+l.x));NCX.drawImage(LCUT,Math.round(l.x-LR),Math.round(l.y-LR));}
+  NCX.globalAlpha=1;NCX.globalCompositeOperation='source-over';
+  ctx.drawImage(NCV,0,0);
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.8;
+  for(const l of lamps)ctx.drawImage(LWARM,Math.round(l.x-LR),Math.round(l.y-LR));
+  ctx.restore();
+  if(dying){ctx.fillStyle='rgba(0,0,0,'+clamp(deathT/1.2,0,0.85)+')';ctx.fillRect(0,0,VW,VH);}
+}
+
 let last=performance.now(),hudT=0;
 function frame(t){
   const dt=Math.min(0.05,(t-last)/1000);last=t;
@@ -3627,7 +3937,8 @@ if(!shownIntro){
     'Bertani & beternak: beli lahan di Agen Properti, bibit/alat di toko, lalu hadapi petak/hewan dan tekan E. Z ganti bibit. Masuk rumah: E di depan pintu.',
     'Stat: kamu punya 5 poin awal, +1 poin tiap naik level. Tekan C untuk membagi ke Kekuatan, Kecepatan, Ketahanan, Stamina (maks 100 per stat). Lari, menyerang, sihir, dan perisai memakai stamina (bar ST hijau).',
     'Mulai dari Tetua Desa. Selesaikan misi untuk membuka busur dan 6 sihir. Tiap musuh punya kelemahan elemen!',
-    'Hewan liar: rusa, kelinci, ayam, kerbau (jinak), serta beruang, serigala, harimau, buaya (ganas). Hasil buruan masuk inventori (I) dan bisa dijual di Guild Petualang di setiap desa.'
+    'Hewan liar: rusa, kelinci, ayam, kerbau (jinak), serta beruang, serigala, harimau, buaya (ganas). Hasil buruan masuk inventori (I) dan bisa dijual di Guild Petualang di setiap desa.',
+    'Dungeon: setiap desa punya 1 gua batu (cari pintu gua di dekat desa, tekan E di depannya). Tiap dungeon punya jumlah lantai & kesulitan berbeda; makin dalam monster makin kuat, dan lantai terakhir dijaga BOSS. Cari peti harta, tekan E di tangga untuk turun/naik. Lantai yang pernah dicapai bisa dimasuki langsung.'
   ]);
 }
 }
@@ -3755,7 +4066,7 @@ function mpJoin(){
     p.on('error',e=>{clearTimeout(to);const m=e.type==='peer-unavailable'?'Ruangan "'+code+'" tidak ditemukan.':'Gagal: '+e.type;mpCleanup();mpMsg(m);});
   });}
 function mpAdd(list){
-  if(!MPon||IN!==null)return;const now=performance.now();
+  if(!MPon||IN!==null||DG)return;const now=performance.now();
   MPpeers.forEach((r,id)=>{
     if(!MPnr&&now-r.seen>6000){MPpeers.delete(id);mpUi();return;}
     if(r.ind)return;if(!r.set)r.set=SPR.player;
@@ -3853,7 +4164,7 @@ function mpSb(create,code){
   });}
 if(SUPABASE_URL&&SUPABASE_KEY)$('mpMan').style.display='none';
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
-  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:IN===null?0:1});},100);
+  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:(IN===null&&!DG)?0:1});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
 $('mpX').onclick=()=>$('mp').classList.remove('on');
 $('mpHost').onclick=mpHost;$('mpJoin').onclick=mpJoin;
