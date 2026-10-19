@@ -1442,6 +1442,8 @@ let P=freshPlayer();
 let collected=new Set(),picked=new Set();
 let gtime=0;                 // waktu permainan (detik)
 let mobs=[],pickups=[],fx=[],npcs=[],proj=[];
+let MPmid=0,MPid='',MPcl=false,MPauth=true,MPwasCl=false,MPsrc=null,MPsnapT=0;
+const mpNewId=()=>(MPid||'x')+':'+(++MPmid);
 const cds=[0,0,0,0,0,0,0];
 const timers=[];
 const loaded=new Set();
@@ -1623,7 +1625,7 @@ function makeMob(type,x,y,tier,ck,cx,cy,fl){
   hp=Math.max(1,Math.round(hp*(1+(lvl-1)*0.12)));
   if(dmg>0)dmg=Math.max(1,Math.round(dmg*(1+(lvl-1)*0.08)));
   xp=Math.max(1,Math.round(xp*(1+(lvl-1)*0.1)));
-  return {kind:'mob',type,tier,lvl,x,y,hp,maxHp:hp,dmg,xp,dir:0,anim:0,walkT:0,t:Math.random()*5,cd:0.5+Math.random(),
+  return {kind:'mob',id:mpNewId(),type,tier,lvl,x,y,hp,maxHp:hp,dmg,xp,dir:0,anim:0,walkT:0,t:Math.random()*5,cd:0.5+Math.random(),
     hop:0,vx:0,vy:0,flash:0,kbT:0,kx:0,ky:0,slow:0,stun:0,burn:0,burnT:0,wt:0,wm:false,wa:Math.random()*6.283,
     sd:Math.random()<0.5?1:-1,rt:0,lunge:0,aim:0,wind:0,fade:1,hit:0,dead:false,ck,cx,cy};
 }
@@ -1701,15 +1703,17 @@ function initVillageCrystals(){
 }
 let despawnT=0,ghostT=3;
 function updateChunks(dt){
-  const pcx=Math.floor(P.x/T/CH),pcy=Math.floor(P.y/T/CH);
-  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+  if(MPcl)return;
+  const cs=[[Math.floor(P.x/T/CH),Math.floor(P.y/T/CH)]];
+  if(MPsb)MPpeers.forEach(r=>{if(!r.ind&&r.tx!==undefined)cs.push([Math.floor(r.tx/T/CH),Math.floor(r.ty/T/CH)]);});
+  for(const [pcx,pcy] of cs)for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
     const cx=pcx+dx,cy=pcy+dy;
     if(!loaded.has(chunkKey(cx,cy)))spawnChunk(cx,cy);
   }
   despawnT-=dt;
   if(despawnT<=0){
     despawnT=2;
-    const far=e=>e.ck!==null&&e.ck!==undefined&&(Math.abs(e.cx-pcx)>3||Math.abs(e.cy-pcy)>3);
+    const far=e=>e.ck!==null&&e.ck!==undefined&&cs.every(([a,b])=>Math.abs(e.cx-a)>3||Math.abs(e.cy-b)>3);
     mobs.filter(far).forEach(e=>loaded.delete(e.ck));
     pickups.filter(far).forEach(e=>loaded.delete(e.ck));
     mobs=mobs.filter(e=>!far(e));
@@ -1718,13 +1722,14 @@ function updateChunks(dt){
 }
 // hantu muncul dinamis saat malam
 function ghostSpawner(dt){
+  if(MPcl)return;
   ghostT-=dt;if(ghostT>0)return;
   ghostT=3+Math.random()*3;
   if(nightF()<0.3||inSafe(P.x,P.y,2))return;
   let n=0;for(const m of mobs)if(m.type==='ghost'&&!m.dead)n++;
   if(n>=3)return;
   const a=Math.random()*6.283,r=130+Math.random()*50;
-  const x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r;
+  const cc=mpPick(),x=cc.x+Math.cos(a)*r,y=cc.y+Math.sin(a)*r;
   if(inSafe(x,y))return;
   mobs.push(makeMob('ghost',x,y,0,null,0,0));
 }
@@ -2501,6 +2506,8 @@ function cast(){
 function hitMob(m,dmg,elem,o){
   if(m.dead)return;
   o=o||{};
+  if(m.net){mpHitNet(m,dmg,elem,o);return;}
+  m.lastSrc=MPsrc;
   const d=MOBS[m.type];
   let mult=1,tag='';
   if(elem&&d.weak===elem){mult=2;tag='!';}
@@ -2518,6 +2525,10 @@ function hitMob(m,dmg,elem,o){
 function killMob(m,by){
   if(m.dead)return;
   m.dead=true;
+  if(MPsb&&!m.net&&IN===null&&!DG){
+    mpOut({t:'k',o:m.id,by:m.lastSrc||MPid,x:Math.round(m.x),y:Math.round(m.y)});
+    if(m.lastSrc){burst(m.x,mc(m),'#ffffff');if(Math.hypot(P.x-m.x,P.y-m.y)<260&&!dying){gainXp(m.xp);floatText(m.x,mc(m)-16,'+'+m.xp+' XP','#8fe3ff');}return;}
+  }
   P.st.kill++;P.st[m.type]=(P.st[m.type]||0)+1;if(m.boss&&DG)dgBossDead(m);
   if(by==='arrow')P.st.arrow++;
   gainXp(m.xp);
@@ -2667,6 +2678,8 @@ function wander(m,dt,sp,sm,fly){
 }
 function updateMob(m,dt){
   const d=MOBS[m.type];
+  if(m.net){mpMobVis(m,dt);return;}
+  const TG=mpTarget(m),TGd=TG===P?dying:false;
   m.t+=dt;if(m.flash>0)m.flash-=dt;if(m.walkT>0)m.walkT-=dt;
   if(m.slow>0)m.slow-=dt;
   if(m.stun>0)m.stun-=dt;
@@ -2677,11 +2690,11 @@ function updateMob(m,dt){
   if(m.kbT>0){m.kbT-=dt;moveMob(m,m.kx*dt,m.ky*dt);return;}
   if(m.stun>0)return;
   const sm=m.slow>0?0.5:1;
-  const dx=P.x-m.x,dy=P.y-m.y;let dist=Math.hypot(dx,dy);if(DG&&dist<150&&!dgLOS(m.x,m.y-4,P.x,P.y-4))dist=999;
+  const dx=TG.x-m.x,dy=TG.y-m.y;let dist=Math.hypot(dx,dy);if(DG&&dist<150&&!dgLOS(m.x,m.y-4,TG.x,TG.y-4))dist=999;
   const ca=dist>0?dx/dist:0,sa=dist>0?dy/dist:0;
   if(m.taunt>0){
     m.taunt-=dt;
-    if(!d.reach||dying)m.taunt=0;
+    if(!d.reach||TGd)m.taunt=0;
     else{
       const tsp=34*sm*dt;
       if(dist>d.reach-3){if(d.fly)moveFly(m,ca*tsp,sa*tsp);else moveEnt(m,ca*tsp,sa*tsp,true);}
@@ -2693,7 +2706,7 @@ function updateMob(m,dt){
       if(m.hop>0){m.hop-=dt;moveEnt(m,m.vx*dt*sm,m.vy*dt*sm,true);}
       else if(m.cd<=0){
         m.cd=0.5+Math.random()*0.5;
-        const chase=dist<70&&!dying;
+        const chase=dist<70&&!TGd;
         if(!chase&&Math.random()<0.5){m.vx=m.vy=0;}
         else{const ang=chase?Math.atan2(dy,dx):Math.random()*6.283,sp=chase?44:22;m.hop=0.32;m.vx=Math.cos(ang)*sp;m.vy=Math.sin(ang)*sp;}
       }
@@ -2701,7 +2714,7 @@ function updateMob(m,dt){
     case 'bat':
       m.anim+=dt*14;
       if(m.rt>0){m.rt-=dt;moveFly(m,-ca*50*sm*dt,-sa*50*sm*dt);}
-      else if(dist<110&&!dying){
+      else if(dist<110&&!TGd){
         const a=Math.atan2(dy,dx)+Math.sin(m.t*7)*0.8;
         moveFly(m,Math.cos(a)*58*sm*dt,Math.sin(a)*58*sm*dt);
       }else{
@@ -2712,7 +2725,7 @@ function updateMob(m,dt){
     case 'goblin':
       m.cd-=dt;
       if(m.lunge>0){m.lunge-=dt;moveEnt(m,m.vx*dt,m.vy*dt,true);m.walkT=0.15;m.anim+=dt*12;}
-      else if(dist<95&&!dying){
+      else if(dist<95&&!TGd){
         if(dist>13)moveEnt(m,ca*32*sm*dt,sa*32*sm*dt,true);
         if(m.cd<=0&&dist<55&&dist>20){m.lunge=0.3;m.vx=ca*95;m.vy=sa*95;m.cd=2.6+Math.random();}
         m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*8;
@@ -2723,10 +2736,10 @@ function updateMob(m,dt){
       if(m.aim>0){
         m.aim-=dt;m.dir=dirFromVec(dx,dy);
         if(m.aim<=0){
-          const tx=P.x-m.x,ty=(P.y-6)-(m.y-8),l=Math.hypot(tx,ty)||1;
-          proj.push({t:'earrow',hostile:true,x:m.x,y:m.y-8,vx:tx/l*105,vy:ty/l*105,life:1.6,dmg:m.dmg,r:3});
+          const tx=TG.x-m.x,ty=(TG.y-6)-(m.y-8),l=Math.hypot(tx,ty)||1;
+          mpPj({t:'earrow',hostile:true,x:m.x,y:m.y-8,vx:tx/l*105,vy:ty/l*105,life:1.6,dmg:m.dmg,r:3});
         }
-      }else if(dist<130&&!dying){
+      }else if(dist<130&&!TGd){
         const sp=24*sm;
         if(dist<55)moveEnt(m,-ca*sp*dt,-sa*sp*dt,true);
         else if(dist>90)moveEnt(m,ca*sp*dt,sa*sp*dt,true);
@@ -2742,9 +2755,9 @@ function updateMob(m,dt){
         if(m.wind<=0){
           fx.push({k:'ring',x:m.x,y:m.y,r0:4,r1:36,col:'#ff7a1a',life:0.35,sq:0.7});
           for(let k=0;k<10;k++){const b=Math.random()*6.283;sparkFx(m.x,m.y-2,k%2?'#ffd23f':'#ff7a1a',0.4,Math.cos(b)*50,Math.sin(b)*30-10,2);}
-          if(Math.hypot(P.x-m.x,P.y-m.y)<36&&P.inv<=0&&!dying)hurt(m.dmg,m.x,m.y);
+          if(Math.hypot(TG.x-m.x,TG.y-m.y)<36&&TG.inv<=0&&!TGd)mobHurt(TG,m.dmg,m.x,m.y);
         }
-      }else if(dist<130&&!dying){
+      }else if(dist<130&&!TGd){
         if(dist>16){moveEnt(m,ca*17*sm*dt,sa*17*sm*dt,true);m.walkT=0.15;m.anim+=dt*4;}
         m.dir=dirFromVec(dx,dy);
         if(m.cd<=0&&dist<50){m.wind=0.7;m.cd=3.5;fx.push({k:'warn',x:m.x,y:m.y,r:36,t:0,life:0.7});}
@@ -2761,7 +2774,7 @@ function updateMob(m,dt){
     case 'rusa':case 'kelinci':case 'ayam_liar':case 'kerbau':{
       // pasif: lari jika pemain dekat, kalau tidak jalan-jalan
       const fleeR=m.type==='kerbau'?28:40,spW=m.type==='kerbau'?12:m.type==='rusa'?22:18;
-      if(dist<fleeR&&!dying){
+      if(dist<fleeR&&!TGd){
         moveEnt(m,-ca*spW*1.4*sm*dt,-sa*spW*1.4*sm*dt,true);
         m.dir=dirFromVec(-dx,-dy);m.walkT=0.15;m.anim+=dt*8;
       }else wander(m,dt,spW*0.7,sm,false);
@@ -2769,7 +2782,7 @@ function updateMob(m,dt){
     case 'beruang':case 'serigala':case 'harimau':{
       const chaseR=m.type==='beruang'?120:m.type==='harimau'?140:110;
       const spC=m.type==='beruang'?20:m.type==='harimau'?36:30;
-      if(dist<chaseR&&!dying){
+      if(dist<chaseR&&!TGd){
         if(dist>d.reach-2)moveEnt(m,ca*spC*sm*dt,sa*spC*sm*dt,true);
         m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*7;
       }else wander(m,dt,14,sm,false);
@@ -2784,14 +2797,14 @@ function updateMob(m,dt){
           const t=tileAt(tx+dx,ty+dy);if(t.t===TY.WATER||t.t===TY.DEEP){const dd=Math.hypot(dx,dy);if(dd<bd){bd=dd;bx=dx;by=dy;}}
         }
         if(bd<99)moveEnt(m,Math.sign(bx)*18*sm*dt,Math.sign(by)*18*sm*dt,true);
-      }else if(dist<100&&!dying){
+      }else if(dist<100&&!TGd){
         if(dist>d.reach-2)moveEnt(m,ca*22*sm*dt,sa*22*sm*dt,true);
         m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*5;
       }else wander(m,dt,10,sm,false);
       break;}
   }
-  if(d.reach&&dist<d.reach&&P.inv<=0&&!dying){
-    hurt(m.dmg,m.x,m.y);
+  if(d.reach&&dist<d.reach&&TG.inv<=0&&!TGd){
+    mobHurt(TG,m.dmg,m.x,m.y);
     if(m.type==='bat')m.rt=0.9;
   }
 }
@@ -2896,6 +2909,7 @@ function update(dt){
   }
   if(IN!==null){if(P.y>=118){P.x=OX;P.y=OY;IN=null;}for(const f of fx)f.t+=dt;fx=fx.filter(f=>f.t<f.life);return;}
   if(!DG)npcs.forEach(n=>updateNpc(n,dt));
+  mpTick(dt);
   mobs.forEach(m=>updateMob(m,dt));
   mobs=mobs.filter(m=>!m.dead);
   updateProj(dt);
@@ -4007,7 +4021,7 @@ const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=nul
 const MPLIBS=['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 {const s=document.createElement('style');s.textContent='#mp{display:none;position:absolute;inset:0;z-index:48;background:rgba(10,14,28,.85);align-items:center;justify-content:center}#mp.on{display:flex}#mp .abox{touch-action:auto}#mpmsg{color:#ffe066;font-size:12px;min-height:34px;white-space:pre-wrap;margin-bottom:6px}#mpchat{position:absolute;left:8px;bottom:64px;width:min(270px,62vw);z-index:15;pointer-events:none;font-size:12px;text-shadow:1px 1px #000}#mpchat div{background:rgba(10,14,28,.7);padding:2px 6px;margin-top:2px;word-break:break-word}#mpchat input{display:none;pointer-events:auto;width:100%;font:inherit;font-size:14px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:4px;user-select:text;-webkit-user-select:text;touch-action:auto}#mpchat.open input{display:block}@media (pointer:coarse){#mpchat{bottom:250px}}';document.head.appendChild(s);}
 const mpPanel=document.createElement('div');mpPanel.id='mp';
-mpPanel.innerHTML='<div class="abox"><h2>\ud83c\udf10 Main Online</h2><p>Mainkan dunia yang sama bersama teman. Main sendiri tetap bisa offline.</p><div id="mpmsg"></div><div id="mproom" style="display:none"><input id="mpRoomName" maxlength="20" placeholder="Nama ruangan (kosong = umum)" autocomplete="off"><button id="mpRoomGo" type="button">Masuk Online</button><p style="font-size:11px">Semua orang yang membuka link game ini dan masuk ke nama ruangan yang sama akan bertemu di dunia yang sama.</p></div><div id="mpoff"><button id="mpHost" type="button">Buat Ruangan</button><input id="mpCode" maxlength="5" placeholder="Kode ruangan teman" autocomplete="off" style="text-transform:uppercase;margin-top:8px"><button id="mpJoin" class="sec" type="button">Gabung</button><button id="mpMan" class="sec" type="button" style="margin-top:8px">Cara manual (tanpa server)</button><div id="mpmanbox" style="display:none"><textarea id="mpTa" rows="4" placeholder="Kode undangan/jawaban tampil & ditempel di sini" style="width:100%;font:inherit;font-size:11px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:6px;user-select:text;-webkit-user-select:text;touch-action:auto"></textarea><button id="mpM1" type="button">1. Buat undangan (host)</button><button id="mpM2" class="sec" type="button">2. Balas undangan (teman)</button><button id="mpM3" class="sec" type="button">3. Sambungkan jawaban (host)</button></div></div><button id="mpLeave" class="dng" type="button" style="display:none">Keluar dari ruangan</button><button id="mpX" class="sec" type="button">Tutup</button></div>';
+mpPanel.innerHTML='<div class="abox"><h2>\ud83c\udf10 Main Online</h2><p>Mainkan dunia yang sama bersama teman; musuh di dunia luar dilihat & dilawan bersama. Main sendiri tetap bisa offline.</p><div id="mpmsg"></div><div id="mproom" style="display:none"><input id="mpRoomName" maxlength="20" placeholder="Nama ruangan (kosong = umum)" autocomplete="off"><button id="mpRoomGo" type="button">Masuk Online</button><p style="font-size:11px">Semua orang yang membuka link game ini dan masuk ke nama ruangan yang sama akan bertemu di dunia yang sama.</p></div><div id="mpoff"><button id="mpHost" type="button">Buat Ruangan</button><input id="mpCode" maxlength="5" placeholder="Kode ruangan teman" autocomplete="off" style="text-transform:uppercase;margin-top:8px"><button id="mpJoin" class="sec" type="button">Gabung</button><button id="mpMan" class="sec" type="button" style="margin-top:8px">Cara manual (tanpa server)</button><div id="mpmanbox" style="display:none"><textarea id="mpTa" rows="4" placeholder="Kode undangan/jawaban tampil & ditempel di sini" style="width:100%;font:inherit;font-size:11px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:6px;user-select:text;-webkit-user-select:text;touch-action:auto"></textarea><button id="mpM1" type="button">1. Buat undangan (host)</button><button id="mpM2" class="sec" type="button">2. Balas undangan (teman)</button><button id="mpM3" class="sec" type="button">3. Sambungkan jawaban (host)</button></div></div><button id="mpLeave" class="dng" type="button" style="display:none">Keluar dari ruangan</button><button id="mpX" class="sec" type="button">Tutup</button></div>';
 document.body.appendChild(mpPanel);
 const mpChat=document.createElement('div');mpChat.id='mpchat';mpChat.innerHTML='<input id="mpin" maxlength="80" placeholder="Ketik pesan, Enter kirim" autocomplete="off">';document.body.appendChild(mpChat);
 const MPbtn=document.createElement('button'),MPchatBtn=document.createElement('button');
@@ -4024,7 +4038,7 @@ function mpLoad(cb){
   const next=()=>{if(i>=MPLIBS.length){mpMsg('Pustaka online tidak bisa dimuat (internet/diblokir). Coba "Cara manual" di bawah.');return;}
     const s=document.createElement('script');s.src=MPLIBS[i++];let d=false;const t=setTimeout(()=>{if(d)return;d=true;s.remove();next();},8000);s.onload=()=>{if(d)return;d=true;clearTimeout(t);cb();};s.onerror=()=>{if(d)return;d=true;clearTimeout(t);s.remove();next();};document.head.appendChild(s);};
   next();}
-function mpCleanup(){try{MPpeer&&MPpeer.destroy();}catch(e){}MPpcs.forEach(c=>{try{c.close();}catch(e){}});MPpcs.length=0;if(MPnr){try{MPunsub&&MPunsub();MPnr.leave();}catch(e){}MPnr=null;MPunsub=null;}if(MPws){const w=MPws;MPws=null;try{w.close();}catch(e){}}if(MPsb){const z=MPsb;MPsb=null;try{z.sb.removeChannel(z.ch);}catch(e){}}MPpeer=null;MPconns.clear();MPpeers.clear();MPon=false;MPhost=false;MPcode='';mpUi();}
+function mpCleanup(){mpLeaveNet();try{MPpeer&&MPpeer.destroy();}catch(e){}MPpcs.forEach(c=>{try{c.close();}catch(e){}});MPpcs.length=0;if(MPnr){try{MPunsub&&MPunsub();MPnr.leave();}catch(e){}MPnr=null;MPunsub=null;}if(MPws){const w=MPws;MPws=null;try{w.close();}catch(e){}}if(MPsb){const z=MPsb;MPsb=null;try{z.sb.removeChannel(z.ch);}catch(e){}}MPpeer=null;MPconns.clear();MPpeers.clear();MPon=false;MPhost=false;MPcode='';mpUi();}
 function mpSend(m){MPconns.forEach(c=>{try{if(c.open)c.send(m);}catch(e){}});}
 function mpLog(name,txt){const d=document.createElement('div');d.textContent=name+': '+txt;mpChat.insertBefore(d,$('mpin'));
   while(mpChat.children.length>7)mpChat.removeChild(mpChat.firstChild);setTimeout(()=>d.remove(),12000);}
@@ -4032,12 +4046,13 @@ function mpSay(txt){txt=String(txt).trim().slice(0,80);if(!txt||!MPon)return;if(
 function mpDrop(id){const r=MPpeers.get(id);if(r)toast('\ud83c\udf10 '+r.name+' keluar');MPpeers.delete(id);MPconns.delete(id);if(MPhost)mpSend({t:'bye',f:id});mpUi();}
 function mpMsgIn(from,m){
   if(!m||typeof m!=='object')return;
+  if(MPsb&&mpNet(m))return;
   const id=MPhost?from:String(m.f||from).slice(0,40);
   if(m.t==='s'){
     let r=MPpeers.get(id);const nm=cleanName(m.n)||'Pemain';
-    if(!r){r={kind:'remote',x:+m.x||0,y:+m.y||0,set:null,lkS:'',say:'',sayT:0};MPpeers.set(id,r);toast('\ud83c\udf10 '+nm+' bergabung');mpUi();}
+    if(!r){r={kind:'remote',id:id,inv:0,x:+m.x||0,y:+m.y||0,set:null,lkS:'',say:'',sayT:0};MPpeers.set(id,r);toast('\ud83c\udf10 '+nm+' bergabung');mpUi();}
     r.tx=+m.x||0;r.ty=+m.y||0;r.dir=(m.d|0)&3;r.mv=!!m.m;r.name=nm;r.lvl=Math.max(1,Math.min(999,m.l|0));
-    r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.seen=performance.now();
+    r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.dy=!!m.dy;r.seen=performance.now();
     const lk=JSON.stringify(m.lk||{});if(lk!==r.lkS&&lk.length<500){r.lkS=lk;try{r.set=makeSet(lookPal(sanitizeLook(m.lk)));}catch(e){}}
   }else if(m.t==='c'){
     const r=MPpeers.get(id),tx=String(m.x||'').slice(0,80);if(r&&tx){r.say=tx;r.sayT=performance.now()+6000;mpLog(r.name,tx);}
@@ -4143,14 +4158,14 @@ function mpLoadSb(cb){
 let sbLast=0,sbKey='';
 function mpSbOut(m){
   if(!MPsb)return;const now=performance.now();
-  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
+  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
   MPsb.ch.send({type:'broadcast',event:'m',payload:Object.assign({},m,{f:MPsb.id})}).catch(()=>{});}
 function mpSb(create,code){
   if(create)code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
   mpMsg('Menghubungkan ke Supabase...');
   mpLoadSb(()=>{
-    let sb;try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:10}}});}catch(e){mpMsg('Konfigurasi Supabase salah (cek URL dan key).');return;}
-    const id=Math.random().toString(36).slice(2,10);
+    let sb;try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:30}}});}catch(e){mpMsg('Konfigurasi Supabase salah (cek URL dan key).');return;}
+    const id=Math.random().toString(36).slice(2,10);MPid=id;
     const ch=sb.channel('pxrpg-'+code,{config:{broadcast:{self:false},presence:{key:id}}});
     MPsb={sb,ch,id};sbKey='';sbLast=0;let ok=false;
     const to=setTimeout(()=>{if(!ok){mpCleanup();mpMsg('Gagal terhubung ke Supabase. Periksa URL, key, dan internet.');}},15000);
@@ -4163,8 +4178,93 @@ function mpSb(create,code){
       });
   });}
 if(SUPABASE_URL&&SUPABASE_KEY)$('mpMan').style.display='none';
+
+/* ===== MUSUH BERSAMA (host-otoritatif; aktif di mode Supabase) =====
+   Pemain dunia-luar dengan id terkecil jadi "host": dialah yang menjalankan AI semua musuh.
+   Pemain lain menerima snapshot, menyerang lewat pesan 'h', dan menerima damage lewat 'u'. */
+function mpPick(){const l=[P];if(MPsb)MPpeers.forEach(r=>{if(!r.ind&&r.tx!==undefined)l.push({x:r.tx,y:r.ty});});return l[Math.floor(Math.random()*l.length)];}
+function mpTarget(m){
+  if(!MPsb||DG||IN!==null)return P;
+  let best=P,bd=dying?1e9:Math.hypot(P.x-m.x,P.y-m.y);
+  MPpeers.forEach(r=>{if(r.ind||r.dy||r.tx===undefined)return;const d=Math.hypot(r.tx-m.x,r.ty-m.y);if(d<bd){bd=d;best={x:r.tx,y:r.ty,inv:r.inv||0,rem:r};}});
+  return best;}
+function mobHurt(tg,n,x,y){
+  if(tg===P){hurt(n,x,y);return;}
+  if(tg.rem&&tg.inv<=0){tg.rem.inv=1;mpOut({t:'u',to:tg.rem.id,n:Math.round(n),fx:Math.round(x),fy:Math.round(y)});}}
+function mpPj(o){proj.push(o);if(MPsb&&IN===null&&!DG)mpOut({t:'pj',p:o});}
+function mpHitNet(m,dmg,elem,o){
+  const d=MOBS[m.type];let mult=1,tag='';
+  if(elem&&d.weak===elem){mult=2;tag='!';}else if(elem&&d.res&&d.res[elem]!==undefined){mult=d.res[elem];tag='~';}
+  const n=Math.max(1,Math.round(dmg*mult));m.hit=2;if(!o.burn)m.flash=0.2;
+  floatText(m.x,mc(m)-8,'-'+n+tag,mult>1?'#ffb347':mult<1?'#9aa0a8':'#ffffff');
+  const q={t:'h',o:m.id,d:dmg,e:elem||null,by:o.by||null};
+  if(o.kx!==undefined||o.ky!==undefined)q.k=[o.kx||0,o.ky||0,o.kb||0.15];
+  mpOut(q);}
+function mpMobVis(m,dt){
+  m.t+=dt;if(m.flash>0)m.flash-=dt;if(m.walkT>0){m.walkT-=dt;m.anim+=dt*8;}
+  const dx=m.tx-m.x,dy=m.ty-m.y;
+  if(dx*dx+dy*dy>2500){m.x=m.tx;m.y=m.ty;}else{const k=Math.min(1,dt*14);m.x+=dx*k;m.y+=dy*k;}
+  const z=m.z||(m.z={});let e=null;
+  for(const k of ['slow','stun','burn','taunt']){const v=m[k]||0;
+    if(v>0){if(v>(z[k]||0)+0.05)(e=e||{})[k]=Math.round(v*100)/100;m[k]=v-dt;z[k]=m[k];}else z[k]=0;}
+  if(e){e.t='e';e.o=m.id;mpOut(e);}}
+function mpSnap(a){
+  if(!Array.isArray(a))return;
+  const map=new Map(),seen=new Set();for(const m of mobs)if(m.net)map.set(m.id,m);
+  for(const r of a.slice(0,200)){
+    if(!Array.isArray(r)||!MOBS[r[1]])continue;const id=String(r[0]).slice(0,40);seen.add(id);
+    let m=map.get(id);
+    if(!m){m=makeMob(r[1],+r[4]||0,+r[5]||0,r[2]|0,null,0,0,Math.max(1,r[3]|0));m.id=id;m.net=true;m.tx=m.x;m.ty=m.y;mobs.push(m);}
+    m.tx=+r[4]||0;m.ty=+r[5]||0;m.hp=+r[6];m.maxHp=+r[7]||m.hp;m.dir=(r[8]|0)&3;
+    m.walkT=r[9]?0.2:0;m.hop=+r[10]||0;m.lunge=+r[11]||0;m.aim=+r[12]||0;m.wind=+r[13]||0;m.fade=r[14]===undefined?1:+r[14];}
+  mobs=mobs.filter(m=>!m.net||seen.has(m.id)||m.dead);}
+function mpNet(m){
+  const f=String(m.f||'').slice(0,40);
+  switch(m.t){
+  case 'M':if(MPcl&&IN===null&&!DG)mpSnap(m.a);return true;
+  case 'h':{if(MPcl||IN!==null||DG)return true;
+    const mm=mobs.find(x=>x.id===m.o&&!x.net&&!x.dead);if(!mm)return true;
+    const o={by:typeof m.by==='string'?m.by.slice(0,10):null};
+    if(Array.isArray(m.k)){o.kx=Math.max(-300,Math.min(300,+m.k[0]||0));o.ky=Math.max(-300,Math.min(300,+m.k[1]||0));o.kb=Math.max(0,Math.min(0.6,+m.k[2]||0.15));}
+    MPsrc=f;try{hitMob(mm,Math.max(0,Math.min(500,+m.d||0)),typeof m.e==='string'?m.e.slice(0,12):null,o);}finally{MPsrc=null;}
+    return true;}
+  case 'e':{if(MPcl||IN!==null||DG)return true;
+    const mm=mobs.find(x=>x.id===m.o&&!x.net&&!x.dead);if(!mm)return true;
+    for(const k of ['slow','stun','burn','taunt']){const v=+m[k];if(v>0)mm[k]=Math.max(mm[k]||0,Math.min(v,10));}
+    return true;}
+  case 'u':if(m.to===MPid&&P.inv<=0&&!dying&&IN===null&&!DG)hurt(Math.max(1,Math.min(999,+m.n||1)),+m.fx||0,+m.fy||0);return true;
+  case 'pj':{if(IN!==null||DG||!m.p||m.p.t!=='earrow')return true;const q=m.p;
+    proj.push({t:'earrow',hostile:true,x:+q.x||0,y:+q.y||0,vx:+q.vx||0,vy:+q.vy||0,life:Math.min(3,+q.life||1.6),dmg:Math.min(999,+q.dmg||1),r:+q.r||3});return true;}
+  case 'k':{if(IN!==null||DG)return true;
+    const mm=mobs.find(x=>x.id===m.o&&x.net&&!x.dead);if(!mm)return true;
+    if(m.by===MPid)killMob(mm,'net');
+    else{mm.dead=true;burst(mm.x,mc(mm),'#ffffff');if(Math.hypot(P.x-mm.x,P.y-mm.y)<260&&!dying){gainXp(mm.xp);floatText(mm.x,mc(mm)-16,'+'+mm.xp+' XP','#8fe3ff');}}
+    return true;}
+  }
+  return false;}
+function mpLeaveNet(){
+  if(MPwasCl&&IN===null&&!DG){mobs=[];loaded.clear();}
+  else{mobs=mobs.filter(m=>!m.net);if(DG&&DG.sw)DG.sw.mobs=DG.sw.mobs.filter(m=>!m.net);}
+  MPwasCl=false;MPcl=false;MPauth=true;}
+function mpTick(dt){
+  if(!MPsb){MPcl=false;return;}
+  MPpeers.forEach(r=>{if(r.inv>0)r.inv-=dt;});
+  if(IN!==null||DG){MPcl=false;return;}
+  const now=performance.now();let au=true;
+  MPpeers.forEach((r,id)=>{if(!r.ind&&now-(r.seen||0)<4000&&id<MPid)au=false;});
+  MPauth=au;const cl=!au;
+  if(cl!==MPwasCl){
+    if(cl){mobs=[];loaded.clear();}
+    else for(const m of mobs)if(m.net){m.net=false;m.cx=Math.floor(m.x/T/CH);m.cy=Math.floor(m.y/T/CH);m.ck=chunkKey(m.cx,m.cy);loaded.add(m.ck);}
+    MPwasCl=cl;}
+  MPcl=cl;
+  if(!cl&&now-MPsnapT>150){MPsnapT=now;
+    const a=[],q=v=>Math.round((+v||0)*100)/100;
+    for(const m of mobs){if(m.dead||m.net)continue;if(a.length>=150)break;
+      a.push([m.id,m.type,m.tier,m.lvl,q(m.x),q(m.y),m.hp,m.maxHp,m.dir&3,m.walkT>0?1:0,q(m.hop),q(m.lunge),q(m.aim),q(m.wind),q(m.fade)]);}
+    mpOut({t:'M',a});}}
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
-  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:(IN===null&&!DG)?0:1});},100);
+  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:(IN===null&&!DG)?0:1,dy:dying?1:0});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
 $('mpX').onclick=()=>$('mp').classList.remove('on');
 $('mpHost').onclick=mpHost;$('mpJoin').onclick=mpJoin;
