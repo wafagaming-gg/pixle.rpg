@@ -43,6 +43,10 @@
   #dhint{display:block;text-align:right;font-size:11px;color:#9ad;margin-top:4px;animation:bl 1s infinite}
   @keyframes bl{50%{opacity:.2}}
 
+  #bossbar{position:absolute;top:44px;left:50%;transform:translateX(-50%);width:min(340px,56vw);display:none;pointer-events:none;text-align:center;font-size:12px;text-shadow:1px 1px #000;z-index:5}
+  #bossbar b{display:block;color:#ff6b6b;margin-bottom:2px;letter-spacing:1px}
+  #bossbar .bbb{height:10px;background:#1a0a0a;border:2px solid #fff;box-shadow:0 0 0 2px #000}
+  #bossbar .bbb i{display:block;height:100%;width:100%;background:linear-gradient(#ff6b5a,#b81c1c)}
   #toast{position:absolute;top:14%;left:50%;transform:translateX(-50%);background:rgba(10,14,28,.85);border:2px solid #ffe066;padding:6px 14px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;color:#ffe066;text-align:center;max-width:90vw}
 
   #controls{display:none}
@@ -212,7 +216,7 @@ html,body{height:100dvh}
 
 <div id="hotbar"></div>
 <div id="dialog"><b id="dname"></b><span id="dtext"></span><span id="dhint">▼ E / Enter / Space / klik</span></div>
-<div id="err"></div><div id="toast"></div><div id="shop"></div>
+<div id="err"></div><div id="toast"></div><div id="bossbar"><b id="bbn"></b><div class="bbb"><i id="bbi"></i></div></div><div id="shop"></div>
 <div id="lobby"><div class="lbox">
   <h2>🏰 Lobi</h2>
   <div class="sub" id="lwho"></div>
@@ -1237,6 +1241,40 @@ function makeCroc(f){
   R(g,'#ffd23f',25,5,1,1);R(g,'#fff',26,5,1,1);R(g,'#2a4a22',4,4,2,1);R(g,'#2a4a22',10,5,2,1);R(g,'#2a4a22',16,4,2,1);
   return outline(c);
 }
+
+function scaleImg(src,k,padTop){const pt=padTop||0,[c,g]=mk(src.width*k,src.height*k+pt);g.imageSmoothingEnabled=false;g.drawImage(src,0,pt,src.width*k,src.height*k);return c;}
+function tintImg(src,col,a){const [c,g]=mk(src.width,src.height);g.drawImage(src,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=a;g.fillStyle=col;g.fillRect(0,0,c.width,c.height);return c;}
+function makeBossSlime(f){
+  const c=scaleImg(SPR.slime[2][f],4,14),g=c.getContext('2d');
+  const cx=Math.floor(c.width/2);
+  R(g,'#b8860b',cx-15,19,30,3);R(g,'#ffd23f',cx-14,14,28,6);
+  for(let i=0;i<4;i++){R(g,'#ffd23f',cx-14+i*8,6,6,9);R(g,'#fff2a0',cx-14+i*8,6,2,3);}
+  R(g,'#e0443e',cx-2,15,4,4);R(g,'#4fc3f7',cx-11,16,3,3);R(g,'#4fc3f7',cx+8,16,3,3);
+  return c;
+}
+function makeDragon(f,flip){
+  const [c,g]=mk(48,36);
+  const B='#b02a22',D='#5e1410',L='#e86a48',BL='#f0c880',W='#7a1818',WB='#c04030',H='#fff2c0',Y='#ffd23f';
+  for(let i=0;i<12;i++){const x=12+i,top=f?8+Math.floor(i*0.5):1+Math.floor(i*0.9);R(g,W,x,top,1,17-top);R(g,WB,x,top,1,1);}
+  R(g,WB,12,f?8:1,1,9);
+  R(g,D,10,28,5,7);R(g,D,26,28,5,7);R(g,H,10,34,5,1);R(g,H,26,34,5,1);
+  R(g,B,0,22,10,4);R(g,D,3,26,6,1);R(g,Y,0,20,3,3);
+  ell(g,D,21,23,14,9);ell(g,B,21,22,13,8);ell(g,BL,21,26,10,4);
+  for(let i=0;i<6;i++)R(g,Y,14+i*4,13,2,2);
+  R(g,B,31,12,6,12);R(g,L,31,12,2,12);
+  R(g,B,34,6,11,8);R(g,D,34,12,11,2);R(g,L,42,8,4,4);
+  R(g,Y,38,8,2,2);R(g,'#000',39,9,1,1);R(g,H,35,2,2,5);R(g,H,39,3,2,4);R(g,D,44,9,1,1);
+  const o=outline(c);
+  if(!flip)return o;
+  const [t,tg]=mk(o.width,o.height);tg.translate(o.width,0);tg.scale(-1,1);tg.drawImage(o,0,0);return t;
+}
+function buildBossSprites(){
+  SPR.bos_slime=[makeBossSlime(0),makeBossSlime(1)];
+  SPR.bos_goblin=SPR.goblin.map(row=>row.map(im=>tintImg(scaleImg(im,3),'#7a1010',0.4)));
+  SPR.bos_lich=SPR.skeleton.map(row=>row.map(im=>tintImg(scaleImg(im,3),'#6a1fb0',0.4)));
+  SPR.bos_titan=SPR.golem.map(im=>tintImg(scaleImg(im,3),'#ff2a00',0.22));
+  SPR.bos_naga=[[0,1].map(f=>scaleImg(makeDragon(f,false),2)),[0,1].map(f=>scaleImg(makeDragon(f,true),2))];
+}
 function buildSprites(){
   SPR.grass=[0,1,2,3].map(makeGrass);
   SPR.water=[0,1].map(f=>[0,1].map(v=>makeWater(false,f,v)));
@@ -1271,6 +1309,7 @@ function buildSprites(){
   SPR.serigala=[makeWolf(0),makeWolf(1)];
   SPR.harimau=[makeTiger(0),makeTiger(1)];
   SPR.buaya=[makeCroc(0),makeCroc(1)];
+  buildBossSprites();
 }
 buildSprites();
 
@@ -1293,7 +1332,13 @@ const MOBS={
   beruang :{name:'Beruang',  rad:10,cy:12, h:24,reach:14, weak:'api', col:'#6b4423',hp:22,dmg:3,xp:28},
   serigala:{name:'Serigala', rad:7, cy:9,  h:18,reach:12, weak:'api', col:'#8a8a96',hp:12,dmg:2,xp:16},
   harimau :{name:'Harimau',  rad:8, cy:10, h:20,reach:13, weak:'api', col:'#e0a030',hp:20,dmg:3,xp:30},
-  buaya   :{name:'Buaya',    rad:9, cy:7,  h:14,reach:13, weak:'api', col:'#3f7a3a',hp:16,dmg:3,xp:22, water:1}
+  buaya   :{name:'Buaya',    rad:9, cy:7,  h:14,reach:13, weak:'api', col:'#3f7a3a',hp:16,dmg:3,xp:22, water:1},
+  /* BOS DUNIA TERBUKA: makin jauh dari desa makin mengerikan */
+  bos_slime :{name:'Raja Slime',     boss:1,rad:22,cy:26,h:76, reach:30,weak:'api',  col:'#a468e0',kbMul:0.04,hp:24,dmg:3,xp:40,hpm:7, dmgm:1.0,xpm:8, coin:80, sw:44,bw:64},
+  bos_goblin:{name:'Jenderal Goblin',boss:1,rad:14,cy:32,h:68, reach:24,weak:'tanah',col:'#c02020',kbMul:0.05,hp:24,dmg:3,xp:40,hpm:9, dmgm:1.3,xpm:11,coin:140,sw:28,bw:52},
+  bos_lich  :{name:'Lich Kegelapan', boss:1,rad:14,cy:32,h:70, reach:12,weak:'cahaya',res:{gelap:0.4},col:'#b36bff',kbMul:0.05,hp:24,dmg:3,xp:40,hpm:10,dmgm:1.4,xpm:14,coin:220,sw:26,bw:52},
+  bos_titan :{name:'Titan Magma',    boss:1,rad:26,cy:42,h:88, reach:36,weak:'air',  res:{api:0.2},col:'#ff7a1a',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:13,dmgm:1.7,xpm:18,coin:350,sw:56,bw:72},
+  bos_naga  :{name:'Naga Api',       boss:1,rad:26,cy:30,h:78, reach:34,weak:'air',  res:{api:0.2},col:'#e0443e',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:17,dmgm:2.0,xpm:26,coin:600,sw:60,bw:76}
 };
 const SPELLS=[
   {id:'angin', name:'Angin',    mp:4,cd:0.55,col:'#9fe8c0',icon:'🌪️'},
@@ -1405,7 +1450,7 @@ const WALK=[0,1,0,3];
 const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
 const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
 let SAVE_KEY=null;                             // diisi setelah login
-const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg'];
+const SAVE_FIELDS=['x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg','bk'];
 const ROLES={
   warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:700,farm:true,xpMul:0.5,
     ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
@@ -1436,7 +1481,7 @@ function freshPlayer(){
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
     weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false,false],eq:null,buf:{},absorb:0,
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,dg:{best:{},clr:{}},stam:50,maxSt:50,exh:false,stT:0};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,dg:{best:{},clr:{}},bk:{},stam:50,maxSt:50,exh:false,stT:0};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
@@ -1510,7 +1555,7 @@ function loadGame(){
       {const st=(P.stats&&typeof P.stats==='object')?P.stats:{};P.stats={};STATK.forEach(k=>P.stats[k]=Math.max(0,Math.floor(+st[k])||0));
        const sp=Math.floor(+s.p.pts);
        P.pts=(s.p.stats===undefined||!isFinite(sp))?Math.max(0,5+Math.max(0,(P.lvl||1)-1)-statSum()):Math.max(0,sp);}
-      P.bhp=P.bhp||0;P.bmp=P.bmp||0;
+      P.bhp=P.bhp||0;P.bmp=P.bmp||0;if(!P.bk||typeof P.bk!=='object'||Array.isArray(P.bk))P.bk={};
       collected=new Set(s.col||[]);picked=new Set(s.flw||[]);gtime=s.time||0;shownIntro=true;
     }
   }catch(e){}
@@ -1617,16 +1662,25 @@ function initNpcs(){
    ========================================================= */
 const CH=12;
 const chunkKey=(cx,cy)=>cx*4096+cy;
-function mobLevel(x,y){return 1+Math.floor(Math.max(0,settDist(x/T,y/T))/5);}
-function makeMob(type,x,y,tier,ck,cx,cy,fl){
+function mobLevel(x,y){return 1+Math.floor(Math.max(0,settDist(x/T,y/T))/4);}   // +1 level tiap 4 petak dari desa terdekat
+function makeMob(type,x,y,tier,ck,cx,cy,fl,ow){
   const d=MOBS[type];
   let hp=d.hp,dmg=d.dmg,xp=d.xp;
   if(type==='slime'){hp=2+tier*2;dmg=1+tier;xp=4+tier*4;}
-  const lvl=fl!==undefined?fl:mobLevel(x,y);
-  hp=Math.max(1,Math.round(hp*(1+(lvl-1)*0.12)));
-  if(dmg>0)dmg=Math.max(1,Math.round(dmg*(1+(lvl-1)*0.08)));
-  xp=Math.max(1,Math.round(xp*(1+(lvl-1)*0.1)));
-  return {kind:'mob',id:mpNewId(),type,tier,lvl,x,y,hp,maxHp:hp,dmg,xp,dir:0,anim:0,walkT:0,t:Math.random()*5,cd:0.5+Math.random(),
+  const lvl=fl!==undefined?fl:mobLevel(x,y),L1=lvl-1,owl=ow||fl===undefined;
+  let spd=1;
+  if(owl){   // dunia terbuka: skala lebih curam (HP melonjak, serangan & kecepatan ikut naik)
+    hp=Math.max(1,Math.round(hp*(1+L1*0.14+L1*L1*0.002)));
+    if(dmg>0)dmg=Math.max(1,Math.round(dmg*(1+L1*0.10)));
+    xp=Math.max(1,Math.round(xp*(1+L1*0.12)));
+    spd=1+Math.min(d.boss?0.25:0.6,L1*(d.boss?0.01:0.012));
+  }else{     // dungeon: skala lama
+    hp=Math.max(1,Math.round(hp*(1+L1*0.12)));
+    if(dmg>0)dmg=Math.max(1,Math.round(dmg*(1+L1*0.08)));
+    xp=Math.max(1,Math.round(xp*(1+L1*0.1)));
+  }
+  if(d.boss){hp=Math.round(hp*d.hpm);dmg=Math.max(1,Math.round(dmg*d.dmgm));xp=Math.round(xp*d.xpm);}
+  return {kind:'mob',id:mpNewId(),type,tier,lvl,x,y,hp,maxHp:hp,dmg,xp,boss:!!d.boss,spd,dir:0,anim:0,walkT:0,t:Math.random()*5,cd:0.5+Math.random(),
     hop:0,vx:0,vy:0,flash:0,kbT:0,kx:0,ky:0,slow:0,stun:0,burn:0,burnT:0,wt:0,wm:false,wa:Math.random()*6.283,
     sd:Math.random()<0.5?1:-1,rt:0,lunge:0,aim:0,wind:0,fade:1,hit:0,dead:false,ck,cx,cy};
 }
@@ -1635,7 +1689,7 @@ function pickMob(d,r){
   if(d>=20)tbl.push(['bat',22]);
   if(d>=32)tbl.push(['goblin',24]);
   if(d>=48)tbl.push(['skeleton',16]);
-  if(d>=75)tbl.push(['golem',7]);
+  if(d>=75)tbl.push(['golem',7+Math.min(14,Math.floor((d-75)/10))]);   // makin jauh makin banyak golem
   let tot=0;for(const e of tbl)tot+=e[1];
   let v=r*tot;
   for(const e of tbl){v-=e[1];if(v<0)return e[0];}
@@ -1663,9 +1717,171 @@ function pickWild(d,r,nearW){
   let v=r*tot;for(const e of tbl){v-=e[1];if(v<0)return e[0];}
   return 'serigala';
 }
+
+/* =========================================================
+   BOS DUNIA TERBUKA
+   - muncul di 'sarang' tetap (deterministik) di luar jangkauan desa
+   - jenis bos ditentukan jarak dari desa terdekat
+   - kalah -> respawn 8 menit; progres disimpan di P.bk
+   ========================================================= */
+const BOSS_CELL=34,BOSS_RESPAWN=480000;
+const BOSS_TYPES=[['bos_slime',14],['bos_goblin',24],['bos_lich',34],['bos_titan',46],['bos_naga',60]];
+function bossPickType(dv,r){
+  const el=BOSS_TYPES.filter(b=>dv>=b[1]);if(!el.length)return null;
+  if(r<0.6||el.length===1)return el[el.length-1][0];       // 60%: bos tertinggi untuk zona itu
+  return el[Math.floor((r-0.6)/0.4*(el.length-1))][0];     // sisanya: bos yang lebih rendah
+}
+function spawnBosses(cx,cy,key){
+  if(DG)return;
+  const x0=cx*CH,y0=cy*CH;
+  const bx0=Math.floor(x0/BOSS_CELL),bx1=Math.floor((x0+CH-1)/BOSS_CELL),by0=Math.floor(y0/BOSS_CELL),by1=Math.floor((y0+CH-1)/BOSS_CELL);
+  for(let bx=bx0;bx<=bx1;bx++)for(let by=by0;by<=by1;by++){
+    if(rnd(bx,by,201)>0.6)continue;
+    const tx=bx*BOSS_CELL+4+Math.floor(rnd(bx,by,202)*(BOSS_CELL-8)),ty=by*BOSS_CELL+4+Math.floor(rnd(bx+31,by,203)*(BOSS_CELL-8));
+    if(Math.floor(tx/CH)!==cx||Math.floor(ty/CH)!==cy)continue;
+    const dv=Math.max(0,settDist(tx,ty));if(dv<14)continue;
+    const id=bx+'_'+by;
+    if(P.bk&&P.bk[id]&&Date.now()-P.bk[id]<BOSS_RESPAWN)continue;
+    if(mobs.some(q=>q.bkey===id))continue;
+    const type=bossPickType(dv,rnd(bx,by,204));if(!type)continue;
+    const [fx_,fy_]=findFree(tx,ty);
+    if(inSafe(fx_*T,fy_*T,3)||dentNear(fx_,fy_))continue;
+    const lvl=1+Math.floor(dv/4)+3;
+    const b=makeMob(type,fx_*T+8,fy_*T+12,0,key,cx,cy,lvl,true);
+    b.bkey=id;b.home={x:b.x,y:b.y};
+    mobs.push(b);
+  }
+}
+function bossSummon(m,type,n){
+  let c=0;for(const q of mobs)if(q.minion&&q.owner===m.id&&!q.dead)c++;
+  for(let i=0;i<n&&c<6;i++){
+    const a=Math.random()*6.283,r=24+Math.random()*16,x=m.x+Math.cos(a)*r,y=m.y+Math.sin(a)*r;
+    if(blocked(x,y))continue;
+    const q=makeMob(type,x,y,type==='slime'?2:0,null,0,0,Math.max(1,m.lvl-3),true);
+    q.minion=true;q.owner=m.id;q.xp=Math.max(1,Math.round(q.xp*0.25));
+    mobs.push(q);c++;burst(x,mc(q),'#ffffff');
+  }
+  floatText(m.x,m.y-d_h(m)-6,'PASUKAN!','#ff6b6b');
+}
+const d_h=m=>MOBS[m.type].h;
+function bossFan(m,TG,n,spread,sp,mul,life){
+  const base=Math.atan2((TG.y-6)-(m.y-12),TG.x-m.x);
+  for(let i=0;i<n;i++){
+    const a=base+(n>1?(i/(n-1)-0.5)*spread:0);
+    mpPj({t:'earrow',fire:true,hostile:true,x:m.x,y:m.y-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:life||1.8,dmg:Math.max(1,Math.round(m.dmg*mul)),r:3});
+  }
+}
+function bossNova(m,n,sp,mul,life){
+  const o=Math.random()*6.283;
+  for(let i=0;i<n;i++){
+    const a=o+i/n*6.283;
+    mpPj({t:'earrow',fire:true,hostile:true,x:m.x,y:m.y-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:life||1.5,dmg:Math.max(1,Math.round(m.dmg*mul)),r:3});
+  }
+}
+function bossSlam(m,r,col,mul,TG,TGd){
+  fx.push({k:'ring',x:m.x,y:m.y,r0:4,r1:r,col,life:0.4,sq:0.7});
+  for(let k=0;k<14;k++){const b=Math.random()*6.283;sparkFx(m.x,m.y-2,col,0.45,Math.cos(b)*60,Math.sin(b)*36-10,2);}
+  if(Math.hypot(TG.x-m.x,TG.y-m.y)<r&&TG.inv<=0&&!TGd)mobHurt(TG,Math.max(1,Math.round(m.dmg*(mul||1))),m.x,m.y);
+}
+function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
+  const hpf=m.hp/m.maxHp,enr=hpf<0.4;          // enrage di bawah 40% HP
+  m.cd-=dt;m.sum=(m.sum||0)-dt;
+  const aggro=!TGd&&dist<(m.engaged?300:170);
+  if(aggro&&!m.engaged){m.engaged=true;if(!m.warned){m.warned=true;toast('⚠️ '+d.name+' Lv '+m.lvl+' menyerang!');}}
+  if(!aggro){
+    m.engaged=false;m.wind=0;m.aim=0;
+    if(m.home){
+      const hx=m.home.x-m.x,hy=m.home.y-m.y,hd=Math.hypot(hx,hy);
+      if(hd>10){moveEnt(m,hx/hd*30*dt,hy/hd*30*dt,true);m.walkT=0.15;m.anim+=dt*5;}
+      m.hp=Math.min(m.maxHp,m.hp+m.maxHp*0.02*dt);
+    }
+    return;
+  }
+  m.face=dx<0?1:0;m.dir=dirFromVec(dx,dy);
+  switch(m.type){
+    case 'bos_slime':{
+      m.hc=(m.hc||0)-dt;
+      if(m.wind>0){m.wind-=dt;if(m.wind<=0)bossSlam(m,58,'#5ad06a',1.2,TG,TGd);break;}
+      if(m.hop>0){m.hop-=dt;if(dist<26)m.hop=0;else moveEnt(m,m.vx*dt*sm,m.vy*dt*sm,true);}
+      else if(m.hc<=0&&dist>30){m.hc=0.55;m.hop=0.4;const sp=enr?84:60;m.vx=ca*sp;m.vy=sa*sp;}
+      if(m.cd<=0&&dist<66){m.wind=0.8;m.cd=enr?2.2:3.3;fx.push({k:'warn',x:m.x,y:m.y,r:58,t:0,life:0.8});}
+      if(m.sum<=0&&hpf<0.75){m.sum=enr?7:11;bossSummon(m,'slime',enr?3:2);}
+      break;}
+    case 'bos_goblin':{
+      if(m.lunge>0){m.lunge-=dt;moveEnt(m,m.vx*dt,m.vy*dt,true);m.walkT=0.15;m.anim+=dt*12;}
+      else if(m.wind>0){m.wind-=dt;if(m.wind<=0){m.lunge=0.5;const sp=enr?200:165;m.vx=ca*sp;m.vy=sa*sp;}}
+      else{
+        if(dist>24)moveEnt(m,ca*38*sm*dt,sa*38*sm*dt,true);
+        m.walkT=0.15;m.anim+=dt*8;
+        if(m.cd<=0&&dist<150&&dist>40){m.wind=0.55;m.cd=enr?2.4:3.4;fx.push({k:'warn',x:m.x,y:m.y,r:26,t:0,life:0.55});}
+        if(m.sum<=0&&hpf<0.7){m.sum=enr?9:14;bossSummon(m,'goblin',2);}
+      }
+      break;}
+    case 'bos_lich':{
+      if(m.aim>0){m.aim-=dt;if(m.aim<=0)bossFan(m,TG,enr?5:3,enr?1.1:0.7,105,0.8,1.9);break;}
+      const sp=26*sm;
+      if(dist<60)moveEnt(m,-ca*sp*dt,-sa*sp*dt,true);
+      else if(dist>110)moveEnt(m,ca*sp*dt,sa*sp*dt,true);
+      else moveEnt(m,-sa*sp*0.6*m.sd*dt,ca*sp*0.6*m.sd*dt,true);
+      m.walkT=0.15;m.anim+=dt*6;
+      m.tp=(m.tp||0)-dt;
+      if(dist<34&&m.tp<=0){            // teleportasi menjauh dari pemain
+        m.tp=enr?3:5;
+        const a=Math.atan2(dy,dx)+Math.PI+(Math.random()-0.5),nx=TG.x+Math.cos(a)*85,ny=TG.y+Math.sin(a)*85;
+        if(!blocked(nx,ny)){burst(m.x,mc(m),'#b36bff');m.x=nx;m.y=ny;burst(nx,mc(m),'#b36bff');}
+      }
+      if(m.cd<=0&&dist<190){m.aim=0.6;m.cd=enr?1.7:2.4;}
+      if(m.sum<=0&&hpf<0.6){m.sum=12;bossSummon(m,'skeleton',2);}
+      break;}
+    case 'bos_titan':{
+      m.sh=(m.sh||0)-dt;
+      if(m.wind>0){m.wind-=dt;if(m.wind<=0){bossSlam(m,68,'#ff7a1a',1,TG,TGd);bossNova(m,enr?14:9,85,0.55,1.4);}break;}
+      if(dist>30){const sp=(enr?27:20)*sm;moveEnt(m,ca*sp*dt,sa*sp*dt,true);m.walkT=0.15;m.anim+=dt*4;}
+      if(m.cd<=0&&dist<78){m.wind=0.95;m.cd=enr?2.6:3.8;fx.push({k:'warn',x:m.x,y:m.y,r:68,t:0,life:0.95});}
+      else if(m.sh<=0&&dist>=60&&dist<190){m.sh=enr?2.4:3.6;bossFan(m,TG,enr?3:1,0.5,100,0.9,1.8);}
+      break;}
+    case 'bos_naga':{
+      m.sh=(m.sh||0)-dt;
+      if(m.wind>0){
+        m.wind-=dt;m.walkT=0;
+        if(m.wind<=0){
+          if(m.mode===1)bossSlam(m,52,'#ff5030',1.3,TG,TGd);
+          else{
+            bossFan(m,TG,enr?7:5,0.95,135,0.8,1.7);
+            for(let k=0;k<8;k++)sparkFx(m.x+(m.face?-26:26),m.y-26,k%2?'#ffd23f':'#ff5030',0.4,(m.face?-1:1)*(30+Math.random()*50),(Math.random()-0.5)*40,2);
+          }
+        }
+        break;
+      }
+      if(dist>46){const sp=(enr?42:30)*sm;moveEnt(m,ca*sp*dt,sa*sp*dt,true);m.walkT=0.15;m.anim+=dt*5;}
+      if(m.cd<=0){
+        if(dist<58){m.mode=1;m.wind=0.6;m.cd=enr?1.8:2.6;fx.push({k:'warn',x:m.x,y:m.y,r:52,t:0,life:0.6});}
+        else if(dist<230){m.mode=0;m.wind=0.9;m.cd=enr?2.2:3.2;}
+      }else if(m.sh<=0&&dist<200){m.sh=enr?5:8;bossNova(m,enr?14:10,85,0.6,1.5);fx.push({k:'ring',x:m.x,y:m.y,r0:4,r1:40,col:'#ff7a1a',life:0.35,sq:0.7});}
+      break;}
+  }
+}
+function bossReward(m){
+  const d=MOBS[m.type],L=m.lvl||1;
+  if(m.bkey&&P.bk)P.bk[m.bkey]=Date.now();
+  for(const q of mobs)if(q.minion&&q.owner===m.id&&!q.dead){q.dead=true;burst(q.x,mc(q),'#ffffff');}
+  P.st.boss=(P.st.boss||0)+1;
+  const coins=Math.round(d.coin*(1+L*0.15));
+  P.coins+=coins;P.st.coin=(P.st.coin||0)+coins;
+  const lt=P.bag.loot;
+  lt.relik=(lt.relik||0)+1;
+  lt.permata=(lt.permata||0)+2+Math.floor(Math.random()*2);
+  let extra='';
+  if(Math.random()<0.4){lt.mahkota=(lt.mahkota||0)+1;extra=' +👑';}
+  P.pts=(P.pts||0)+1;
+  for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:'crystal',x:m.x+(k-1)*12,y:m.y,ck:null,t:0});
+  for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:k%2?'mana':'heart',x:m.x+(k-1)*9,y:m.y+6,val:1,ck:null,t:0,life:40});
+  fx.push({k:'ring',x:m.x,y:m.y,r0:4,r1:70,col:'#ffd23f',life:0.6,sq:0.7});
+  toast('👑 '+d.name+' (Lv '+L+') kalah! +'+coins+' koin, relik, permata'+extra+' · +1 poin stat');
+}
 function spawnChunk(cx,cy){
   const key=chunkKey(cx,cy);loaded.add(key);
-  const n=Math.floor(rnd(cx,cy,31)*3.2);
+  const n=Math.floor(rnd(cx,cy,31)*(3.2+Math.min(1.6,Math.max(0,Math.hypot(cx*CH,cy*CH)-50)/70)));   // makin jauh makin ramai
   for(let i=0;i<n;i++){
     const tx=cx*CH+Math.floor(rnd(cx,cy,40+i)*CH),ty=cy*CH+Math.floor(rnd(cx+99,cy,50+i)*CH);
     const d=Math.hypot(tx,ty);if(d<14||inSafe(tx*T,ty*T,2))continue;
@@ -1675,6 +1891,7 @@ function spawnChunk(cx,cy){
     const tier=Math.min(3,Math.floor((d-14)/45));
     mobs.push(makeMob(type,tx*T+8,ty*T+12,tier,key,cx,cy));
   }
+  spawnBosses(cx,cy,key);
   // hewan liar (buruan)
   const wn=Math.floor(rnd(cx,cy,33)*2.4);
   for(let i=0;i<wn;i++){
@@ -1821,9 +2038,14 @@ function updateHUD(){
   if(html!==lastQ){$('quest').innerHTML=html;lastQ=html;}
   const ns=nearSett(),vd=ns.d;
   const va=Math.atan2(ns.s.y*T-(IN!==null?OY:P.y),ns.s.x*T-(IN!==null?OX:P.x)),arrows=['→','↘','↓','↙','←','↖','↑','↗'];
-  const vtxt='● '+ns.s.name+(vd<ns.s.r?' (di sini)':' '+arrows[((Math.round(va/(Math.PI/4))%8)+8)%8]+' '+Math.round(vd)+' petak');$('vtag').style.color=ns.s.col;
+  const zl=(IN!==null||DG||mobLevel(P.x,P.y)<2)?'':' · ⚠ Zona Lv '+mobLevel(P.x,P.y);
+  const vtxt='● '+ns.s.name+(vd<ns.s.r?' (di sini)':' '+arrows[((Math.round(va/(Math.PI/4))%8)+8)%8]+' '+Math.round(vd)+' petak')+zl;$('vtag').style.color=ns.s.col;
   const vt2=DG?'🕳️ '+DG.d.name+' · Lt '+DG.f+'/'+DG.d.floors+' · musuh '+mobs.length:vtxt;if(DG)$('vtag').style.color=DG.d.col;if($('vtag').textContent!==vt2)$('vtag').textContent=vt2;
   $('selrow').textContent=(IN===null&&!RL().farm)?RL().hint:IN!==null?'🪑 '+FURN[P.selF].n+' x'+(P.bag.furn[FURN[P.selF].id]||0)+' (Z/X)':'🌱 '+CROPS[CK[P.selSeed]].n+' x'+P.bag.seed[CK[P.selSeed]]+' (Z) 🌾'+P.bag.feed;
+  {let bb=null,bd2=1e9;for(const m of mobs){if(!m.boss||m.dead)continue;const dd=Math.hypot(m.x-P.x,m.y-P.y);if(dd<260&&dd<bd2){bd2=dd;bb=m;}}
+   const el=$('bossbar');
+   if(bb&&IN===null){el.style.display='block';$('bbn').textContent='👑 '+MOBS[bb.type].name+' · Lv '+bb.lvl;$('bbi').style.width=clamp(bb.hp/bb.maxHp,0,1)*100+'%';}
+   else if(el.style.display!=='none')el.style.display='none';}
   updateHotbar();
 }
 
@@ -2543,6 +2765,7 @@ function killMob(m,by){
   if(Math.random()<0.2)drop('heart');
   if(Math.random()<0.25)drop('mana');
   if(m.type==='golem')drop('crystal',1,60);
+  if(m.boss&&!DG)bossReward(m);
   // loot buruan langsung ke inventori
   const drops=MOB_DROPS[m.type];
   if(drops){
@@ -2684,15 +2907,18 @@ function updateMob(m,dt){
   m.t+=dt;if(m.flash>0)m.flash-=dt;if(m.walkT>0)m.walkT-=dt;
   if(m.slow>0)m.slow-=dt;
   if(m.stun>0)m.stun-=dt;
+  if(d.boss){if(m.stun>0.35)m.stun=0.35;if(m.slow>1)m.slow=1;}   // bos tahan stun/slow
   if(m.burn>0){
     m.burn-=dt;m.burnT-=dt;
     if(m.burnT<=0){m.burnT=1;hitMob(m,1,null,{by:'spell',burn:true});if(m.dead)return;}
   }
   if(m.kbT>0){m.kbT-=dt;moveMob(m,m.kx*dt,m.ky*dt);return;}
   if(m.stun>0)return;
-  const sm=m.slow>0?0.5:1;
+  const sm=(m.slow>0?0.5:1)*(m.spd||1);
   const dx=TG.x-m.x,dy=TG.y-m.y;let dist=Math.hypot(dx,dy);if(DG&&dist<150&&!dgLOS(m.x,m.y-4,TG.x,TG.y-4))dist=999;
   const ca=dist>0?dx/dist:0,sa=dist>0?dy/dist:0;
+  if(d.boss)m.taunt=0;
+  if(m.minion&&dist>340){m.dead=true;return;}
   if(m.taunt>0){
     m.taunt-=dt;
     if(!d.reach||TGd)m.taunt=0;
@@ -2788,6 +3014,8 @@ function updateMob(m,dt){
         m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*7;
       }else wander(m,dt,14,sm,false);
       break;}
+    case 'bos_slime':case 'bos_goblin':case 'bos_lich':case 'bos_titan':case 'bos_naga':
+      bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm);break;
     case 'buaya':{
       // tetap dekat air
       const tx=Math.floor(m.x/T),ty=Math.floor(m.y/T);
@@ -3005,7 +3233,7 @@ function drawEntity(e,now){
     }
   }else if(e.kind==='mob'){
     const d=MOBS[e.type],alt=d.alt||0;
-    shadow(sx,sy,e.type==='golem'?20:e.type==='slime'?12:10);
+    shadow(sx,sy,d.sw||(e.type==='golem'?20:e.type==='slime'?12:10));
     const vis=!(e.flash>0&&Math.floor(e.flash*30)%2===0);
     if(vis){
       const wk=e.walkT>0?WALK[Math.floor(e.anim)%4]:0;
@@ -3025,6 +3253,29 @@ function drawEntity(e,now){
           const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0;
           const bob=e.walkT>0&&Math.floor(e.anim)%2?1:0;
           if(e.boss)ctx.drawImage(SPR.golem[e.wind>0?1:0],sx-21+sh,sy-40+bob,42,42);else ctx.drawImage(SPR.golem[e.wind>0?1:0],sx-14+sh,sy-27+bob);
+          break;}
+        case 'bos_slime':{
+          const off=e.hop>0?-Math.round(Math.sin((1-e.hop/0.4)*Math.PI)*8):0,sq=e.wind>0?1:0;
+          const img=SPR.bos_slime[e.hop>0||sq?1:0];
+          ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2+off+(sq?3:0));
+          break;}
+        case 'bos_goblin':{
+          const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0,img=SPR.bos_goblin[e.dir][wk];
+          ctx.drawImage(img,sx-Math.floor(img.width/2)+sh,sy-img.height+2);
+          break;}
+        case 'bos_lich':{
+          const bob=Math.round(Math.sin(e.t*3)*2),img=SPR.bos_lich[e.dir][wk];
+          ctx.globalAlpha=(e.aim>0?0.5:0.22)+0.08*Math.sin(e.t*5);ctx.fillStyle='#b36bff';
+          ctx.beginPath();ctx.ellipse(sx,sy-30+bob,24,32,0,0,6.283);ctx.fill();ctx.globalAlpha=1;
+          ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2+bob-4);
+          break;}
+        case 'bos_titan':{
+          const sh=e.wind>0?(Math.floor(e.t*30)%2?2:-2):0,bob=e.walkT>0&&Math.floor(e.anim)%2?1:0,img=SPR.bos_titan[e.wind>0?1:0];
+          ctx.drawImage(img,sx-Math.floor(img.width/2)+sh,sy-img.height+2+bob);
+          break;}
+        case 'bos_naga':{
+          const bob=Math.round(Math.sin(e.t*(e.wind>0?10:4))*2),img=SPR.bos_naga[e.face?1:0][Math.floor(e.t*(e.wind>0?9:4))%2];
+          ctx.drawImage(img,sx-Math.floor(img.width/2),sy-img.height+2+bob);
           break;}
         case 'ghost':{
           const bob=Math.round(Math.sin(e.t*3)*2);
@@ -3064,12 +3315,17 @@ function drawEntity(e,now){
       for(let i=10;i<Math.min(l,120);i+=6)ctx.fillRect(Math.round(sx+tx/l*i),Math.round(sy-8+ty/l*i),1,1);
     }
     drawStatus(e,sx,sy,d.h,alt);
-    if(e.boss){const w=34,by=sy-d.h-alt-18;ctx.fillStyle='#000';ctx.fillRect(sx-w/2-1,by,w+2,5);ctx.fillStyle='#e0443e';ctx.fillRect(sx-w/2,by+1,Math.max(0,w*e.hp/e.maxHp),3);txt('BOSS',sx,by-2,'#ff6b6b',7);}
-    if(e.hit>0||Math.hypot(e.x-P.x,e.y-P.y)<100){
+    if((e.type==='bos_goblin'&&e.wind>0)||(e.type==='bos_lich'&&e.aim>0)||(e.type==='bos_naga'&&e.wind>0&&e.mode!==1)){
+      ctx.fillStyle='#ff4040';
+      const tx=P.x-e.x,ty=(P.y-6)-(e.y-8),l=Math.hypot(tx,ty)||1;
+      for(let i=10;i<Math.min(l,170);i+=6)ctx.fillRect(Math.round(sx+tx/l*i),Math.round(sy-8+ty/l*i),1,1);
+    }
+    if(e.boss){const w=d.bw||34,by=sy-d.h-alt-18;ctx.fillStyle='#000';ctx.fillRect(sx-w/2-1,by,w+2,5);ctx.fillStyle='#e0443e';ctx.fillRect(sx-w/2,by+1,Math.max(0,w*e.hp/e.maxHp),3);txt(e.type.startsWith('bos_')?d.name:'BOSS',sx,by-2,'#ff6b6b',7);}
+    if(e.hit>0||e.boss||Math.hypot(e.x-P.x,e.y-P.y)<100){
       const lc=e.lvl>P.lvl+5?'#ff6b6b':e.lvl>P.lvl?'#ffd23f':'#ffffff';
       txt('Lv '+e.lvl,sx,sy-d.h-alt-(e.hit>0?9:4),lc,6);
     }
-    if(e.hit>0){
+    if(e.hit>0&&!e.boss){
       const w=d.rad>8?20:14,by=sy-d.h-alt-5;
       ctx.fillStyle='#000';ctx.fillRect(sx-w/2-1,by,w+2,3);
       ctx.fillStyle='#e0443e';ctx.fillRect(sx-w/2,by+1,Math.max(0,w*e.hp/e.maxHp),1);
@@ -3144,6 +3400,7 @@ function drawProj(p){
   const sx=Math.round(p.x-camX),sy=Math.round(p.y-camY),a=Math.atan2(p.vy,p.vx);
   switch(p.t){
     case 'arrow':case 'earrow':{
+      if(p.fire){ctx.fillStyle='#ff7a1a';ctx.fillRect(sx-2,sy-2,4,4);ctx.fillStyle='#ffe066';ctx.fillRect(sx-1,sy-1,2,2);ctx.fillStyle='#ff4a1a';ctx.fillRect(sx+Math.round(Math.sin(p.life*40)*2),sy-3,1,1);break;}
       const col=p.t==='arrow'?'#e8dcc0':'#ff8a8a';
       const ca=Math.cos(a),sa=Math.sin(a);
       for(let i=-4;i<=2;i++){ctx.fillStyle=i===2?'#ffffff':col;ctx.fillRect(Math.round(sx+ca*i),Math.round(sy+sa*i),1,1);}
@@ -3292,7 +3549,7 @@ function drawMini(dt){
   }
   mctx.putImageData(img,0,0);
   mctx.fillStyle='#ff4040';
-  mobs.forEach(s=>{const x=Math.floor(s.x/T)-ox,y=Math.floor(s.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64)mctx.fillRect(x,y,2,2);});
+  mobs.forEach(s=>{const x=Math.floor(s.x/T)-ox,y=Math.floor(s.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64){if(s.boss){mctx.fillStyle='#ffd23f';mctx.fillRect(x-2,y-2,6,6);mctx.fillStyle='#ff4040';mctx.fillRect(x-1,y-1,4,4);}else mctx.fillRect(x,y,2,2);}});
   mctx.fillStyle='#5ee6ff';
   pickups.forEach(p=>{if(p.type!=='crystal')return;const x=Math.floor(p.x/T)-ox,y=Math.floor(p.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64)mctx.fillRect(x,y,2,2);});
   // penanda desa: ikon emas di posisi desa, atau menempel di tepi peta bila di luar jangkauan
