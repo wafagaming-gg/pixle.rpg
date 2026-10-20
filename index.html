@@ -5104,6 +5104,7 @@ async function doAuth(){
       $('anote').textContent='';
       if(sb){await cloudAuth(sb,mail,pw,cname);return;}
       if(mode==='up')return err('Tidak ada internet. Pendaftaran akun butuh koneksi.');
+      if(!accounts()[mail])return err('Tidak bisa terhubung ke server Supabase dari perangkat ini, jadi akun dari perangkat lain belum bisa dipakai. Cek internet / coba jaringan atau browser lain, lalu muat ulang halaman.');
       $('anote').textContent='Offline: masuk memakai data di perangkat ini saja.';
     }
     const acc=accounts();
