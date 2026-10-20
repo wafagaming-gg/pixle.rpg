@@ -5131,7 +5131,7 @@ $('asubmit').addEventListener('click',doAuth);
 $('aguest').onclick=()=>{curMail=null;SAVE_KEY=persist?LEGACY_KEY:null;$('auth').classList.remove('on');openLobby();};
 if(!persist)$('anote').textContent='Penyimpanan browser tidak tersedia di sini: progres hanya bertahan selama halaman terbuka. Buka file ini langsung di browser agar tersimpan.';
 // panel akun
-$('acctBtn').addEventListener('click',()=>{if(!curMail){$('acctMail').textContent='Mode tanpa akun. Keluar lalu daftar untuk menyimpan progres.';}else $('acctMail').textContent='Masuk sebagai: '+curMail+(P.name?' \u00b7 Karakter: '+P.name:'');$('acctPw').style.display='none';$('acctPw').value='';delStep=0;$('acctDel').textContent='Hapus akun & mulai dari awal';$('acctErr').textContent='';$('acct').classList.add('on');for(const k in keys)keys[k]=false;});
+$('acctBtn').addEventListener('click',()=>{if(!curMail){$('acctMail').textContent='Mode tanpa akun. Keluar lalu daftar untuk menyimpan progres.';}else $('acctMail').textContent='Masuk sebagai: '+curMail+(P.name?' \u00b7 Karakter: '+P.name:'')+' \u00b7 \u2601 '+(!CL.uid?'tanpa cloud':CL.last==='ok'?'Cloud-save AKTIF':CL.last?'Cloud-save GAGAL ('+CL.last+')':'Cloud-save belum dicoba (bermain sebentar)');$('acctPw').style.display='none';$('acctPw').value='';delStep=0;$('acctDel').textContent='Hapus akun & mulai dari awal';$('acctErr').textContent='';$('acct').classList.add('on');for(const k in keys)keys[k]=false;});
 $('acctX').onclick=()=>$('acct').classList.remove('on');
 $('acctLobby').onclick=async()=>{saveGame();await cloudPush();SAVE_KEY=null;location.reload();};
 $('acctOut').onclick=async()=>{saveGame();await cloudPush();SAVE_KEY=null;ls.del(SESSION_KEY);try{if(CL.sb)await CL.sb.auth.signOut();}catch(e){}location.reload();};
@@ -5197,8 +5197,9 @@ async function cloudPush(){
   CL.busy=true;
   try{
     const d=JSON.parse(raw);
-    await CL.sb.from('rpg_saves').upsert({user_id:CL.uid,data:d,updated_at:new Date().toISOString()});
-  }catch(e){}finally{CL.busy=false;}
+    const r=await CL.sb.from('rpg_saves').upsert({user_id:CL.uid,data:d,updated_at:new Date().toISOString()});
+    CL.last=(r&&r.error)?String(r.error.message||'gagal'):'ok';
+  }catch(e){CL.last=String(e&&e.message||e);}finally{CL.busy=false;}
 }
 async function cloudDel(){
   if(!CL.sb||!CL.uid)return;
@@ -5213,7 +5214,7 @@ async function cloudStart(sb,user,name){
   let r=await sb.from('rpg_saves').select('data,updated_at').eq('user_id',user.id).maybeSingle();
   if(r.error){
     // tabel belum ada / error lain: jangan blokir login, simpan progres di perangkat ini saja
-    console.warn('rpg_saves:',r.error);r={data:null};CL.noCloud=true;
+    console.warn('rpg_saves:',r.error);CL.last=String(r.error.message||'tabel rpg_saves belum ada');r={data:null};CL.noCloud=true;
     setTimeout(()=>toast('Login berhasil, tapi cloud-save belum aktif (tabel rpg_saves belum dibuat). Progres disimpan di perangkat ini.'),1500);
   }
   const cl=r.data&&r.data.data;
@@ -5221,9 +5222,13 @@ async function cloudStart(sb,user,name){
     const old=ls.get(LEGACY_KEY);
     if(old){try{loc=JSON.parse(old);if(loc&&loc.p){ls.set(key,old);}}catch(e){loc=null;}}
   }
-  const lt=loc&&loc.p?(+loc.ts||0):-1;
-  const ct=cl&&cl.p?(+cl.ts||Date.parse(r.data.updated_at)||0):-1;
-  if(ct>lt)ls.set(key,JSON.stringify(cl));      // data cloud lebih baru (mis. dimainkan di perangkat lain)
+  let lt=loc&&loc.p?(+loc.ts||0):-1;
+  let ct=cl&&cl.p?(+cl.ts||Date.parse(r.data.updated_at)||0):-1;
+  if(lt>=0&&ct>=0){   // dua-duanya ada: karakter dengan level lebih tinggi dipertahankan (cegah karakter baru menimpa karakter lama)
+    const ll=+loc.p.lvl||1,cL=+cl.p.lvl||1;
+    if(cL>ll)ct=Math.max(ct,lt+1);else if(ll>cL)lt=Math.max(lt,ct+1);
+  }
+  if(ct>lt)ls.set(key,JSON.stringify(cl));      // data cloud menang (lebih tinggi / lebih baru)
   $('apass').value=$('apass2').value='';
   startGame(mail);
   if(lt>ct)cloudPush();                          // data perangkat ini lebih baru -> unggah
