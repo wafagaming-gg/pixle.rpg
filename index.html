@@ -5234,7 +5234,11 @@ async function cloudAuth(sb,mail,pw,cname){
     if(pw!==$('apass2').value)return err('Kata sandi tidak sama.');
     res=await sb.auth.signUp({email:mail,password:pw,options:{data:{name:cname}}});
     if(res.error)return err(cloudMsg(res.error));
-    if(!res.data.session)return err('Pendaftaran berhasil. Buka emailmu untuk konfirmasi, lalu masuk di sini.');
+    if(!res.data.session){   // tanpa verifikasi: coba langsung masuk setelah daftar
+      const r2=await sb.auth.signInWithPassword({email:mail,password:pw});
+      if(r2.error||!r2.data.session)return err('Pendaftaran berhasil, tetapi Supabase masih meminta konfirmasi email. Matikan "Confirm email" di Supabase (Authentication > Sign In / Providers > Email), lalu masuk lagi.');
+      res=r2;
+    }
   }else{
     res=await sb.auth.signInWithPassword({email:mail,password:pw});
     if(res.error)return err(cloudMsg(res.error));
