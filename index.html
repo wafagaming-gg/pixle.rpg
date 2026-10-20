@@ -5152,7 +5152,7 @@ $('acctDel').onclick=async()=>{
 
 
 /* ====== ISI DI SINI UNTUK ONLINE VIA SUPABASE (lihat panduan) ====== */
-const SUPABASE_URL='https://djyqbwmnwpvxgmnrkzcp.supabase.co/';   // contoh: 'https://abcdxyz.supabase.co'
+const SUPABASE_URL='https://djyqbwmnwpvxgmnrkzcp.supabase.co';   // contoh: 'https://abcdxyz.supabase.co'
 const SUPABASE_KEY='sb_publishable_1LiNLJFMmlLJOjCBaPTgRA_hm8A6taK';   // Publishable key atau anon key (BUKAN service_role / secret key)
 /* ===== AKUN CLOUD (Supabase Auth) + SIMPAN PROGRES DI CLOUD (tabel rpg_saves) ===== */
 var CL={sb:null,uid:null,t:0,busy:false};
@@ -5209,11 +5209,11 @@ async function cloudStart(sb,user,name){
   const nm=cleanName(name||(user.user_metadata&&user.user_metadata.name)||'');
   const acc=accounts();acc[mail]=Object.assign(acc[mail]||{},nm?{name:nm}:{});putAccounts(acc);
   let loc=null;try{loc=JSON.parse(ls.get(key)||'null');}catch(e){}
-  const r=await sb.from('rpg_saves').select('data,updated_at').eq('user_id',user.id).maybeSingle();
+  let r=await sb.from('rpg_saves').select('data,updated_at').eq('user_id',user.id).maybeSingle();
   if(r.error){
-    const em=String(r.error.message||'');
-    if(/relation|schema cache|does not exist/i.test(em)||r.error.code==='42P01')showSql();
-    throw new Error(/relation|schema cache|does not exist/i.test(em)||r.error.code==='42P01'?'Tabel rpg_saves belum dibuat di Supabase. Salin SQL di kotak bawah ke Supabase SQL Editor.':em);
+    // tabel belum ada / error lain: jangan blokir login, simpan progres di perangkat ini saja
+    console.warn('rpg_saves:',r.error);r={data:null};CL.noCloud=true;
+    setTimeout(()=>toast('Login berhasil, tapi cloud-save belum aktif (tabel rpg_saves belum dibuat). Progres disimpan di perangkat ini.'),1500);
   }
   const cl=r.data&&r.data.data;
   if(!(loc&&loc.p)&&!(cl&&cl.p)){   // progres lama tanpa akun diambil alih bila belum ada data sama sekali
