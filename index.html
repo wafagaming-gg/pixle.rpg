@@ -2233,7 +2233,7 @@ function saveGame(){
   try{
     const p={};SAVE_FIELDS.forEach(k=>p[k]=P[k]);if(IN!==null){p.x=OX;p.y=OY;}if(DG){p.x=DG.ox;p.y=DG.oy;}
     (window.__ls?__ls.set:(k,v)=>localStorage.setItem(k,v))(SAVE_KEY,JSON.stringify({p,col:[...collected],flw:[...picked],time:gtime,ts:Date.now()}));
-    if(CL.uid&&Date.now()-CL.t>20000){CL.t=Date.now();cloudPush();}
+    if(CL.uid&&Date.now()-CL.t>10000){CL.t=Date.now();cloudPush();}
   }catch(e){}
 }
 /* =========================================================
@@ -5715,8 +5715,9 @@ function frame(t){
    ========================================================= */
 const mem={};let persist=true;
 try{localStorage.setItem('_t','1');localStorage.removeItem('_t');}catch(e){persist=false;}
-const ls={get(k){if(persist){try{return localStorage.getItem(k);}catch(e){persist=false;}}return k in mem?mem[k]:null;},
-  set(k,v){if(persist){try{localStorage.setItem(k,v);return true;}catch(e){persist=false;}}mem[k]=String(v);return true;},
+const isSaveKey=k=>k===LEGACY_KEY||String(k).startsWith(SAVE_PFX);   // data karakter: hanya di memori, TIDAK pernah ke localStorage (disimpan di cloud saja)
+const ls={get(k){if(isSaveKey(k))return k in mem?mem[k]:null;if(persist){try{return localStorage.getItem(k);}catch(e){persist=false;}}return k in mem?mem[k]:null;},
+  set(k,v){if(isSaveKey(k)){mem[k]=String(v);return true;}if(persist){try{localStorage.setItem(k,v);return true;}catch(e){persist=false;}}mem[k]=String(v);return true;},
   del(k){delete mem[k];if(persist){try{localStorage.removeItem(k);}catch(e){}}}};
 const accounts=()=>{try{return JSON.parse(ls.get(ACC_KEY)||'{}')||{};}catch(e){return {};}};
 const putAccounts=a=>ls.set(ACC_KEY,JSON.stringify(a));
@@ -5946,7 +5947,7 @@ async function doAuth(){
       if(sb){await cloudAuth(sb,mail,pw,cname);return;}
       if(mode==='up')return err('Tidak ada internet. Pendaftaran akun butuh koneksi.');
       if(!accounts()[mail])return err('Tidak bisa terhubung ke server Supabase dari perangkat ini, jadi akun dari perangkat lain belum bisa dipakai. Cek internet / coba jaringan atau browser lain, lalu muat ulang halaman.');
-      $('anote').textContent='Offline: masuk memakai data di perangkat ini saja.';
+      return err('Tidak bisa terhubung ke server. Progres hanya disimpan di cloud, jadi butuh koneksi untuk masuk.');
     }
     const acc=accounts();
     if(mode==='up'){
@@ -6066,6 +6067,7 @@ async function cloudPush(){
       CL.sb.from('rpg_saves').upsert({user_id:CL.uid,data:d,updated_at:new Date().toISOString()}),
       new Promise((_,rj)=>setTimeout(()=>rj(new Error('waktu habis: koneksi ke Supabase lambat atau diblokir')),12000))]);
     CL.last=(r&&r.error)?String(r.error.message||'gagal'):'ok';
+    if(CL.last==='ok'){try{localStorage.removeItem(SAVE_KEY);localStorage.removeItem(LEGACY_KEY);}catch(e){}}   // cloud sudah aman: hapus salinan lokal
   }catch(e){CL.last=String(e&&e.message||e);}finally{CL.busy=false;}
 }
 async function cloudDel(){
@@ -6085,6 +6087,9 @@ async function cloudStart(sb,user,name){
     setTimeout(()=>toast('Login berhasil, tapi cloud-save belum aktif (tabel rpg_saves belum dibuat). Progres disimpan di perangkat ini.'),1500);
   }
   const cl=r.data&&r.data.data;
+  if(!(cl&&cl.p)&&!r.error&&!CL.noCloud){   // migrasi sekali: save lama di localStorage diunggah ke cloud
+    for(const k of [key,LEGACY_KEY]){try{const o=localStorage.getItem(k);const j=o&&JSON.parse(o);if(j&&j.p){ls.set(key,o);loc=j;break;}}catch(e){}}
+  }
   if(!(loc&&loc.p)&&!(cl&&cl.p)){   // progres lama tanpa akun diambil alih bila belum ada data sama sekali
     const old=ls.get(LEGACY_KEY);
     if(old){try{loc=JSON.parse(old);if(loc&&loc.p){ls.set(key,old);}}catch(e){loc=null;}}
@@ -6096,6 +6101,12 @@ async function cloudStart(sb,user,name){
     if(cL>ll)ct=Math.max(ct,lt+1);else if(ll>cL)lt=Math.max(lt,ct+1);
   }
   if(ct>lt)ls.set(key,JSON.stringify(cl));      // data cloud menang (lebih tinggi / lebih baru)
+  else if(cl&&cl.p){                             // nama di Supabase (mis. diedit manual) selalu jadi acuan
+    const cn=cleanName(cl.p.name);
+    if(cn){try{const o=JSON.parse(ls.get(key)||'null');if(o&&o.p&&o.p.name!==cn){o.p.name=cn;ls.set(key,JSON.stringify(o));}}catch(e){}}
+  }
+  {const cn2=cleanName(cl&&cl.p&&cl.p.name);if(cn2){const a2=accounts();a2[mail]=Object.assign(a2[mail]||{},{name:cn2});putAccounts(a2);}}
+  if(cl&&cl.p){try{localStorage.removeItem(key);localStorage.removeItem(LEGACY_KEY);}catch(e){}}
   $('apass').value=$('apass2').value='';
   startGame(mail);
   if(lt>ct)cloudPush();                          // data perangkat ini lebih baru -> unggah
@@ -6124,8 +6135,7 @@ async function cloudBoot(m){
   $('anote').textContent='Memeriksa sesi...';
   const sb=await sbReady();
   if(!sb){
-    if(m&&accounts()[m]){startGame(m);return;}
-    $('anote').textContent='Tidak ada internet. Masuk butuh koneksi untuk pertama kali.';return;
+    $('anote').textContent='Tidak ada koneksi ke server. Progres hanya disimpan di cloud, jadi butuh internet untuk masuk.';return;
   }
   try{
     const r=await sb.auth.getSession(),u=r&&r.data&&r.data.session&&r.data.session.user;
