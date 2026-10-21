@@ -1540,8 +1540,8 @@ const MOBS={
   bos_ratu  :{name:'Ratu Hantu',    boss:1,rad:18,cy:48,h:100,reach:14,weak:'cahaya',res:{gelap:0.4},col:'#9fd0ff',fly:true,alt:10,kbMul:0.04,hp:24,dmg:3,xp:40,hpm:11,dmgm:1.3,xpm:15,coin:260,sw:30,bw:60},
   bos_ksatria:{name:'Ksatria Hitam', boss:1,rad:14,cy:32,h:68, reach:24,weak:'cahaya',res:{gelap:0.5},col:'#5a5a9a',kbMul:0.04,hp:24,dmg:3,xp:40,hpm:14,dmgm:1.8,xpm:20,coin:500,sw:28,bw:56},
   bos_naga  :{name:'Naga Api',       boss:1,rad:26,cy:30,h:78, reach:34,weak:'air',  res:{api:0.2},col:'#e0443e',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:17,dmgm:2.0,xpm:26,coin:600,sw:60,bw:76},
-  /* BOS MUSTAHIL DIKALAHKAN (Dunia 1, dekat Ibu Kota): kebal total */
-  bos_abadi :{name:'Penjaga Abadi',boss:1,immortal:1,rad:16,cy:48,h:98,reach:30,weak:null,col:'#ff2020',kbMul:0,hp:24,dmg:3,xp:0,hpm:1,dmgm:1,xpm:0,coin:0,sw:36,bw:84}
+  /* BOS SUPER SULIT (Dunia 1, dekat Ibu Kota): HP raksasa, bisa dikalahkan */
+  bos_abadi :{name:'Penjaga Abadi',boss:1,rad:16,cy:48,h:98,reach:30,weak:null,col:'#ff2020',kbMul:0,hp:24,dmg:3,xp:40,hpm:1,dmgm:1,xpm:1,coin:5000,sw:36,bw:84}
 };
 const SPELLS=[
   {id:'angin', name:'Angin',    mp:4,cd:0.55,col:'#9fe8c0',icon:'🌪️'},
@@ -2296,9 +2296,10 @@ function spawnAbadi(cx,cy,key){
   const tx0=Math.round(CAP.x+CAP.r+9),ty0=Math.round(CAP.y);
   if(Math.floor(tx0/CH)!==cx||Math.floor(ty0/CH)!==cy)return;
   if(mobs.some(q=>q.bkey==='abadi'&&!q.dead))return;
+  if(P.bk&&P.bk.abadi&&Date.now()-P.bk.abadi<BOSS_RESPAWN*6)return;   // respawn 48 menit setelah dikalahkan
   const [fx_,fy_]=findFree(tx0,ty0);
   const b=makeMob('bos_abadi',fx_*T+8,fy_*T+12,0,key,cx,cy,999,true);
-  b.hp=b.maxHp=1e9;b.dmg=1500;b.immortal=true;b.bkey='abadi';b.home={x:b.x,y:b.y};b.spd=1.25;
+  b.hp=b.maxHp=150000;b.dmg=60;b.xp=20000;b.bkey='abadi';b.home={x:b.x,y:b.y};b.spd=1.25;
   mobs.push(b);
 }
 function bossSummon(m,type,n){
@@ -2335,7 +2336,7 @@ function bossSlam(m,r,col,mul,TG,TGd){
 function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
   const hpf=m.hp/m.maxHp,enr=hpf<0.4;          // enrage di bawah 40% HP
   m.cd-=dt;m.sum=(m.sum||0)-dt;
-  if(m.immortal&&!m.warnNear&&!TGd&&dist<330){m.warnNear=true;toast('☠️ Aura mengerikan terasa di dekat Ibu Kota... Penjaga Abadi tak bisa dikalahkan! Jangan mendekat!');}
+  if(m.bkey==='abadi'){m.dmg=Math.max(40,Math.round(P.maxHp*0.3));if(!m.warnNear&&!TGd&&dist<330){m.warnNear=true;toast('☠️ Aura mengerikan terasa di dekat Ibu Kota... Penjaga Abadi, bos tersulit di dunia ini! Hati-hati!');}}
   const aggro=!TGd&&dist<(m.engaged?300:170);
   if(aggro&&!m.engaged){m.engaged=true;if(!m.warned){m.warned=true;toast('⚠️ '+d.name+' Lv '+m.lvl+' menyerang!');}}
   if(!aggro){
@@ -2465,6 +2466,7 @@ function bossReward(m){
   for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:'crystal',x:m.x+(k-1)*12,y:m.y,ck:null,t:0});
   for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:k%2?'mana':'heart',x:m.x+(k-1)*9,y:m.y+6,val:1,ck:null,t:0,life:40});
   fx.push({t:0,k:'ring',x:m.x,y:m.y,r0:4,r1:70,col:'#ffd23f',life:0.6,sq:0.7});
+  if(m.type==='bos_abadi'){P.pts=(P.pts||0)+4;lt.mahkota=(lt.mahkota||0)+3;lt.permata=(lt.permata||0)+10;lt.relik=(lt.relik||0)+3;extra+=' +4 poin stat +3👑 +10💎';}
   toast('👑 '+d.name+' (Lv '+L+') kalah! +'+coins+' koin, relik, permata'+extra+' · +1 poin stat');
 }
 function spawnChunk(cx,cy){
