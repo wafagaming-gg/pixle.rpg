@@ -259,7 +259,7 @@ html,body{height:100dvh}
   <div id="tools">
     <label>Sprite…<input type="file" id="spriteFile" accept="image/*"></label>
     <button id="spriteClr" title="Kembali ke karakter bawaan">↺</button>
-    <button id="mapBtn">Peta</button><button id="worldBtn" title="Pindah dunia (N)">🔒 Dunia</button><button id="invBtn" title="Inventori (I)">🎒 Inv</button><button id="statBtn" title="Stat (C)">📊 Stat</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="setBtn" title="Seting suara & tombol (O)">⚙ Seting</button><button id="resetBtn">Reset</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
+    <button id="mapBtn">Peta</button><button id="worldBtn" title="Pindah dunia (N)">🔒 Dunia</button><button id="invBtn" title="Inventori (I)">🎒 Inv</button><button id="statBtn" title="Stat (C)">📊 Stat</button><button id="eatBtn" title="Makan (G)">🍖 Makan</button><button id="fsBtn" title="Layar penuh">⛶</button><button id="setBtn" title="Seting suara & tombol (O)">⚙ Seting</button><button id="resetBtn">Reset</button><button id="jumpBtn" title="Admin: lompat lantai dungeon (L)" style="display:none">🛠️ Lantai</button><button id="custBtn" title="Kustomisasi karakter">🎨</button><button id="acctBtn">👤</button>
   </div>
 </div>
 
@@ -2884,6 +2884,7 @@ function updateHUD(){
   const vtxt='● '+ns.s.name+(vd<ns.s.r?' (di sini)':' '+arrows[((Math.round(va/(Math.PI/4))%8)+8)%8]+' '+Math.round(vd)+' petak')+zl;$('vtag').style.color=ns.s.col;
   const vt2=DG?'🕳️ '+DG.d.name+' · Lt '+DG.f+'/'+DG.d.floors+' · musuh '+mobs.length:vtxt;if(DG)$('vtag').style.color=DG.d.col;if($('vtag').textContent!==vt2)$('vtag').textContent=vt2;
   {const wl=canWorld2()||WORLD===2?'🌀 Dunia '+WORLD:'🔒 Dunia';const wb=$('worldBtn');if(wb&&wb.textContent!==wl)wb.textContent=wl;}
+  {const jb=$('jumpBtn'),sh=(DG&&isAdmin())?'':'none';if(jb&&jb.style.display!==sh)jb.style.display=sh;}
   $('selrow').textContent=(IN===null&&!RL().farm)?RL().hint:IN!==null?'🪑 '+FURN[P.selF].n+' x'+(P.bag.furn[FURN[P.selF].id]||0)+' (Z/X)':'🌱 '+CROPS[CK[P.selSeed]].n+' x'+P.bag.seed[CK[P.selSeed]]+' (Z) 🌾'+P.bag.feed;
   {let bb=null,bd2=1e9;for(const m of mobs){if(!m.boss||m.dead)continue;const dd=Math.hypot(m.x-P.x,m.y-P.y);if(dd<260&&dd<bd2){bd2=dd;bb=m;}}
    const el=$('bossbar');
@@ -5224,6 +5225,7 @@ function press(k){
   else if(k==='x')pickF();
   else if(k==='k')skillMenu();
   else if(k==='o')openSet();
+  else if(k==='l'&&DG&&isAdmin())dgJumpMenu();
   else if(k.length===1&&k>='1'&&k<='3')slotPress(+k-1);
 }
 addEventListener('keydown',e=>{
@@ -5347,6 +5349,7 @@ $('spriteClr').addEventListener('click',()=>{customImg=null;toast('Karakter bawa
 $('resetBtn').addEventListener('click',async()=>{
   if(confirm('Hapus progres dan pilih peran dari awal? (akun tetap ada)')){const k=SAVE_KEY;SAVE_KEY=null;try{localStorage.removeItem(k);}catch(e){}await cloudDel();location.reload();}
 });
+$('jumpBtn').addEventListener('click',dgJumpMenu);
 $('mapBtn').addEventListener('click',showMap);$('worldBtn').addEventListener('click',worldMenu);$('invBtn').addEventListener('click',()=>press('i'));$('statBtn').addEventListener('click',()=>press('c'));$('eatBtn').addEventListener('click',()=>press('g'));addEventListener('beforeunload',saveGame);
 setInterval(saveGame,5000);
 
@@ -5586,6 +5589,20 @@ function dgBossDead(m){
   toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota'+(first?', +2 poin stat':'')+' · 🎁 '+gr+' · Tekan I untuk memakai · Portal keluar muncul');
 }
 function dgUpdate(dt){DG.t+=dt;}
+/* khusus admin: lompat ke lantai mana pun di dalam dungeon (tombol L) */
+function dgJumpMenu(){
+  if(!DG||!isAdmin()||dlg||dying)return;
+  if(menu){closeMenu();return;}
+  const D=DG.d;
+  openMenu('🛠️ Admin — Lompat Lantai ('+D.name+')',()=>{
+    const r=[];
+    for(let f=1;f<=D.floors;f++)r.push({
+      t:'Lantai '+f+(f===DG.f?' <span style="color:#7dffb0">(di sini)</span>':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(D,f)+(f===D.floors?' · BOSS AKHIR':(f%5===0?' · BOS TENGAH':''))+'</small>',
+      b:f===DG.f?'—':'Lompat',off:f===DG.f,
+      f:()=>{closeMenu();dgLoad(f,f<DG.f);toast('🛠️ Lompat ke lantai '+f+'/'+D.floors);}});
+    return r;
+  });
+}
 
 function dgNear(){
   for(const d of DUNGEONS){const bot=(d.ey+2)*T;if(Math.abs(P.x-(d.ex*T+16))<22&&P.y>=bot-2&&P.y<bot+22)return d;}
@@ -5596,7 +5613,8 @@ function dgDoorInteract(){
   openMenu('🕳️ '+d.name,()=>{
     const best=Math.max(1,P.dg.best[d.i]|0);
     const r=[{t:'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss akhir: '+MOBS[DG_BOSS[d.i%DG_BOSS.length]].name+' · Bos tengah tiap 5 lantai · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: 2 perlengkapan acak ('+dgRewardTxt(d)+')</small>',b:'—',off:true,f:()=>{}}];
-    for(let f=1;f<=Math.min(d.floors,best);f++)r.push({t:'Masuk lantai '+f+(f===1?' (awal)':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(d,f)+(f===d.floors?' · BOSS AKHIR':(f%5===0?' · BOS TENGAH':''))+'</small>',b:'Masuk',f:()=>dgEnter(d.i,f)});
+    if(isAdmin())r.push({t:'<small style="color:#ffd23f">🛠️ Admin: semua lantai bisa dimasuki langsung. Di dalam dungeon tekan L untuk lompat lantai.</small>',b:'—',off:true,f:()=>{}});
+    for(let f=1;f<=(isAdmin()?d.floors:Math.min(d.floors,best));f++)r.push({t:'Masuk lantai '+f+(f===1?' (awal)':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(d,f)+(f===d.floors?' · BOSS AKHIR':(f%5===0?' · BOS TENGAH':''))+'</small>',b:'Masuk',f:()=>dgEnter(d.i,f)});
     if(MPon)MPpeers.forEach(fr=>{const z=(fr.g|0)-1000,fi=Math.floor(z/100),ff=z%100;
       if(z>=0&&fi===d.i&&ff>=1&&ff<=d.floors&&(((fr.w|0)||1)===WORLD))r.push({t:'👥 Gabung '+fr.name+' di lantai '+ff,b:'Gabung',f:()=>dgEnter(d.i,ff)});});
     return r;});
