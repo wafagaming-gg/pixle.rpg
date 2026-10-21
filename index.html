@@ -1539,7 +1539,9 @@ const MOBS={
   bos_titan :{name:'Titan Magma',    boss:1,rad:26,cy:42,h:88, reach:36,weak:'air',  res:{api:0.2},col:'#ff7a1a',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:13,dmgm:1.7,xpm:18,coin:350,sw:56,bw:72},
   bos_ratu  :{name:'Ratu Hantu',    boss:1,rad:18,cy:48,h:100,reach:14,weak:'cahaya',res:{gelap:0.4},col:'#9fd0ff',fly:true,alt:10,kbMul:0.04,hp:24,dmg:3,xp:40,hpm:11,dmgm:1.3,xpm:15,coin:260,sw:30,bw:60},
   bos_ksatria:{name:'Ksatria Hitam', boss:1,rad:14,cy:32,h:68, reach:24,weak:'cahaya',res:{gelap:0.5},col:'#5a5a9a',kbMul:0.04,hp:24,dmg:3,xp:40,hpm:14,dmgm:1.8,xpm:20,coin:500,sw:28,bw:56},
-  bos_naga  :{name:'Naga Api',       boss:1,rad:26,cy:30,h:78, reach:34,weak:'air',  res:{api:0.2},col:'#e0443e',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:17,dmgm:2.0,xpm:26,coin:600,sw:60,bw:76}
+  bos_naga  :{name:'Naga Api',       boss:1,rad:26,cy:30,h:78, reach:34,weak:'air',  res:{api:0.2},col:'#e0443e',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:17,dmgm:2.0,xpm:26,coin:600,sw:60,bw:76},
+  /* BOS MUSTAHIL DIKALAHKAN (Dunia 1, dekat Ibu Kota): kebal total */
+  bos_abadi :{name:'Penjaga Abadi',boss:1,immortal:1,rad:16,cy:48,h:98,reach:30,weak:null,col:'#ff2020',kbMul:0,hp:24,dmg:3,xp:0,hpm:1,dmgm:1,xpm:0,coin:0,sw:36,bw:84}
 };
 const SPELLS=[
   {id:'angin', name:'Angin',    mp:4,cd:0.55,col:'#9fe8c0',icon:'🌪️'},
@@ -1745,6 +1747,13 @@ function buildSprites2(){
   SPR2.bos_naga=SPR.bos_naga.map(a=>a.map(im=>tintImg(im,'#2a5aff',0.6)));
 }
 buildSprites2();
+SPR.bos_abadi=SPR.guard.map((row,d)=>row.map(im=>{
+  const c=tintImg(scaleImg(im,4,10),'#000000',0.62),g=c.getContext('2d');
+  R(g,'#ffd23f',16,14,40,5);R(g,'#ffd23f',16,6,6,9);R(g,'#ffd23f',33,2,6,13);R(g,'#ffd23f',50,6,6,9);R(g,'#ff2020',34,8,4,4);
+  if(d===0){R(g,'#ff2020',24,34,8,6);R(g,'#ff2020',44,34,8,6);R(g,'#ffd0d0',26,35,3,2);R(g,'#ffd0d0',46,35,3,2);}
+  else if(d===2){R(g,'#ff2020',20,34,8,6);R(g,'#ffd0d0',22,35,3,2);}
+  else if(d===3){R(g,'#ff2020',44,34,8,6);R(g,'#ffd0d0',47,35,3,2);}
+  return c;}));
 /* nama & warna efek monster Dunia 2 */
 const MOB_W2={
   slime:['Slime Senja',null],bat:['Ngengat Senja','#d86aa8'],goblin:['Imp Bara','#d8483a'],skeleton:['Kerangka Bara','#8a7ab8'],
@@ -2281,6 +2290,17 @@ function spawnBosses(cx,cy,key){
     mobs.push(b);
   }
 }
+/* BOS MUSTAHIL: Penjaga Abadi, berjaga di sebelah timur Ibu Kota (hanya Dunia 1) */
+function spawnAbadi(cx,cy,key){
+  if(DG||WORLD!==1||!CAP)return;
+  const tx0=Math.round(CAP.x+CAP.r+9),ty0=Math.round(CAP.y);
+  if(Math.floor(tx0/CH)!==cx||Math.floor(ty0/CH)!==cy)return;
+  if(mobs.some(q=>q.bkey==='abadi'&&!q.dead))return;
+  const [fx_,fy_]=findFree(tx0,ty0);
+  const b=makeMob('bos_abadi',fx_*T+8,fy_*T+12,0,key,cx,cy,999,true);
+  b.hp=b.maxHp=1e9;b.dmg=1500;b.immortal=true;b.bkey='abadi';b.home={x:b.x,y:b.y};b.spd=1.25;
+  mobs.push(b);
+}
 function bossSummon(m,type,n){
   let c=0;for(const q of mobs)if(q.minion&&q.owner===m.id&&!q.dead)c++;
   for(let i=0;i<n&&c<6;i++){
@@ -2315,6 +2335,7 @@ function bossSlam(m,r,col,mul,TG,TGd){
 function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
   const hpf=m.hp/m.maxHp,enr=hpf<0.4;          // enrage di bawah 40% HP
   m.cd-=dt;m.sum=(m.sum||0)-dt;
+  if(m.immortal&&!m.warnNear&&!TGd&&dist<330){m.warnNear=true;toast('☠️ Aura mengerikan terasa di dekat Ibu Kota... Penjaga Abadi tak bisa dikalahkan! Jangan mendekat!');}
   const aggro=!TGd&&dist<(m.engaged?300:170);
   if(aggro&&!m.engaged){m.engaged=true;if(!m.warned){m.warned=true;toast('⚠️ '+d.name+' Lv '+m.lvl+' menyerang!');}}
   if(!aggro){
@@ -2396,6 +2417,17 @@ function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
       if(m.cd<=0&&dist<170){m.combo=enr?3:2;m.wind=0.5;m.cd=enr?3.2:4.4;fx.push({k:'warn',x:m.x,y:m.y,r:26,t:0,life:0.5});}
       if(m.sum<=0&&hpf<0.6){m.sum=13;bossSummon(m,'skeleton',2);}
       break;}
+    case 'bos_abadi':{
+      m.sh=(m.sh||0)-dt;
+      if(m.lunge>0){m.lunge-=dt;moveEnt(m,m.vx*dt,m.vy*dt,true);m.walkT=0.15;m.anim+=dt*12;
+        if(m.lunge<=0){bossSlam(m,74,'#ff2020',1,TG,TGd);bossNova(m,16,95,0.4,1.6);}
+        break;}
+      if(m.wind>0){m.wind-=dt;if(m.wind<=0){m.vx=ca*215;m.vy=sa*215;m.lunge=0.45;}break;}
+      if(dist>26)moveEnt(m,ca*48*sm*dt,sa*48*sm*dt,true);
+      m.walkT=0.15;m.anim+=dt*8;
+      if(m.cd<=0&&dist<210){m.wind=0.45;m.cd=2.2;fx.push({k:'warn',x:m.x,y:m.y,r:74,t:0,life:0.45});}
+      else if(m.sh<=0&&dist>=74){m.sh=2.4;bossFan(m,TG,5,1.0,115,0.6,1.8);}
+      break;}
     case 'bos_naga':{
       m.sh=(m.sh||0)-dt;
       if(m.wind>0){
@@ -2447,7 +2479,7 @@ function spawnChunk(cx,cy){
     const tier=Math.min(3,Math.floor(((WORLD===2?d*1.6:d)-14)/45));
     mobs.push(makeMob(type,tx*T+8,ty*T+12,tier,key,cx,cy));
   }
-  spawnBosses(cx,cy,key);
+  spawnBosses(cx,cy,key);spawnAbadi(cx,cy,key);
   // hewan liar (buruan)
   const wn=Math.floor(rnd(cx,cy,33)*2.4);
   for(let i=0;i<wn;i++){
@@ -3411,6 +3443,7 @@ function hitMob(m,dmg,elem,o){
   if(m.net){mpHitNet(m,dmg,elem,o);return;}
   m.lastSrc=MPsrc;
   const d=MOBS[m.type];
+  if(d.immortal){m.hit=2;floatText(m.x,mc(m)-8,'KEBAL','#ff6b6b');if(!o.burn)crossFx(m.x,mc(m),'#ff2020',6,0.2);return;}
   let mult=1,tag='';
   if(elem&&d.weak===elem){mult=2;tag='!';}
   else if(elem&&d.res&&d.res[elem]!==undefined){mult=d.res[elem];tag='~';}
@@ -3426,6 +3459,7 @@ function hitMob(m,dmg,elem,o){
 }
 function killMob(m,by){
   if(m.dead)return;
+  if(MOBS[m.type]&&MOBS[m.type].immortal){m.hp=m.maxHp;return;}
   m.dead=true;
   sfx(m.boss?'bossKill':'kill');
   if(MPsb&&!m.net&&IN===null){
@@ -3710,7 +3744,7 @@ function updateMob(m,dt){
         m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*7;
       }else wander(m,dt,14,sm,false);
       break;}
-    case 'bos_slime':case 'bos_goblin':case 'bos_lich':case 'bos_titan':case 'bos_naga':case 'bos_ratu':case 'bos_ksatria':
+    case 'bos_slime':case 'bos_goblin':case 'bos_lich':case 'bos_titan':case 'bos_naga':case 'bos_ratu':case 'bos_ksatria':case 'bos_abadi':
       bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm);break;
     case 'buaya':{
       // tetap dekat air
@@ -3979,6 +4013,11 @@ function drawEntity(e,now){
           break;}
         case 'bos_ksatria':{
           const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0,img=MS.bos_ksatria[e.dir][wk];
+          ctx.drawImage(img,sx-Math.floor(img.width/2)+sh,sy-img.height+2);
+          break;}
+        case 'bos_abadi':{
+          const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0,img=SPR.bos_abadi[e.dir][wk],pu=0.5+0.5*Math.sin(e.t*3);
+          ctx.fillStyle='rgba(255,20,20,'+(0.10+0.08*pu)+')';ctx.beginPath();ctx.ellipse(sx,sy-30,26+pu*5,38+pu*5,0,0,6.283);ctx.fill();
           ctx.drawImage(img,sx-Math.floor(img.width/2)+sh,sy-img.height+2);
           break;}
         case 'bos_naga':{
@@ -5981,7 +6020,9 @@ function mobHurt(tg,n,x,y){
   if(tg.rem&&tg.inv<=0){tg.rem.inv=1;mpOut({t:'u',to:tg.rem.id,n:Math.round(n),fx:Math.round(x),fy:Math.round(y)});}}
 function mpPj(o){proj.push(o);if(MPsb&&IN===null)mpOut({t:'pj',p:o});}
 function mpHitNet(m,dmg,elem,o){
-  const d=MOBS[m.type];let mult=1,tag='';
+  const d=MOBS[m.type];
+  if(d.immortal){m.hit=2;floatText(m.x,mc(m)-8,'KEBAL','#ff6b6b');return;}
+  let mult=1,tag='';
   if(elem&&d.weak===elem){mult=2;tag='!';}else if(elem&&d.res&&d.res[elem]!==undefined){mult=d.res[elem];tag='~';}
   const n=Math.max(1,Math.round(dmg*mult));m.hit=2;if(!o.burn)m.flash=0.2;
   floatText(m.x,mc(m)-8,'-'+n+tag,mult>1?'#ffb347':mult<1?'#9aa0a8':'#ffffff');hitFx(m,o,elem,mult);
