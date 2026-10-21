@@ -213,7 +213,13 @@ html,body{height:100dvh}
 .ivgrid{flex:1;min-width:0;display:grid;grid-template-columns:repeat(9,1fr)}
 .ivs{position:relative;aspect-ratio:1;background:#8b8b8b;border:2px solid;border-color:#373737 #fff #fff #373737;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,3.6vw,22px);cursor:pointer;line-height:1}
 .ivs.hb{margin-top:6px}
+.ivs i.eqm{position:absolute;left:1px;top:0;font-size:10px;color:#7cfc00;text-shadow:1px 1px #000;font-style:normal;pointer-events:none}
+#ivgear{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:6px}
+#ivgear .gs{aspect-ratio:1;background:#6b6b6b;border:1px solid #222;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;line-height:1;text-shadow:none}
+#ivgear .gs:not(.on){opacity:.45}
+#ivgear .gsum{grid-column:1/-1;font-size:10px;line-height:1.3;margin-top:3px;color:#ffe9a0;word-break:break-word}
 .ivs:hover{background:#9c9c9c}
+.ivs.lk{opacity:.35;background:#555;cursor:default}.ivs.lk:hover{background:#555}
 .ivs.sel{outline:3px solid #ffe066;outline-offset:-3px;background:#a9a9a9}
 .ivs b{position:absolute;right:2px;bottom:0;font-size:11px;color:#fff;text-shadow:1px 1px #3f3f3f;font-weight:bold;pointer-events:none}
 #ivinfo{margin-top:8px;background:#8b8b8b;border:2px solid;border-color:#373737 #fff #fff #373737;padding:6px 8px;color:#fff;text-shadow:1px 1px #3f3f3f}
@@ -344,7 +350,7 @@ html,body{height:100dvh}
   </div>
   <button id="sClose" type="button">Tutup</button>
 </div></div>
-<div id="inv"><div class="ivbox" id="ivbox"><h2>🎒 Inventori</h2><div class="ivtop"><div class="ivchar"><canvas id="ivprev"></canvas><div id="ivwho"></div></div><div class="ivgrid" id="ivgrid"></div></div><div id="ivinfo"><div id="ivname"></div><div id="ivdesc"></div><div class="ivbtns"><button id="ivUse" type="button">🍽️ Makan</button><button id="ivD1" type="button">Buang 1</button><button id="ivDA" type="button">Buang semua</button><button id="ivX" type="button">Tutup</button></div></div><div class="ivhint">Klik = pilih · Klik 2x = makan/pakai · Klik kanan = buang 1 · Shift+Klik kanan = buang semua · Q = buang 1 · I/Esc = tutup. Barang yang dibuang tergeletak di tanah; berjalan mendekatinya untuk mengambil lagi. Saat main online (\ud83c\udf10), pemain lain di ruangan yang sama ikut melihat &amp; bisa mengambil barang yang kamu buang (titik oranye di minimap).</div></div></div>
+<div id="inv"><div class="ivbox" id="ivbox"><h2>🎒 Inventori</h2><div class="ivtop"><div class="ivchar"><canvas id="ivprev"></canvas><div id="ivwho"></div><div id="ivgear"></div></div><div class="ivgrid" id="ivgrid"></div></div><div id="ivinfo"><div id="ivname"></div><div id="ivdesc"></div><div class="ivbtns"><button id="ivUse" type="button">🍽️ Makan</button><button id="ivD1" type="button">Buang 1</button><button id="ivDA" type="button">Buang semua</button><button id="ivX" type="button">Tutup</button></div></div><div class="ivhint">Klik = pilih · Klik 2x = makan/pakai · Klik kanan = buang 1 · Shift+Klik kanan = buang semua · Q = buang 1 · I/Esc = tutup. Semua perlengkapan & ransel juga bisa dibuang (tombol Buang / klik kanan / Q). Ransel menambah slot bila dipakai. Barang yang dibuang tergeletak di tanah; berjalan mendekatinya untuk mengambil lagi. Saat main online (\ud83c\udf10), pemain lain di ruangan yang sama ikut melihat &amp; bisa mengambil barang yang kamu buang (titik oranye di minimap).</div></div></div>
 <div id="ivtip"></div>
 <div id="controls">
   <div class="btn" id="bA" data-k="attack">SERANG</div>
@@ -582,7 +588,7 @@ function addSettNpcs(){
     n.still=1;npcs.push(n);});
   // Guild Petualang: jual loot buruan
   GUILDS.forEach(g=>{
-    const n=makeNpc(g.name,SPR.hunter,g.x,g.y,()=>say(g.name,['Guild Petualang menerima hasil buruanmu.','Jual tanduk, kulit, daging, taring, dan barang langka lainnya di sini!','Tekan I untuk membuka inventori.'],()=>shopGuild()));
+    const n=makeNpc(g.name,SPR.hunter,g.x,g.y,()=>say(g.name,['Guild Petualang menerima hasil buruanmu.','Jual tanduk, kulit, daging, taring, dan barang langka lainnya di sini!','Tekan I untuk membuka inventori.','Ada juga Pandai Besi: beli pedang, busur, tongkat, helm, zirah, sepatu, dan cincin!'],()=>shopGuildHub()));
     n.still=1;npcs.push(n);});
   // 4 NPC pemburu per desa & ibu kota (area buruan dekat pemukiman)
   const huntTips=[
@@ -1235,6 +1241,12 @@ function drawAcc(g,dir,P){
     }else if(dir===2){
       R(g,c,3,6,4,1);R(g,c,3,9,4,1);R(g,c,3,7,1,2);R(g,c,6,7,1,2);R(g,c,7,6,5,1);
     }
+  }else if(a===5){   // helm perlengkapan (dari slot Helm)
+    const hl=tint(c,1.35);
+    R(g,c,3,1,10,3);R(g,c,4,0,8,1);R(g,hl,5,1,3,1);R(g,cd,3,4,10,1);
+    if(dir===1)R(g,c,3,4,10,5);                 // belakang kepala tertutup
+    else if(dir===0){R(g,cd,3,4,1,3);R(g,cd,12,4,1,3);R(g,cd,7,4,2,3);}   // pelindung pipi + nasal
+    else{R(g,cd,3,4,10,1);R(g,c,8,4,5,4);}      // samping
   }else if(a===4){
     R(g,'#ffd23f',4,1,8,1);R(g,'#c9a227',4,2,8,1);
     R(g,'#ffd23f',4,0,1,1);R(g,'#ffd23f',7,0,2,1);R(g,'#ffd23f',11,0,1,1);
@@ -1278,23 +1290,41 @@ function sanitizeLook(L){
   return o;
 }
 const tint=(c,f)=>'#'+[1,3,5].map(i=>Math.min(255,Math.round(parseInt(c.substr(i,2),16)*f)).toString(16).padStart(2,'0')).join('');
-function lookPal(L){
+function lookPal(L,gr){
   L=sanitizeLook(L);
-  return {hair:L.hair,hairD:shade(L.hair,.72),hairL:tint(L.hair,1.3),skin:L.skin,eye:L.eye,
+  const p={hair:L.hair,hairD:shade(L.hair,.72),hairL:tint(L.hair,1.3),skin:L.skin,eye:L.eye,
     tunic:L.tunic,tunicD:shade(L.tunic,.8),trim:L.trim,scarf:L.scarf,pants:L.pants,boots:shade(L.pants,.7),
     style:L.style,acc:L.acc,accC:L.accC,accD:shade(L.accC,.75)};
+  if(gr){   // perlengkapan yang dikenakan mengubah tampilan: zirah -> baju, sepatu -> sepatu, helm -> penutup kepala
+    const ga=GEAR[gr.a],gb=GEAR[gr.b],gh=GEAR[gr.h];
+    if(ga){p.tunic=ga.col;p.tunicD=shade(ga.col,.75);p.trim=tint(ga.col,1.4);}
+    if(gb)p.boots=gb.col;
+    if(gh){p.acc=5;p.accC=gh.col;p.accD=shade(gh.col,.7);}
+  }
+  return p;
+}
+/* ringkasan perlengkapan yang terlihat (dikirim ke pemain lain & dipakai untuk membuat sprite) */
+function gearVis(g){
+  const o={};
+  if(g&&typeof g==='object')for(const s of GSLOTS){const id=g[s];if(typeof id==='string'&&GEAR[id]&&GEAR[id].slot===s)o[s]=id;}
+  return o;
 }
 function cleanName(n){
   n=String(n==null?'':n).replace(/\s+/g,' ').trim();
   return /^[\p{L}\p{N} _.\-]{3,14}$/u.test(n)?n:'';
 }
 const NAME_RULE='Nama karakter 3-14 karakter: huruf, angka, spasi, _ . -';
-function drawPrev(cv,look,dir,f,sc){
-  const fr=makeFrame(dir,f,lookPal(look));
+function drawPrev(cv,look,dir,f,sc,gear){
+  const fr=makeFrame(dir,f,lookPal(look,gear));
   cv.width=fr.width;cv.height=fr.height;cv.style.width=fr.width*sc+'px';cv.style.height=fr.height*sc+'px';
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);g.drawImage(fr,0,0);
 }
-function applyLook(){PAL.player=lookPal(P.look);SPR.player=makeSet(PAL.player);}
+let lookKey='';
+function applyLook(){
+  const gv=gearVis(P.gear),k=JSON.stringify([P.look,gv.h,gv.a,gv.b]);
+  if(k===lookKey&&SPR.player)return;
+  lookKey=k;PAL.player=lookPal(P.look,gv);SPR.player=makeSet(PAL.player);
+}
 
 const SL=[['#5ad06a','#2f9c46'],['#4fa3e8','#2a6fb3'],['#a468e0','#6f3fa8'],['#e0584e','#a02c25']];
 function makeSlime(tier,f){
@@ -1770,6 +1800,226 @@ for(const k in MOB_W2){
   Object.defineProperty(d,'col',{get(){return (WORLD===2&&c2)?c2:c1;},configurable:true,enumerable:true});
 }
 
+
+/* =========================================================
+   PERLENGKAPAN (EQUIPMENT): senjata, helm, zirah, sepatu, cincin
+   - 7 tingkat biasa (Latihan -> Naga) + Set Abadi (drop Penjaga Abadi)
+   - Didapat HANYA dari hadiah boss dungeon (2 item acak, makin sulit makin bagus)
+   - Tiap dunia punya inventori & perlengkapan sendiri (ikut sistem progres dunia)
+   ========================================================= */
+const GSLOTS=['w','h','a','b','r','k'];
+const BASE_SLOTS=36;                                   // slot inventori dasar
+const RANSEL_SLOTS=[6,9,12,16,20,25,30,36,42,50];           // tambahan slot per macam ransel
+const GSN={w:'Senjata',h:'Helm',a:'Zirah',b:'Sepatu',r:'Cincin',k:'Ransel'};
+const GSI={w:'⚔️',h:'🪖',a:'🦺',b:'🥾',r:'💍',k:'🎒'};
+const GWT={pedang:{ic:'⚔️',n:'Pedang',roles:['prajurit','warga']},busur:{ic:'🏹',n:'Busur',roles:['pemanah']},tongkat:{ic:'🪄',n:'Tongkat Sihir',roles:['penyihir']},perisai:{ic:'🛡️',n:'Perisai',roles:['tanker']}};
+/* 10 macam untuk tiap senjata & perlengkapan (indeks 0-9). TIDAK dijual: didapat dari hadiah boss dungeon.
+   Tiap macam punya stat dasar + bonus khusus yang berbeda. */
+const GV=[
+  {n:'Latihan',col:'#b08a5a',lv:1,v:1,val:60},
+  {n:'Besi',col:'#aab4c0',lv:5,v:2.2,val:250},
+  {n:'Baja',col:'#7aa8d8',lv:12,v:4,val:900},
+  {n:'Perak Bulan',col:'#e0e8f8',lv:22,v:7,val:3500},
+  {n:'Zamrud',col:'#4ade80',lv:35,v:10,val:8000},
+  {n:'Emas Mulia',col:'#ffd23f',lv:50,v:14,val:14000},
+  {n:'Kristal Senja',col:'#b48cff',lv:65,v:19,val:40000},
+  {n:'Obsidian',col:'#8a6ab0',lv:80,v:25,val:90000},
+  {n:'Naga',col:'#ff5a2a',lv:95,v:31,val:200000},
+  {n:'Abadi',col:'#ff2020',lv:110,v:38,val:450000}
+];
+const GTWIST=[   // bonus khusus tiap macam
+  null,
+  (s,v)=>{s.hp+=Math.round(v*4);},
+  (s,v)=>{s.def+=Math.round(v*1.5);},
+  (s,v)=>{s.mp+=Math.round(v*4);},
+  (s,v)=>{s.spd=+(s.spd+v*0.8).toFixed(1);},
+  (s,v)=>{s.atk+=Math.round(v*1.5);},
+  (s,v)=>{s.stam+=Math.round(v*3);s.mp+=Math.round(v*2);},
+  (s,v)=>{s.def+=Math.round(v);s.hp+=Math.round(v*3);},
+  (s,v)=>{s.atk+=Math.round(v*1.2);s.spd=+(s.spd+v*0.5).toFixed(1);},
+  (s,v)=>{s.atk+=Math.round(v);s.def+=Math.round(v);s.hp+=Math.round(v*2);s.mp+=Math.round(v*2);s.spd=+(s.spd+v*0.4).toFixed(1);s.stam+=Math.round(v*2);}
+];
+const GEAR={};
+const GSM={w:1,h:0.7,a:1.2,b:0.6,r:1.5,k:1.2};
+(function(){
+  const add=(id,slot,t,name,ic,wt)=>{
+    const T_=GV[t],v=T_.v,s={atk:0,def:0,hp:0,mp:0,spd:0,stam:0,blk:0,slots:0};
+    if(slot==='w'){
+      if(wt==='perisai'){s.atk=Math.round(v*3);s.def=Math.max(1,Math.round(v*5));s.hp=Math.round(v*12);s.blk=Math.min(12,Math.max(1,Math.round(v*0.45)));}
+      else s.atk=Math.round(v*8);
+    }
+    else if(slot==='h'){s.def=Math.max(1,Math.round(v*2.5));s.hp=Math.round(v*15);}
+    else if(slot==='a'){s.def=Math.max(1,Math.round(v*4));s.hp=Math.round(v*25);}
+    else if(slot==='b'){s.def=Math.max(1,Math.round(v*1.5));s.spd=+(v*1.2).toFixed(1);s.stam=Math.round(v*2);}
+    else if(slot==='k'){s.slots=RANSEL_SLOTS[t]||0;s.stam=Math.round(v);}
+    else{s.atk=Math.max(1,Math.round(v*2.5));s.mp=Math.round(v*10);}
+    if(slot!=='k'&&GTWIST[t])GTWIST[t](s,v);
+    const val=Math.round(T_.val*GSM[slot]);
+    GEAR[id]=Object.assign({id,slot,tier:t,name,ic,col:T_.col,lv:T_.lv,wt:wt||null,set:null,shop:false,buy:val,sell:Math.max(1,Math.round(val*0.4))},s);
+  };
+  GV.forEach((T_,t)=>{
+    const sfx_='g'+(t+1);
+    for(const wt in GWT)add('w_'+wt+'_'+sfx_,'w',t,GWT[wt].n+' '+T_.n,GWT[wt].ic,wt);
+    add('h_'+sfx_,'h',t,'Helm '+T_.n,'🪖');
+    add('a_'+sfx_,'a',t,'Zirah '+T_.n,'🦺');
+    add('b_'+sfx_,'b',t,'Sepatu '+T_.n,'🥾');
+    add('r_'+sfx_,'r',t,'Cincin '+T_.n,'💍');
+    add('k_'+sfx_,'k',t,'Ransel '+T_.n,'🎒');
+  });
+})();
+/* migrasi perlengkapan versi lama (tingkat 0-6 & Abadi 'u') ke 10 macam baru */
+const GLEG={'0':0,'1':1,'2':2,'3':3,'4':5,'5':7,'6':8,'u':9};
+function legacyGear(id){const m=/^(w_[a-z]+|[hbark])_(\d|u)$/.exec(String(id||''));if(!m)return null;const t=GLEG[m[2]];if(t===undefined)return null;const n=m[1]+'_g'+(t+1);return GEAR[n]?n:null;}
+function migrateGear(bag,gear){
+  if(bag&&bag.gear&&typeof bag.gear==='object'&&!Array.isArray(bag.gear)){
+    for(const id in bag.gear){const n=legacyGear(id);if(!n)continue;bag.gear[n]=(bag.gear[n]|0)+(bag.gear[id]|0);delete bag.gear[id];}
+  }
+  if(gear&&typeof gear==='object')for(const k in gear){const n=legacyGear(gear[k]);if(n)gear[k]=n;}
+}
+const roleWT=()=>P&&P.role==='pemanah'?'busur':P&&P.role==='penyihir'?'tongkat':P&&P.role==='tanker'?'perisai':'pedang';
+const gearId=(s,t)=>s==='w'?'w_'+roleWT()+'_g'+(t+1):s+'_g'+(t+1);
+function fixGear(){
+  if(!P||!P.bag)return;
+  migrateGear(P.bag,P.gear);
+  if(P.wd&&typeof P.wd==='object')for(const k in P.wd){const o=P.wd[k];if(o&&typeof o==='object')migrateGear(o.bag,o.gear);}
+  if(!P.bag.gear||typeof P.bag.gear!=='object'||Array.isArray(P.bag.gear))P.bag.gear={};
+  if(!P.gear||typeof P.gear!=='object'||Array.isArray(P.gear))P.gear={};
+  for(const id in P.bag.gear)if(!GEAR[id]||!(P.bag.gear[id]>0))delete P.bag.gear[id];
+  for(const s of GSLOTS){
+    const id=P.gear[s];
+    if(!id)continue;
+    const g=GEAR[id];
+    if(!g||g.slot!==s||!(P.bag.gear[id]>0)||(s==='w'&&P.role&&!GWT[g.wt].roles.includes(P.role)))P.gear[s]='';
+  }
+}
+function gearStat(){
+  const o={atk:0,def:0,hp:0,mp:0,spd:0,stam:0,blk:0,slots:0},sets={};
+  if(P&&P.gear)for(const s of GSLOTS){
+    const g=GEAR[P.gear[s]];if(!g)continue;
+    for(const k in o)o[k]+=g[k]||0;
+    if(g.set)sets[g.set]=(sets[g.set]||0)+1;
+  }
+  const ab=sets.abadi||0;
+  if(ab>=3){o.atk+=20;o.def+=Math.round(o.def*0.1);}
+  if(ab>=5){o.atk+=30;o.hp=Math.round(o.hp*1.15);}
+  return o;
+}
+const gearAtkMul=()=>1+gearStat().atk/100;
+function gearStatText(g){
+  const p=[];
+  if(g.atk)p.push('⚔️ Damage +'+g.atk+'%');if(g.def)p.push('🛡️ Ketahanan +'+g.def);
+  if(g.hp)p.push('❤️ HP +'+g.hp);if(g.mp)p.push('💧 MP +'+g.mp);
+  if(g.spd)p.push('⚡ Laju serang +'+g.spd+'%');if(g.stam)p.push('🔋 Stamina +'+g.stam);
+  if(g.blk)p.push('🛡️ Tangkisan +'+g.blk+'%');if(g.slots)p.push('🎒 Slot inventori +'+g.slots);
+  return p.join(' · ');
+}
+function gearSummary(){
+  const G=gearStat(),p=[];
+  if(G.atk)p.push('⚔️+'+G.atk+'%');if(G.def)p.push('🛡️+'+G.def);if(G.hp)p.push('❤️+'+G.hp);
+  if(G.mp)p.push('💧+'+G.mp);if(G.spd)p.push('⚡+'+G.spd.toFixed(1)+'%');if(G.stam)p.push('🔋+'+G.stam);if(G.blk)p.push('🛡️tangkis+'+G.blk+'%');if(G.slots)p.push('🎒+'+G.slots);
+  return p.length?p.join(' '):'belum ada';
+}
+const GCMP=[['atk','⚔️','%'],['def','🛡️',''],['hp','❤️',''],['mp','💧',''],['spd','⚡','%'],['stam','🔋',''],['blk','🛡️tangkis','%'],['slots','🎒','']];
+function gearScore(g){return (g.atk||0)+(g.def||0)+(g.hp||0)*0.2+(g.mp||0)*0.2+(g.spd||0)+(g.stam||0)*0.2+(g.blk||0)*2+(g.slots||0)*0.5;}
+function gearCmp(g){
+  const cur=GEAR[P.gear[g.slot]];if(!cur||cur.id===g.id)return '';
+  const p=[];
+  for(const [k,ic,u] of GCMP){const d=Math.round(((g[k]||0)-(cur[k]||0))*10)/10;if(d)p.push(ic+(d>0?'+':'')+d+u);}
+  return 'Dibanding '+cur.name+': '+(p.length?p.join(' '):'sama');
+}
+function gearBetter(g){
+  if(!g||gearWhy(g))return false;
+  const cur=GEAR[P.gear[g.slot]];
+  return !cur||gearScore(g)>gearScore(cur)+0.01;
+}
+function gearLabel(g){
+  return g.ic+' <b style="color:'+g.col+'">'+g.name+'</b> <small style="color:#9ad">Lv '+g.lv+' · '+gearStatText(g)+'</small>';
+}
+function gearWhy(g){
+  if(g.slot==='w'&&!GWT[g.wt].roles.includes(P.role||'warga'))return 'hanya untuk '+GWT[g.wt].roles.map(r=>ROLES[r].n).join('/');
+  if(effLvl()<g.lv)return 'butuh Lv '+g.lv;
+  return '';
+}
+function toggleGear(id){
+  const g=GEAR[id];if(!g||!(P.bag.gear[id]>0))return;
+  const mh=P.maxHp,mm=P.maxMp,ms=P.maxSt;
+  if(g.slot==='k'){
+    const un=P.gear.k===id,nc=BASE_SLOTS+(un?0:g.slots),used=invUsed();
+    if(nc<invCap()&&used>nc){toast('⛔ Kosongkan '+(used-nc)+' slot dulu sebelum '+(un?'melepas':'mengganti')+' ransel');return;}
+  }
+  if(P.gear[g.slot]===id){P.gear[g.slot]='';toast('Dilepas: '+g.name);}
+  else{
+    const why=gearWhy(g);
+    if(why){toast('⛔ '+g.name+': '+why);return;}
+    const old=GEAR[P.gear[g.slot]];P.gear[g.slot]=id;toast(old?'🔄 Diganti: '+old.name+' → '+g.ic+' '+g.name:'Dipakai: '+g.ic+' '+g.name);try{sfx('levelup');}catch(e){}
+  }
+  recalc();
+  if(P.maxHp>mh)P.hp+=P.maxHp-mh;if(P.maxMp>mm)P.mp+=P.maxMp-mm;if(P.maxSt>ms)P.stam+=P.maxSt-ms;
+  P.hp=Math.min(P.hp,P.maxHp);P.mp=Math.min(P.mp,P.maxMp);P.stam=Math.min(P.stam,P.maxSt);
+}
+function giveGear(id,quiet){
+  const g=GEAR[id];if(!g)return false;
+  if(!bagRoom('gear',id)){spawnDrop('gear',id,1,false);toast('🎒 Inventori penuh! '+g.ic+' '+g.name+' jatuh ke tanah');return false;}
+  P.bag.gear[id]=(P.bag.gear[id]|0)+1;
+  if(!quiet){toast('🎁 Perlengkapan: '+g.ic+' '+g.name+' (Lv '+g.lv+')'+(gearBetter(g)?' · lebih bagus! Tekan I untuk ganti':''));floatText(P.x,P.y-30,g.ic+' '+g.name,g.col);}
+  return true;
+}
+function gearOnKill(m){}   // perlengkapan tidak lagi jatuh dari monster; hanya dari hadiah boss dungeon
+/* hadiah boss dungeon: 2 perlengkapan acak (slot & macam diacak), makin sulit dungeon makin bagus macamnya */
+const DG_RANGE={1:[0,1],2:[1,2],3:[2,4],4:[3,5],5:[5,6],6:[6,8],7:[8,9]};
+function dgRewardRange(D){return DG_RANGE[Math.max(1,Math.min(7,D.diff|0))]||[0,1];}
+function dgRewardTxt(D){const r=dgRewardRange(D);return r[0]===r[1]?GV[r[0]].n:GV[r[0]].n+' – '+GV[r[1]].n;}
+function dgGearReward(D,first){
+  const r=dgRewardRange(D),pool=GSLOTS.slice(),got=[];
+  for(let k=0;k<2;k++){
+    const sl=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+    const t=(k===0&&first)?r[1]:r[0]+Math.floor(Math.random()*(r[1]-r[0]+1));
+    const id=gearId(sl,t),g=GEAR[id];if(!g)continue;
+    const ok=giveGear(id,true);
+    got.push(g.ic+' '+g.name+(ok?(gearBetter(g)?' ⬆':''):' (jatuh ke tanah)'));
+    try{floatText(P.x,P.y-30-k*10,g.ic+' '+g.name,g.col);}catch(e){}
+  }
+  return got.join(' · ');
+}
+function shopGuildHub(){
+  openMenu('Guild Petualang',()=>[
+    {t:'🐾 Jual hasil buruan',b:'Buka',f:()=>{closeMenu();shopGuild();}},
+    {t:'⚒️ Pandai Besi — jual perlengkapan',b:'Buka',f:()=>{closeMenu();shopGear();}}
+  ]);
+}
+function shopGear(){
+  openMenu('⚒️ Pandai Besi',()=>{
+    const r=[];
+    r.push({t:'<small style="color:#9ad">Perlengkapan tidak dijual di sini: dapatkan dari <b>hadiah boss dungeon</b> (2 perlengkapan acak tiap boss, makin sulit makin bagus). Kamu hanya bisa menjual perlengkapan yang tidak terpakai.</small>',b:'—',off:true,f:()=>{}});
+    for(const id in P.bag.gear){
+      const g=GEAR[id];if(!g)continue;
+      const sellable=P.bag.gear[id]-(P.gear[g.slot]===id?1:0);
+      if(sellable<=0)continue;
+      r.push({t:'Jual: '+gearLabel(g)+' x'+sellable,b:'Jual 1',f:()=>{
+        if((P.bag.gear[id]|0)-(P.gear[g.slot]===id?1:0)<=0)return;
+        P.bag.gear[id]--;if(P.bag.gear[id]<=0)delete P.bag.gear[id];P.coins+=g.sell;toast('Terjual '+g.name+' +'+g.sell+'🪙');},
+        b2:'Semua',f2:()=>{
+          const q=(P.bag.gear[id]|0)-(P.gear[g.slot]===id?1:0);if(q<=0)return;
+          P.bag.gear[id]-=q;if(P.bag.gear[id]<=0)delete P.bag.gear[id];P.coins+=q*g.sell;toast('Terjual '+q+'x '+g.name+' +'+(q*g.sell)+'🪙');}});
+    }
+    return r;
+  });
+}
+function renderGearSlots(){
+  const el=$('ivgear');if(!el)return;
+  el.innerHTML='';
+  for(const s of GSLOTS){
+    const g=GEAR[P.gear[s]],d=document.createElement('div');
+    d.className='gs'+(g?' on':'');
+    d.textContent=g?g.ic:GSI[s];
+    if(g)d.style.boxShadow='inset 0 0 0 2px '+g.col;
+    d.title=g?g.name+' (klik untuk lepas)':GSN[s]+' (kosong)';
+    d.onclick=()=>{if(g){toggleGear(g.id);invRender();}else toast(GSN[s]+' kosong. Klik 2x perlengkapan di inventori untuk memakai.');};
+    el.appendChild(d);
+  }
+  const sm=document.createElement('div');sm.className='gsum';sm.textContent=gearSummary();el.appendChild(sm);
+}
+
 const SKILLS={
   prajurit:[
     {id:'tebas',name:'Tebasan Berat',icon:'🗡️',mp:3,cd:4,col:'#ff7a6a',desc:'Tebasan tunggal ke arah kursor, damage 3x pedang + dorongan kuat.'},
@@ -1863,7 +2113,7 @@ const WALK=[0,1,0,3];
 const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
 const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
 let SAVE_KEY=null;                             // diisi setelah login
-const SAVE_FIELDS=['v2','x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg','bk','w','w2','wd'];
+const SAVE_FIELDS=['v2','x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg','bk','gear','w','w2','wd'];
 const WFIELDS=SAVE_FIELDS.filter(k=>!['role','name','look','w','w2','wd'].includes(k));   // data yang terpisah per dunia
 const ROLES={
   warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:700,farm:true,xpMul:0.5,
@@ -1895,7 +2145,7 @@ function freshPlayer(){
     hp:10,maxHp:10,mp:20,maxMp:20,lvl:1,xp:0,coins:0,
     weapon:'sword',sel:0,hasBow:false,sp:[false,false,false,false,false,false,false],eq:null,buf:{},absorb:0,
     qdone:[],qact:{},st:freshStats(),inv:0,atk:0,
-    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{}},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,dg:{best:{},clr:{}},bk:{},w:1,w2:false,wd:{},stam:50,maxSt:50,exh:false,stT:0};
+    bag:{seed:{wortel:3,jagung:0,labu:0},prod:{},food:{},loot:{},feed:0,tool:{cangkul:false,siram:false,sabit:false},furn:{},gear:{}},gear:{w:'',h:'',a:'',b:'',r:'',k:''},land:[false,false,false,false],crops:{},animals:[],homes:[false,false,false,false],hf:{},selSeed:0,selF:0,vis:[],role:null,bhp:0,bmp:0,shield:false,food:100,name:'',look:defaultLook(),stats:{str:0,spd:0,def:0,sta:0},pts:0,dg:{best:{},clr:{}},bk:{},w:1,w2:false,wd:{},stam:50,maxSt:50,exh:false,stT:0};
 }
 let P=freshPlayer();
 let collected=new Set(),picked=new Set();
@@ -1923,21 +2173,22 @@ function plotAt(x,y){return PLOTS.find(p=>x>=p.x&&x<p.x+p.w&&y>=p.y&&y<p.y+p.h);
 const STATK=['str','spd','def','sta'];
 const stv=k=>((P&&P.stats&&P.stats[k])|0);
 const statSum=()=>STATK.reduce((a,k)=>a+stv(k),0);
-const strMul=()=>(1+stv('str')*0.04)*((P&&P.buf&&P.buf.cry>0)?1.4:1);
-const defMul=()=>{const v=stv('def');return v<=100?1-v*0.005:50/v;};   // linear s/d 100 (-50%), lalu terus menurun tanpa batas
-const atkCdMul=()=>1/(1+stv('spd')*0.004);
+const strMul=()=>(1+stv('str')*0.04)*((P&&P.buf&&P.buf.cry>0)?1.4:1)*gearAtkMul();
+const defMul=()=>{const v=stv('def')+gearStat().def;return v<=100?1-v*0.005:50/v;};   // linear s/d 100 (-50%), lalu terus menurun tanpa batas
+const atkCdMul=()=>1/(1+stv('spd')*0.004+gearStat().spd/100);
 function useStam(n){P.stam-=n;P.stT=1;if(P.stam<=0){P.stam=0;P.exh=true;}}
 const effLvl=()=>P.lvl+((WORLD===2||visited2())?9:0);   // Dunia 2: Lv 1 setara Lv 10 di Dunia 1 (bonus +9 level untuk kekuatan)
 function recalc(){
-  const R=RL();
+  const R=RL();fixGear();const G=gearStat();
   P.lvl=Math.min(Math.max(1,Math.floor(P.lvl)||1),R.maxLvl);
-  P.maxHp=Math.round(R.hp0+R.hpl*(effLvl()-1))+(P.bhp||0)+stv('def')*2;
-  P.maxMp=Math.round(R.mp0+R.mpl*(effLvl()-1))+(P.bmp||0);
+  P.maxHp=Math.round(R.hp0+R.hpl*(effLvl()-1))+(P.bhp||0)+stv('def')*2+G.hp;
+  P.maxMp=Math.round(R.mp0+R.mpl*(effLvl()-1))+(P.bmp||0)+G.mp;
   if(R.id!=='pemanah'){P.hasBow=false;P.weapon='sword';}else P.hasBow=true;
   if(R.id==='penyihir'){SPELL_LV.forEach((l,i)=>{if(effLvl()>=l)P.sp[i]=true;});if(!P.sp[P.sel])P.sel=0;}
-  P.maxSt=50+stv('sta')*3;if(!isFinite(P.stam))P.stam=P.maxSt;
+  P.maxSt=50+stv('sta')*3+G.stam;if(!isFinite(P.stam))P.stam=P.maxSt;
   P.hp=Math.min(P.hp,P.maxHp);P.mp=Math.min(P.mp,P.maxMp);P.stam=Math.min(P.stam,P.maxSt);
   fixEq(false);
+  try{applyLook();}catch(e){}   // perlengkapan berubah -> sprite karakter ikut berubah
 }
 function initRole(id){
   P.role=id;const R=RL();
@@ -1972,6 +2223,7 @@ function loadGame(){
        const sp=Math.floor(+s.p.pts);
        P.pts=(s.p.stats===undefined||!isFinite(sp))?Math.max(0,5+Math.max(0,(P.lvl||1)-1)-statSum()):Math.max(0,sp);}
       P.bhp=P.bhp||0;P.bmp=P.bmp||0;if(!P.bk||typeof P.bk!=='object'||Array.isArray(P.bk))P.bk={};
+      fixGear();
       collected=new Set(s.col||[]);picked=new Set(s.flw||[]);gtime=s.time||0;shownIntro=true;
     }
   }catch(e){}
@@ -2909,6 +3161,7 @@ function invMenuOld(){
     let prodLines=[];
     for(const k in P.bag.prod){const n=P.bag.prod[k]||0;if(n)prodLines.push(k+' x'+n);}
     if(prodLines.length)r.push({t:'🌾 Hasil panen/ternak/ikan: '+prodLines.join(', '),b:'—',off:true,f:()=>{}});
+    r.push({t:'🛡️ Perlengkapan: '+gearSummary()+'<br><small style="color:#9ad">Tekan I lalu klik 2x perlengkapan untuk memakainya.</small>',b:'Buka I',f:()=>{closeMenu();invShow();}});
     return r;
   });
 }
@@ -2923,18 +3176,21 @@ function itemMeta(cat,id){
   if(cat==='feed')return {ic:'🌾',name:'Pakan Hewan'};
   if(cat==='furn'){const f=FD[id];return f?{ic:FURN_IC[id]||'📦',name:f.n}:null;}
   if(cat==='tool'){const t=TOOL_META[id];return t?{ic:t[0],name:t[1],nodrop:true}:null;}
+  if(cat==='gear'){const g=GEAR[id];return g?{ic:g.ic,name:g.name,price:g.sell,gear:g,col:g.col}:null;}
   return null;
 }
 function itemGet(cat,id){
   const B=P.bag;
   if(cat==='loot')return B.loot[id]|0;if(cat==='food')return B.food[id]|0;if(cat==='prod')return B.prod[id]|0;
   if(cat==='seed')return B.seed[id]|0;if(cat==='feed')return B.feed|0;if(cat==='furn')return B.furn[id]|0;
-  if(cat==='tool')return B.tool[id]?1:0;return 0;
+  if(cat==='tool')return B.tool[id]?1:0;
+  if(cat==='gear')return (B.gear&&B.gear[id])|0;return 0;
 }
 function itemSet(cat,id,n){
   const B=P.bag;n=Math.max(0,Math.floor(n)||0);
   if(cat==='loot')B.loot[id]=n;else if(cat==='food')B.food[id]=n;else if(cat==='prod')B.prod[id]=n;
   else if(cat==='seed')B.seed[id]=n;else if(cat==='feed')B.feed=n;else if(cat==='furn')B.furn[id]=n;
+  else if(cat==='gear'){if(!B.gear)B.gear={};if(n>0)B.gear[id]=n;else delete B.gear[id];}
 }
 function invItems(){
   const B=P.bag,out=[],add=(cat,id)=>{const n=itemGet(cat,id);if(n<=0)return;const m=itemMeta(cat,id);if(m)out.push(Object.assign({cat,id,n},m));};
@@ -2945,7 +3201,24 @@ function invItems(){
   add('feed','feed');
   FURN.forEach(f=>add('furn',f.id));
   for(const k in TOOL_META)add('tool',k);
+  for(const id in (B.gear||{}))add('gear',id);
   return out;
+}
+function invUsed(){return invItems().length;}
+function invCap(){return BASE_SLOTS+gearStat().slots;}
+function bagRoom(cat,id){return itemGet(cat,id)>0||invUsed()<invCap();}
+function spawnDrop(cat,id,n,own){
+  const m=itemMeta(cat,id);if(!m)return null;
+  const v=DIRS[P.dir];let x=P.x+v[0]*14,y=P.y+v[1]*10;
+  if(blocked(x,y)){x=P.x;y=P.y;}
+  const pk={kind:'pickup',type:'item',cat,id,n,ic:m.ic,nm:m.name,x,y,ck:null,t:own?0:-3,life:300,mine:!!own,by:P.name};
+  pickups.push(pk);if(own&&MPsb)mpDropSend([pk]);
+  return pk;
+}
+function bagAdd(cat,id,n){
+  n=n||1;
+  if(bagRoom(cat,id)){itemSet(cat,id,itemGet(cat,id)+n);return true;}
+  spawnDrop(cat,id,n,false);return false;
 }
 const invOpen=()=>$('inv').classList.contains('on');
 let invSel=null;
@@ -2953,7 +3226,9 @@ function itemDesc(it){
   const d=[];
   if(it.eat)d.push('🍽️ '+foodInfo(it.eat));
   if(it.price)d.push('🪙 Harga jual @'+it.price);
-  if(it.nodrop)d.push('Peralatan: tidak bisa dibuang.');
+  if(it.gear){const g=it.gear;d.unshift('Lv '+g.lv+(g.slot==='w'?' · '+GWT[g.wt].roles.map(r=>ROLES[r].n).join('/'):'')+' · '+GSN[g.slot]+' · '+gearStatText(g)+(g.set==='abadi'?' · Set Abadi: 3 pcs +20% dmg, 5 pcs +30% dmg & +15% HP':''));}
+  if(it.gear){const c=gearCmp(it.gear);if(c)d.push(c);}
+  if(it.nodrop&&!it.gear)d.push('Peralatan: tidak bisa dibuang.');
   return d.join('  ·  ');
 }
 function invShow(){
@@ -2972,12 +3247,13 @@ function invRender(){
   const items=invItems();
   if(invSel&&itemGet(invSel.cat,invSel.id)<=0)invSel=null;
   const g=$('ivgrid');g.innerHTML='';
-  const N=Math.max(36,Math.ceil(items.length/9)*9);
+  const CAP=invCap(),N=Math.ceil(Math.max(CAP,items.length)/9)*9;
   for(let i=0;i<N;i++){
     const el=document.createElement('div'),it=items[i];
-    el.className='ivs'+(i>=27&&i<36?' hb':'');
+    el.className='ivs'+(i>=27&&i<36?' hb':'')+(!it&&i>=CAP?' lk':'');
     if(it){
       el.textContent=it.ic;
+      if(it.gear){el.style.boxShadow='inset 0 0 0 3px '+it.col;if(P.gear[it.gear.slot]===it.id){const e=document.createElement('i');e.className='eqm';e.textContent='✔';el.appendChild(e);}}
       if(it.n>1){const b=document.createElement('b');b.textContent=it.n>999?'999+':it.n;el.appendChild(b);}
       if(invSel&&invSel.cat===it.cat&&invSel.id===it.id)el.classList.add('sel');
       el.onclick=()=>{invSel={cat:it.cat,id:it.id};invRender();};
@@ -2991,14 +3267,15 @@ function invRender(){
   const sel=invSel&&items.find(x=>x.cat===invSel.cat&&x.id===invSel.id);
   $('ivname').textContent=sel?sel.ic+' '+sel.name+' x'+sel.n:'Pilih barang';
   $('ivdesc').textContent=sel?(itemDesc(sel)||'Tidak ada keterangan.'):(items.length?'Klik sebuah slot untuk melihat detailnya.':'Inventori kosong. Berburu, bertani, memancing, atau buka peti untuk mendapat barang.');
-  $('ivUse').disabled=!(sel&&sel.eat);$('ivD1').disabled=!sel||!!sel.nodrop;$('ivDA').disabled=!sel||!!sel.nodrop||sel.n<2;
-  drawPrev($('ivprev'),P.look,0,0,5);
-  $('ivwho').innerHTML='<b>'+(P.name||'')+'</b><br>Lv '+P.lvl+' · '+RL().n+'<br>❤ '+Math.ceil(P.hp)+'/'+P.maxHp+'<br>🍖 '+Math.ceil(P.food)+'/100<br>🪙 '+P.coins;
+  $('ivUse').disabled=!(sel&&(sel.eat||sel.gear));$('ivUse').textContent=sel&&sel.gear?(P.gear[sel.gear.slot]===sel.id?'❌ Lepas':(P.gear[sel.gear.slot]?'🔄 Ganti':'🛡️ Pakai')):'🍽️ Makan';renderGearSlots();$('ivD1').disabled=!sel||!!sel.nodrop;$('ivDA').disabled=!sel||!!sel.nodrop||sel.n<2;
+  drawPrev($('ivprev'),P.look,0,0,5,gearVis(P.gear));
+  $('ivwho').innerHTML='<b>'+(P.name||'')+'</b><br>Lv '+P.lvl+' · '+RL().n+'<br>❤ '+Math.ceil(P.hp)+'/'+P.maxHp+'<br>🍖 '+Math.ceil(P.food)+'/100<br>🪙 '+P.coins+'<br>🎒 Slot '+items.length+'/'+CAP;
 }
 function invUse(){
   if(!invSel)return;
   const m=itemMeta(invSel.cat,invSel.id),have=itemGet(invSel.cat,invSel.id);
   if(!m||have<=0)return;
+  if(m.gear){toggleGear(invSel.id);invRender();return;}
   if(!m.eat){toast('Barang ini tidak bisa dimakan');return;}
   if(eatGain(m.eat.f,m.eat.hp,m.eat.mp,m.name))itemSet(invSel.cat,invSel.id,have-1);
   invRender();
@@ -3007,12 +3284,18 @@ function dropItem(cat,id,n){
   if(IN!==null){toast('Tidak bisa membuang barang di dalam rumah');return false;}
   const m=itemMeta(cat,id),have=itemGet(cat,id);n=Math.min(Math.floor(n),have);
   if(!m||m.nodrop||n<=0)return false;
+  let unequip=false;
+  if(cat==='gear'){
+    const g=GEAR[id];
+    if(g&&P.gear[g.slot]===id&&have-n<=0){
+      if(g.slot==='k'){const used=invUsed()-1;if(used>BASE_SLOTS){toast('⛔ Kosongkan '+(used-BASE_SLOTS)+' slot dulu sebelum membuang ransel yang dipakai');return false;}}
+      unequip=true;
+    }
+  }
   itemSet(cat,id,have-n);
-  const v=DIRS[P.dir];let x=P.x+v[0]*14,y=P.y+v[1]*10;
-  if(blocked(x,y)){x=P.x;y=P.y;}
-  const pk={kind:'pickup',type:'item',cat,id,n,ic:m.ic,nm:m.name,x,y,ck:null,t:0,life:300,mine:true,by:P.name};
-  pickups.push(pk);if(MPsb)mpDropSend([pk]);
-  sfx('ui');toast('Dibuang: '+m.ic+' '+m.name+' x'+n+(MPsb?' (pemain lain bisa mengambilnya)':''));
+  if(unequip){P.gear[GEAR[id].slot]='';recalc();}
+  spawnDrop(cat,id,n,true);
+  sfx('ui');toast('Dibuang: '+m.ic+' '+m.name+' x'+n+(unequip?' (perlengkapan dilepas)':'')+(MPsb?' (pemain lain bisa mengambilnya)':''));
   return true;
 }
 function invDrop(n){if(!invSel)return;dropItem(invSel.cat,invSel.id,n);invRender();}
@@ -3471,6 +3754,7 @@ function killMob(m,by){
   P.st.kill++;P.st[m.type]=(P.st[m.type]||0)+1;if(m.boss&&DG){if(DG.f<DG.d.floors)dgMiniDead(m);else dgBossDead(m);}
   if(by==='arrow')P.st.arrow++;
   gainXp(m.xp);
+  gearOnKill(m);
   const d=MOBS[m.type];
   burst(m.x,mc(m),m.type==='slime'?(WORLD===2?SL2:SL)[m.tier][0]:d.col);deathFx(m,m.type==='slime'?(WORLD===2?SL2:SL)[m.tier][0]:d.col);
   floatText(m.x,mc(m)-16,'+'+m.xp+' XP','#8fe3ff');
@@ -3485,19 +3769,19 @@ function killMob(m,by){
   // loot buruan langsung ke inventori
   const drops=MOB_DROPS[m.type];
   if(drops){
-    const got=[];
+    const got=[];let full=false;
     for(const [id,ch] of drops){
       if(Math.random()<ch){
-        P.bag.loot[id]=(P.bag.loot[id]||0)+1;
-        got.push((LOOT[id]?LOOT[id].ic+' ':'')+(LOOT[id]?LOOT[id].n:id));
+        if(bagAdd('loot',id,1))got.push((LOOT[id]?LOOT[id].ic+' ':'')+(LOOT[id]?LOOT[id].n:id));
+        else full=true;
       }
     }
-    if(got.length)toast('Loot: '+got.join(', '));
+    if(got.length||full)toast((got.length?'Loot: '+got.join(', '):'')+(full?(got.length?' · ':'')+'🎒 Inventori penuh, sebagian jatuh ke tanah':''));
   }
 }
 function hurt(n,fromX,fromY){
   n=Math.max(1,Math.round(n*RL().def*defMul()));
-  if(P.shield){n=Math.max(1,Math.round(n*0.15));floatText(P.x,P.y-32,'Tangkis!','#6ab8ff');sfx('block');crossFx(P.x,P.y-9,'#6ab8ff',9,0.2);}
+  if(P.shield){n=Math.max(1,Math.round(n*Math.max(0.05,0.15-gearStat().blk/100)));floatText(P.x,P.y-32,'Tangkis!','#6ab8ff');sfx('block');crossFx(P.x,P.y-9,'#6ab8ff',9,0.2);}
   const B=P.buf||{};
   if(B.wall>0){n=Math.max(1,Math.round(n*0.4));floatText(P.x,P.y-38,'Dinding!','#9ad8ff');sfx('block');}
   if(B.aura>0)n=Math.max(1,Math.round(n*0.75));
@@ -3788,7 +4072,8 @@ function updatePickups(dt){
     if(p.life!==undefined){p.life-=dt;}
     const d=Math.hypot(p.x-P.x,p.y-P.y),rdy=p.type!=='item'||p.t>1.3;
     if(rdy&&p.type!=='crystal'&&d<28&&d>0.1){p.x+=(P.x-p.x)/d*60*dt;p.y+=(P.y-p.y)/d*60*dt;}
-    if(rdy&&d<11&&!dying){
+    if(rdy&&d<11&&!dying&&p.type==='item'&&!bagRoom(p.cat,p.id)){p.t=-3;toast('🎒 Inventori penuh! Buang/jual barang atau pakai ransel');}
+    else if(rdy&&d<11&&!dying){
       p.gone=true;
       if(p.type==='crystal'){P.st.crystal++;if(p.id)collected.add(p.id);toast('+1 Kristal 💎');sfx('crystal');}
       else if(p.type==='coin'){const v=p.val||1;P.coins+=v;P.st.coin+=v;sfx('coin');floatText(P.x,P.y-24,'+'+v+' koin','#ffd23f');}
@@ -3895,12 +4180,42 @@ function txt(s,x,y,col,size){
   ctx.font='bold '+(size||7)+'px "Courier New",monospace';ctx.textAlign='center';ctx.lineJoin='round';
   ctx.lineWidth=2;ctx.strokeStyle='#000';ctx.strokeText(s,x,y);ctx.fillStyle=col||'#fff';ctx.fillText(s,x,y);
 }
-function drawBow(sx,sy){
-  const a=P.aimT>0?P.aimA:Math.atan2(DIRS[P.dir][1],DIRS[P.dir][0]);
+const eqW=()=>{const g=GEAR[P&&P.gear&&P.gear.w];return g||null;};
+function drawStaff(sx,sy,g,a0){
+  const a=a0!==undefined?a0:(P.aimT>0?P.aimA:Math.atan2(DIRS[P.dir][1],DIRS[P.dir][0])),x=sx+(Math.cos(a)>=0?8:-9);
+  ctx.fillStyle='#6b4423';ctx.fillRect(x,sy-17,2,14);
+  ctx.fillStyle=g.col;ctx.fillRect(x-1,sy-21,4,4);
+  ctx.globalAlpha=0.3+0.15*Math.sin(performance.now()/180);ctx.fillRect(x-2,sy-22,6,6);ctx.globalAlpha=1;
+  ctx.fillStyle='#fff';ctx.fillRect(x,sy-20,1,1);
+}
+function drawSword(sx,sy,a,col){
+  const x=sx+(Math.cos(a)>=0?8:-9);
+  ctx.fillStyle=col;ctx.fillRect(x,sy-17,2,9);
+  ctx.fillStyle='#ffffff';ctx.fillRect(x,sy-17,1,8);
+  ctx.fillStyle='#c9a227';ctx.fillRect(x-1,sy-8,4,1);
+  ctx.fillStyle='#6b4423';ctx.fillRect(x,sy-7,2,3);
+}
+function drawShieldSide(sx,sy,dir,col){
+  const bx=sx+(dir===3?-9:8);
+  ctx.fillStyle='#fff';ctx.fillRect(bx-3,sy-14,6,8);ctx.fillStyle=col;ctx.fillRect(bx-2,sy-13,4,6);
+}
+/* senjata/perisai yang dipegang pemain LAIN (e.gr = id perlengkapan, e.bw = sedang memakai busur) */
+function drawRemoteHeld(e,sx,sy){
+  const gr=e.gr||{},g=GEAR[gr.w],v=DIRS[e.dir&3],a=Math.atan2(v[1],v[0]);
+  if(e.bw)drawBow(sx,sy,a,(g&&g.wt==='busur')?g.col:'#8a5a2a');
+  else if(g){
+    if(g.wt==='busur')drawBow(sx,sy,a,g.col);
+    else if(g.wt==='tongkat')drawStaff(sx,sy,g,a);
+    else if(g.wt==='pedang')drawSword(sx,sy,a,g.col);
+    else if(g.wt==='perisai')drawShieldSide(sx,sy,e.dir&3,g.col);
+  }
+}
+function drawBow(sx,sy,a0,c0){
+  const a=a0!==undefined?a0:(P.aimT>0?P.aimA:Math.atan2(DIRS[P.dir][1],DIRS[P.dir][0]));
   const ca=Math.cos(a),sa=Math.sin(a),bx=sx+ca*9,by=sy-8+sa*9;
   for(let t=-4;t<=4;t++){
     const off=(16-t*t)/16*2.2;
-    ctx.fillStyle='#8a5a2a';
+    if(c0)ctx.fillStyle=c0;else{const _g=eqW();ctx.fillStyle=(_g&&_g.wt==='busur')?_g.col:'#8a5a2a';}
     ctx.fillRect(Math.round(bx-sa*t*1.4+ca*off),Math.round(by+ca*t*1.4+sa*off),1,1);
     ctx.fillStyle='#e8dcc0';
     ctx.fillRect(Math.round(bx-sa*t*1.4-ca),Math.round(by+ca*t*1.4-sa),1,1);
@@ -3950,10 +4265,13 @@ function drawEntity(e,now){
       ctx.drawImage(SPR.player[P.dir][P.moving?WALK[Math.floor(P.anim)%4]:0],sx-9,sy-21);
     }
     if(P.weapon==='bow'&&P.hasBow)drawBow(sx,sy);
+    else{const _g=eqW();if(_g&&_g.wt==='tongkat')drawStaff(sx,sy,_g);else if(_g&&_g.wt==='pedang')drawSword(sx,sy,P.aimT>0?P.aimA:Math.atan2(DIRS[P.dir][1],DIRS[P.dir][0]),_g.col);}
     drawBuffFx(sx,sy,now);
     drawNameTag(sx,sy);
     if(P.shield){const v=DIRS[P.dir],cx_=sx+v[0]*8,cy_=sy-9+v[1]*6;
-      ctx.fillStyle='#fff';ctx.fillRect(cx_-5,cy_-6,10,12);ctx.fillStyle='#3a78d8';ctx.fillRect(cx_-4,cy_-5,8,10);ctx.fillStyle='#ffe066';ctx.fillRect(cx_-1,cy_-4,2,8);ctx.fillRect(cx_-3,cy_-1,6,2);}
+      const _sg=eqW(),_sc=(_sg&&_sg.wt==='perisai')?_sg.col:'#3a78d8';
+      ctx.fillStyle='#fff';ctx.fillRect(cx_-5,cy_-6,10,12);ctx.fillStyle=_sc;ctx.fillRect(cx_-4,cy_-5,8,10);ctx.fillStyle='#ffe066';ctx.fillRect(cx_-1,cy_-4,2,8);ctx.fillRect(cx_-3,cy_-1,6,2);}
+    else{const _sg=eqW();if(_sg&&_sg.wt==='perisai'){const bx_=sx+(P.dir===3?-9:8);ctx.fillStyle='#fff';ctx.fillRect(bx_-3,sy-14,6,8);ctx.fillStyle=_sg.col;ctx.fillRect(bx_-2,sy-13,4,6);}}
     if(fishS){const bx=Math.round(fishS.x-camX),by=Math.round(fishS.y-camY)+(fishS.state==='bite'?Math.round(Math.sin(performance.now()/60)*2):0);
       ctx.fillStyle='rgba(255,255,255,.7)';for(let i=1;i<8;i++)ctx.fillRect(Math.round(sx+(bx-sx)*i/8),Math.round(sy-12+(by-sy+12)*i/8-Math.sin(i/8*Math.PI)*4),1,1);
       ctx.fillStyle='#fff';ctx.fillRect(bx-1,by-1,3,3);ctx.fillStyle='#e0443e';ctx.fillRect(bx-1,by-2,3,2);
@@ -5229,9 +5547,9 @@ function dgChest(c){
   const coins=Math.round((20+L*6)*(c.rich?2.5:1)*(0.8+Math.random()*0.5));
   P.coins+=coins;P.st.coin+=coins;
   const got=['🪙 '+coins];
-  const roll=(id,ch,q)=>{if(Math.random()<ch){P.bag.loot[id]=(P.bag.loot[id]||0)+q;got.push(LOOT[id].ic+' '+LOOT[id].n+(q>1?' x'+q:''));}};
+  const roll=(id,ch,q)=>{if(Math.random()<ch){const ok=bagAdd('loot',id,q);got.push(LOOT[id].ic+' '+LOOT[id].n+(q>1?' x'+q:'')+(ok?'':' (jatuh ke tanah)'));}};
   roll('bijih',0.6,1+Math.floor(f/3));roll('permata',0.35+f*0.03,1);roll('relik',c.rich?0.5:0.08+D.diff*0.02,1);
-  if(Math.random()<0.4){const id=['roti','sate','jus','sup'][Math.floor(Math.random()*4)];P.bag.food[id]=(P.bag.food[id]||0)+1;got.push(FOODS[id].ic+' '+FOODS[id].n);}
+  if(Math.random()<0.4){const id=['roti','sate','jus','sup'][Math.floor(Math.random()*4)];const ok=bagAdd('food',id,1);got.push(FOODS[id].ic+' '+FOODS[id].n+(ok?'':' (jatuh ke tanah)'));}
   if(Math.random()<0.25){P.st.crystal++;got.push('💎 Kristal');}
   gainXp(Math.round(4+L*0.8));
   toast('📦 Peti: '+got.join(', '));
@@ -5241,7 +5559,8 @@ function dgBossShared(){
   const F=DG.F,D=DG.d,en=F.en;if(F.bossDead||DG.f<D.floors)return;
   F.bossDead=true;F.chests.push({tx:en.cx-2,ty:en.cy,open:false,rich:true});F.portal={tx:en.cx,ty:en.cy-1};
   const bc=D.diff*60;P.coins+=bc;P.st.coin+=bc;gainXp(D.diff*40);
-  toast('👑 Boss '+D.name+' kalah bersama timmu! +'+bc+' koin · Portal keluar muncul');
+  const gr=dgGearReward(D,false);
+  toast('👑 Boss '+D.name+' kalah bersama timmu! +'+bc+' koin · 🎁 '+gr+' · Portal keluar muncul');
 }
 function dgMiniDead(m){
   const F=DG.F,D=DG.d,en=F.en;if(F.miniDead)return;F.miniDead=true;
@@ -5263,7 +5582,8 @@ function dgBossDead(m){
   for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:'crystal',x:m.x+(k-1)*10,y:m.y,ck:null,t:0});
   const first=!P.dg.clr[D.i];P.dg.clr[D.i]=(P.dg.clr[D.i]||0)+1;
   if(first)P.pts=(P.pts||0)+2;
-  toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota Penjaga'+(first?' · Hadiah pertama: +2 poin stat':'')+' · Portal keluar muncul');
+  const gr=dgGearReward(D,first);
+  toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota'+(first?', +2 poin stat':'')+' · 🎁 '+gr+' · Tekan I untuk memakai · Portal keluar muncul');
 }
 function dgUpdate(dt){DG.t+=dt;}
 
@@ -5275,7 +5595,7 @@ function dgDoorInteract(){
   const d=dgNear();if(!d)return false;
   openMenu('🕳️ '+d.name,()=>{
     const best=Math.max(1,P.dg.best[d.i]|0);
-    const r=[{t:'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss akhir: '+MOBS[DG_BOSS[d.i%DG_BOSS.length]].name+' · Bos tengah tiap 5 lantai · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x</small>',b:'—',off:true,f:()=>{}}];
+    const r=[{t:'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss akhir: '+MOBS[DG_BOSS[d.i%DG_BOSS.length]].name+' · Bos tengah tiap 5 lantai · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: 2 perlengkapan acak ('+dgRewardTxt(d)+')</small>',b:'—',off:true,f:()=>{}}];
     for(let f=1;f<=Math.min(d.floors,best);f++)r.push({t:'Masuk lantai '+f+(f===1?' (awal)':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(d,f)+(f===d.floors?' · BOSS AKHIR':(f%5===0?' · BOS TENGAH':''))+'</small>',b:'Masuk',f:()=>dgEnter(d.i,f)});
     if(MPon)MPpeers.forEach(fr=>{const z=(fr.g|0)-1000,fi=Math.floor(z/100),ff=z%100;
       if(z>=0&&fi===d.i&&ff>=1&&ff<=d.floors&&(((fr.w|0)||1)===WORLD))r.push({t:'👥 Gabung '+fr.name+' di lantai '+ff,b:'Gabung',f:()=>dgEnter(d.i,ff)});});
@@ -5881,7 +6201,8 @@ function mpMsgIn(from,m){
     if(!r){r={kind:'remote',id:id,inv:0,x:+m.x||0,y:+m.y||0,set:null,lkS:'',say:'',sayT:0};MPpeers.set(id,r);toast('\ud83c\udf10 '+nm+' bergabung');mpUi();}
     r.tx=+m.x||0;r.ty=+m.y||0;r.dir=(m.d|0)&3;r.mv=!!m.m;r.name=nm;r.lvl=Math.max(1,Math.min(999,m.l|0));
     r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.dy=!!m.dy;r.g=m.g|0;r.w=((m.w|0)||1);r.v2=!!m.v2;r.seen=performance.now();
-    const lk=JSON.stringify(m.lk||{});if(lk!==r.lkS&&lk.length<500){r.lkS=lk;try{r.set=makeSet(lookPal(sanitizeLook(m.lk)));}catch(e){}}
+    const gv=gearVis(m.gr);r.gr=gv;r.bw=!!m.bw;
+    const lk=JSON.stringify([m.lk||{},gv.h,gv.a,gv.b]);if(lk!==r.lkS&&lk.length<700){r.lkS=lk;try{r.set=makeSet(lookPal(sanitizeLook(m.lk),gv));}catch(e){}}
   }else if(m.t==='c'){
     const r=MPpeers.get(id),tx=String(m.x||'').slice(0,80);if(r&&tx){r.say=tx;r.sayT=performance.now()+6000;mpLog(r.name,tx);}
   }else if(m.t==='bye'&&!MPhost){MPpeers.delete(id);mpUi();}
@@ -5919,6 +6240,7 @@ function mpAdd(list){
 function mpDraw(e,sx,sy){
   shadow(sx,sy,10);
   ctx.drawImage(e.set[e.dir][e.mv?WALK[Math.floor(performance.now()/130)%4]:0],sx-9,sy-21);
+  try{drawRemoteHeld(e,sx,sy);}catch(_){}
   const y2=sy-24;wTag(e.w,e.v2,sx,y2-16);txt(e.name,sx,y2-8,'#9fe8ff',7);txt('Lv '+e.lvl+' \u00b7 '+e.rn,sx,y2,e.rc,6);
   if(e.say&&performance.now()<e.sayT)txt(e.say,sx,y2-26,'#ffffff',7);}
 const MPpcs=[],MPICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};let MPman=null;
@@ -5986,7 +6308,7 @@ function mpLoadSb(cb){
 let sbLast=0,sbKey='';
 function mpSbOut(m){
   if(!MPsb)return;const now=performance.now();
-  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy,m.g,m.w].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
+  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy,m.g,m.w,m.bw,JSON.stringify(m.gr)].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
   MPsb.ch.send({type:'broadcast',event:'m',payload:Object.assign({},m,{f:MPsb.id,g:myG()})}).catch(()=>{});}
 function mpSb(create,code){
   if(create)code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
@@ -6123,6 +6445,7 @@ const mpOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 function dropValid(cat,id){
   switch(cat){
     case 'loot':return mpOwn(LOOT,id);
+    case 'gear':return mpOwn(GEAR,id);
     case 'food':return mpOwn(FOODS,id);
     case 'seed':return mpOwn(CROPS,id);
     case 'furn':return mpOwn(FD,id);
@@ -6234,7 +6557,7 @@ function mpTick(dt){
       a.push([m.id,m.type,m.tier,m.lvl,q(m.x),q(m.y),m.hp,m.maxHp,m.dir&3,m.walkT>0?1:0,q(m.hop),q(m.lunge),q(m.aim),q(m.wind),q(m.fade)]);}
     mpOut({t:'M',a});}}
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
-  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,i:(IN===null&&!DG)?0:1,dy:dying?1:0,g:myG(),v2:visited2()?1:0});},100);
+  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,gr:gearVis(P.gear),bw:(P.weapon==='bow'&&P.hasBow)?1:0,i:(IN===null&&!DG)?0:1,dy:dying?1:0,g:myG(),v2:visited2()?1:0});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
 $('mpX').onclick=()=>$('mp').classList.remove('on');
 $('mpHost').onclick=mpHost;$('mpJoin').onclick=mpJoin;
