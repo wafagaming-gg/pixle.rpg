@@ -5496,7 +5496,7 @@ function dgSprites(D){
 
 const DG_MOB={hp:1.25,dmg:1.15,spd:1.1,xp:1.3};   // bonus mob dungeon dibanding mob dunia terbuka (level sama)
 const DG_BOSS=['bos_slime','bos_goblin','bos_ratu','bos_titan','bos_lich','bos_naga','bos_ksatria'];   // 1 jenis bos per dungeon
-const SECRET_BOSS_HP=1000000;
+const SECRET_BOSS_HP=2000000;
 const dgBossType=D=>D.secret?'bos_gelap':DG_BOSS[D.i%DG_BOSS.length];
 function dgSecretReq(D){return DUNGEONS.findIndex(q=>q.s===D.s&&!q.secret);}
 function dgSecretOpen(D){return !D||!D.secret||isAdmin()||((P.dg.clr[dgSecretReq(D)]|0)>0);}
