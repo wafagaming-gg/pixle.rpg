@@ -524,6 +524,13 @@ const DG_DEF=[
  {s:'Ibu Kota Aurelia',name:'Labirin Aurelia',dn:'Legendaris',floors:20,base:45,step:4,diff:7,off:[7,-4],fav:'golem',fl:'#5a5a72',wl:'#2e2e48'}
 ];
 const DUNGEONS=DG_DEF.map((d,i)=>{const s=SETT.find(q=>q.name===d.s);return Object.assign({},d,{i,ex:Math.round(s.x+d.off[0]),ey:Math.round(s.y+d.off[1]),col:s.col});});
+/* DUNGEON RAHASIA: Gerbang Kegelapan (di dalam Ibu Kota; terbuka setelah dungeon terakhir dikalahkan) */
+const SECRET_DG={name:'Gerbang Kegelapan',dn:'???',floors:5,base:100,step:6,diff:8,fav:'ghost',fl:'#1b1230',wl:'#09050f',off:[-9,-4],secret:true};
+function addSecretDg(capName){
+  const st=SETT.find(q=>q.name===capName);if(!st)return;
+  DUNGEONS.push(Object.assign({},SECRET_DG,{s:capName,i:DUNGEONS.length,ex:Math.round(st.x+SECRET_DG.off[0]),ey:Math.round(st.y+SECRET_DG.off[1]),col:'#8a3cff'}));
+}
+addSecretDg('Ibu Kota Aurelia');
 function dentAt(x,y){for(const d of DUNGEONS)if(x>=d.ex&&x<d.ex+2&&y>=d.ey&&y<d.ey+2)return d;return null;}
 function dentNear(x,y){for(const d of DUNGEONS)if(x>=d.ex-2&&x<=d.ex+3&&y>=d.ey-2&&y<=d.ey+5)return true;return false;}
 function settDist(x,y){let m=1e9;for(const s of SETT){const d=Math.hypot(x-s.x,y-s.y)-s.r;if(d<m)m=d;}return m;}
@@ -851,6 +858,7 @@ function buildStruct2(){
    {s:'Desa Kristal Malam',name:'Gua Kristal Malam',dn:'Neraka',floors:18,base:42,step:4,diff:6,off:[8,5],fav:'ghost',fl:'#4a3a7a',wl:'#261a4a'},
    {s:'Ibu Kota Valdoria',name:'Menara Valdoria',dn:'Legendaris',floors:22,base:50,step:4,diff:7,off:[7,-4],fav:'golem',fl:'#5a5272',wl:'#2a2048'}
   ].forEach((d,i)=>{const st=SETT.find(q=>q.name===d.s);DUNGEONS.push(Object.assign({},d,{i,ex:Math.round(st.x+d.off[0]),ey:Math.round(st.y+d.off[1]),col:st.col}));});
+  addSecretDg('Ibu Kota Valdoria');
   setupRoutes([
    {a:'Desa Senja',b:'Benteng Abu',w:1,pts:[[-17,0],[-26,-6],[-32,-22],[-36,-30],[-41,-30]]},
    {a:'Desa Senja',b:'Desa Lumut Hitam',w:1,pts:[[0,17],[8,30],[24,36],[40,36],[40,41]]},
@@ -1571,6 +1579,7 @@ const MOBS={
   bos_ksatria:{name:'Ksatria Hitam', boss:1,rad:14,cy:32,h:68, reach:24,weak:'cahaya',res:{gelap:0.5},col:'#5a5a9a',kbMul:0.04,hp:24,dmg:3,xp:40,hpm:14,dmgm:1.8,xpm:20,coin:500,sw:28,bw:56},
   bos_naga  :{name:'Naga Api',       boss:1,rad:26,cy:30,h:78, reach:34,weak:'air',  res:{api:0.2},col:'#e0443e',kbMul:0.02,hp:24,dmg:3,xp:40,hpm:17,dmgm:2.0,xpm:26,coin:600,sw:60,bw:76},
   /* BOS SUPER SULIT (Dunia 1, dekat Ibu Kota): HP raksasa, bisa dikalahkan */
+  bos_gelap :{name:'Raja Kegelapan',boss:1,rad:18,cy:52,h:106,reach:32,weak:'cahaya',res:{gelap:0.3},col:'#8a3cff',kbMul:0,hp:24,dmg:3,xp:40,hpm:1,dmgm:1,xpm:1,coin:50000,sw:40,bw:96},
   bos_abadi :{name:'Penjaga Abadi',boss:1,rad:16,cy:48,h:98,reach:30,weak:null,col:'#ff2020',kbMul:0,hp:24,dmg:3,xp:40,hpm:1,dmgm:1,xpm:1,coin:5000,sw:36,bw:84}
 };
 const SPELLS=[
@@ -1784,6 +1793,13 @@ SPR.bos_abadi=SPR.guard.map((row,d)=>row.map(im=>{
   else if(d===2){R(g,'#ff2020',20,34,8,6);R(g,'#ffd0d0',22,35,3,2);}
   else if(d===3){R(g,'#ff2020',44,34,8,6);R(g,'#ffd0d0',47,35,3,2);}
   return c;}));
+SPR.bos_gelap=SPR.guard.map((row,d)=>row.map(im=>{
+  const c=tintImg(scaleImg(im,4,10),'#2a0a52',0.72),g=c.getContext('2d');
+  R(g,'#b985ff',14,14,44,5);R(g,'#b985ff',14,4,6,11);R(g,'#b985ff',24,8,5,7);R(g,'#b985ff',33,0,6,15);R(g,'#b985ff',43,8,5,7);R(g,'#b985ff',52,4,6,11);R(g,'#f0e0ff',34,7,4,4);
+  if(d===0){R(g,'#d9a6ff',24,34,8,6);R(g,'#d9a6ff',44,34,8,6);R(g,'#ffffff',26,35,3,2);R(g,'#ffffff',46,35,3,2);}
+  else if(d===2){R(g,'#d9a6ff',20,34,8,6);R(g,'#ffffff',22,35,3,2);}
+  else if(d===3){R(g,'#d9a6ff',44,34,8,6);R(g,'#ffffff',47,35,3,2);}
+  return c;}));
 /* nama & warna efek monster Dunia 2 */
 const MOB_W2={
   slime:['Slime Senja',null],bat:['Ngengat Senja','#d86aa8'],goblin:['Imp Bara','#d8483a'],skeleton:['Kerangka Bara','#8a7ab8'],
@@ -1866,6 +1882,15 @@ const GSM={w:1,h:0.7,a:1.2,b:0.6,r:1.5,k:1.2};
     add('r_'+sfx_,'r',t,'Cincin '+T_.n,'💍');
     add('k_'+sfx_,'k',t,'Ransel '+T_.n,'🎒');
   });
+})();
+/* SENJATA KEGELAPAN: hadiah khusus Raja Kegelapan (dungeon rahasia), satu senjata sesuai peran pemain */
+(function(){
+  const mkd=(wt,name,ic,st)=>{const id='w_'+wt+'_gk';
+    GEAR[id]=Object.assign({id,slot:'w',tier:10,name,ic,col:'#8a3cff',lv:120,wt,set:null,shop:false,dark:true,buy:5000000,sell:250000,atk:0,def:0,hp:0,mp:0,spd:0,stam:0,blk:0,slots:0},st);};
+  mkd('pedang','Pedang Kegelapan','🗡️',{atk:1500,def:80,hp:2500,mp:400,spd:70,stam:200});
+  mkd('busur','Busur Kegelapan','🏹',{atk:1500,def:60,hp:2000,mp:400,spd:90,stam:200});
+  mkd('tongkat','Tongkat Sihir Kegelapan','🪄',{atk:1500,def:60,hp:2000,mp:4000,spd:70,stam:200});
+  mkd('perisai','Perisai Kegelapan','🛡️',{atk:900,def:250,hp:9000,mp:400,spd:50,stam:300,blk:15});
 })();
 /* migrasi perlengkapan versi lama (tingkat 0-6 & Abadi 'u') ke 10 macam baru */
 const GLEG={'0':0,'1':1,'2':2,'3':3,'4':5,'5':7,'6':8,'u':9};
@@ -1968,8 +1993,14 @@ function gearOnKill(m){}   // perlengkapan tidak lagi jatuh dari monster; hanya 
 /* hadiah boss dungeon: 2 perlengkapan acak (slot & macam diacak), makin sulit dungeon makin bagus macamnya */
 const DG_RANGE={1:[0,1],2:[1,2],3:[2,4],4:[3,5],5:[5,6],6:[6,8],7:[8,9]};
 function dgRewardRange(D){return DG_RANGE[Math.max(1,Math.min(7,D.diff|0))]||[0,1];}
-function dgRewardTxt(D){const r=dgRewardRange(D);return r[0]===r[1]?GV[r[0]].n:GV[r[0]].n+' – '+GV[r[1]].n;}
+function dgRewardTxt(D){if(D.secret)return 'Senjata Kegelapan sesuai peranmu';const r=dgRewardRange(D);return r[0]===r[1]?GV[r[0]].n:GV[r[0]].n+' – '+GV[r[1]].n;}
 function dgGearReward(D,first){
+  if(D.secret){   // hadiah rahasia: senjata Kegelapan sesuai peran
+    const id='w_'+roleWT()+'_gk',g=GEAR[id];if(!g)return '';
+    const ok=giveGear(id,true);
+    try{floatText(P.x,P.y-30,g.ic+' '+g.name,g.col);}catch(e){}
+    return g.ic+' '+g.name+(ok?(gearBetter(g)?' ⬆':''):' (jatuh ke tanah)');
+  }
   const r=dgRewardRange(D),pool=GSLOTS.slice(),got=[];
   for(let k=0;k<2;k++){
     const sl=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
@@ -2588,6 +2619,13 @@ function bossSlam(m,r,col,mul,TG,TGd){
 function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
   const hpf=m.hp/m.maxHp,enr=hpf<0.4;          // enrage di bawah 40% HP
   m.cd-=dt;m.sum=(m.sum||0)-dt;
+  if(m.gk){   // Raja Kegelapan: serangan mengikuti HP pemain, regenerasi pelan, perisai berkala
+    m.dmg=Math.max(80,Math.round(P.maxHp*(enr?0.32:0.22)));
+    if(m.hp<m.maxHp)m.hp=Math.min(m.maxHp,m.hp+m.maxHp*0.00012*dt);
+    if(m.shOn>0)m.shOn-=dt;
+    if(!TGd&&dist<330){m.shC=(m.shC===undefined?16:m.shC)-dt;if(m.shC<=0){m.shC=enr?13:19;m.shOn=2.5;floatText(m.x,m.y-d_h(m)-14,'PERISAI KEGELAPAN','#c07bff');ringFx(m.x,m.y-20,40,'#8a3cff',0.5,0.6);}}
+    if(!m.warnNear&&!TGd&&dist<300){m.warnNear=true;toast('🌑 Raja Kegelapan hampir abadi... bertahanlah dan serang terus, ia masih bisa dikalahkan!');}
+  }
   if(m.bkey==='abadi'){m.dmg=Math.max(40,Math.round(P.maxHp*0.3));if(!m.warnNear&&!TGd&&dist<330){m.warnNear=true;toast('☠️ Aura mengerikan terasa di dekat Ibu Kota... Penjaga Abadi, bos tersulit di dunia ini! Hati-hati!');}}
   const aggro=!TGd&&dist<(m.engaged?300:170);
   if(aggro&&!m.engaged){m.engaged=true;if(!m.warned){m.warned=true;toast('⚠️ '+d.name+' Lv '+m.lvl+' menyerang!');}}
@@ -2680,6 +2718,19 @@ function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
       m.walkT=0.15;m.anim+=dt*8;
       if(m.cd<=0&&dist<210){m.wind=0.45;m.cd=2.2;fx.push({k:'warn',x:m.x,y:m.y,r:74,t:0,life:0.45});}
       else if(m.sh<=0&&dist>=74){m.sh=2.4;bossFan(m,TG,5,1.0,115,0.6,1.8);}
+      break;}
+    case 'bos_gelap':{
+      m.sh=(m.sh||0)-dt;m.sh2=(m.sh2===undefined?7:m.sh2)-dt;
+      if(m.lunge>0){m.lunge-=dt;moveEnt(m,m.vx*dt,m.vy*dt,true);m.walkT=0.15;m.anim+=dt*12;
+        if(m.lunge<=0){bossSlam(m,86,'#8a3cff',1,TG,TGd);bossNova(m,enr?24:16,100,0.45,1.7);}
+        break;}
+      if(m.wind>0){m.wind-=dt;if(m.wind<=0){const sp=enr?240:215;m.vx=ca*sp;m.vy=sa*sp;m.lunge=0.45;}break;}
+      if(dist>28)moveEnt(m,ca*52*sm*dt,sa*52*sm*dt,true);
+      m.walkT=0.15;m.anim+=dt*8;
+      if(m.cd<=0&&dist<230){m.wind=0.45;m.cd=enr?1.6:2.2;fx.push({k:'warn',x:m.x,y:m.y,r:86,t:0,life:0.45});}
+      else if(m.sh<=0&&dist>=80){m.sh=enr?1.8:2.6;bossFan(m,TG,enr?9:6,1.2,120,0.6,2);}
+      if(m.sum<=0&&hpf<0.85){m.sum=enr?9:13;bossSummon(m,'ghost',3);bossSummon(m,'skeleton',2);}
+      if(m.sh2<=0&&dist<320){m.sh2=enr?7:11;bossNova(m,enr?28:20,90,0.4,2.2);fx.push({t:0,k:'ring',x:m.x,y:m.y,r0:4,r1:48,col:'#8a3cff',life:0.4,sq:0.7});}
       break;}
     case 'bos_naga':{
       m.sh=(m.sh||0)-dt;
@@ -3730,6 +3781,7 @@ function hitMob(m,dmg,elem,o){
   m.lastSrc=MPsrc;
   const d=MOBS[m.type];
   if(d.immortal){m.hit=2;floatText(m.x,mc(m)-8,'KEBAL','#ff6b6b');if(!o.burn)crossFx(m.x,mc(m),'#ff2020',6,0.2);return;}
+  if(m.shOn>0){m.hit=2;floatText(m.x,mc(m)-8,'KEBAL','#c07bff');if(!o.burn)crossFx(m.x,mc(m),'#8a3cff',6,0.2);return;}
   let mult=1,tag='';
   if(elem&&d.weak===elem){mult=2;tag='!';}
   else if(elem&&d.res&&d.res[elem]!==undefined){mult=d.res[elem];tag='~';}
@@ -4031,7 +4083,7 @@ function updateMob(m,dt){
         m.dir=dirFromVec(dx,dy);m.walkT=0.15;m.anim+=dt*7;
       }else wander(m,dt,14,sm,false);
       break;}
-    case 'bos_slime':case 'bos_goblin':case 'bos_lich':case 'bos_titan':case 'bos_naga':case 'bos_ratu':case 'bos_ksatria':case 'bos_abadi':
+    case 'bos_slime':case 'bos_goblin':case 'bos_lich':case 'bos_titan':case 'bos_naga':case 'bos_ratu':case 'bos_ksatria':case 'bos_abadi':case 'bos_gelap':
       bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm);break;
     case 'buaya':{
       // tetap dekat air
@@ -4340,6 +4392,12 @@ function drawEntity(e,now){
           const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0,img=SPR.bos_abadi[e.dir][wk],pu=0.5+0.5*Math.sin(e.t*3);
           ctx.fillStyle='rgba(255,20,20,'+(0.10+0.08*pu)+')';ctx.beginPath();ctx.ellipse(sx,sy-30,26+pu*5,38+pu*5,0,0,6.283);ctx.fill();
           ctx.drawImage(img,sx-Math.floor(img.width/2)+sh,sy-img.height+2);
+          break;}
+        case 'bos_gelap':{
+          const sh=e.wind>0?(Math.floor(e.t*30)%2?1:-1):0,img=SPR.bos_gelap[e.dir][wk],pu=0.5+0.5*Math.sin(e.t*3);
+          ctx.fillStyle='rgba(138,60,255,'+(0.12+0.10*pu)+')';ctx.beginPath();ctx.ellipse(sx,sy-32,28+pu*6,42+pu*5,0,0,6.283);ctx.fill();
+          ctx.drawImage(img,sx-Math.floor(img.width/2)+sh,sy-img.height+2);
+          if(e.shOn>0){ctx.strokeStyle='rgba(200,140,255,'+(0.5+0.4*pu)+')';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(sx,sy-32,34,48,0,0,6.283);ctx.stroke();}
           break;}
         case 'bos_naga':{
           const bob=Math.round(Math.sin(e.t*(e.wind>0?10:4))*2),img=MS.bos_naga[e.face?1:0][Math.floor(e.t*(e.wind>0?9:4))%2];
@@ -4669,7 +4727,7 @@ function drawMini(dt){
   pickups.forEach(p=>{if(p.type!=='crystal')return;const x=Math.floor(p.x/T)-ox,y=Math.floor(p.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64)mctx.fillRect(x,y,2,2);});
   mctx.fillStyle='#ffb347';pickups.forEach(p=>{if(p.type!=='item')return;const x=Math.floor(p.x/T)-ox,y=Math.floor(p.y/T)-oy;if(x>=0&&x<64&&y>=0&&y<64){mctx.fillStyle='#000';mctx.fillRect(x-1,y-1,4,4);mctx.fillStyle='#ffb347';mctx.fillRect(x,y,2,2);}});
   // penanda desa: ikon emas di posisi desa, atau menempel di tepi peta bila di luar jangkauan
-  if(!DG)DUNGEONS.forEach(d=>{const x=d.ex-ox,y=d.ey-oy;if(x>=0&&x<62&&y>=0&&y<62){mctx.fillStyle='#000';mctx.fillRect(x,y,3,3);mctx.fillStyle='#ff8a3c';mctx.fillRect(x+1,y+1,1,1);}});
+  if(!DG)DUNGEONS.forEach(d=>{if(d.secret&&!dgSecretOpen(d))return;const x=d.ex-ox,y=d.ey-oy;if(x>=0&&x<62&&y>=0&&y<62){mctx.fillStyle='#000';mctx.fillRect(x,y,3,3);mctx.fillStyle='#ff8a3c';mctx.fillRect(x+1,y+1,1,1);}});
   if(!DG)SETT.forEach(S_=>{let vx=S_.x-ox,vy=S_.y-oy,inside=vx>=3&&vx<=60&&vy>=3&&vy<=60;
   if(!inside){
     const ang=Math.atan2(vy-32,vx-32);
@@ -5377,6 +5435,17 @@ function dgLvl(D,f){return D.base+(f-1)*D.step;}
 function dgMapTxt(n){const q=DUNGEONS.find(z=>z.s===n);return q?'<br><small style="color:#9ad">🕳️ '+q.name+' · '+'⭐'.repeat(q.diff)+' · '+q.floors+' lantai</small>':'';}
 
 function makeDent(D){
+  if(D.secret){
+    const [c,g]=mk(32,34);
+    ell(g,'rgba(0,0,0,.35)',16,32,15,2);
+    ell(g,'#241838',16,22,15,11);ell(g,'#33214f',16,20,13,9);ell(g,'#4a2f73',12,15,5,3);ell(g,'#5b3c8c',20,14,3,2);
+    R(g,'#4a2f73',9,16,14,2);R(g,'#2b1a44',9,16,2,18);R(g,'#2b1a44',21,16,2,18);
+    R(g,'#07030c',11,18,10,16);R(g,'#07030c',12,17,8,1);
+    R(g,'#8a3cff',12,28,8,6);R(g,'#b985ff',13,30,6,4);R(g,'#e6d0ff',15,31,2,2);
+    R(g,'#c07bff',14,10,4,3);R(g,'#07030c',15,11,1,1);R(g,'#07030c',17,11,1,1);
+    R(g,'#8a3cff',9,13,2,2);R(g,'#8a3cff',21,13,2,2);R(g,'#8a3cff',15,7,2,2);
+    return c;
+  }
   const [c,g]=mk(32,34);
   ell(g,'rgba(0,0,0,.25)',16,32,15,2);
   ell(g,'#5f666f',16,22,15,11);ell(g,'#7d8590',16,20,13,9);ell(g,'#939ba6',12,15,5,3);ell(g,'#a6aeb8',20,14,3,2);
@@ -5427,6 +5496,10 @@ function dgSprites(D){
 
 const DG_MOB={hp:1.25,dmg:1.15,spd:1.1,xp:1.3};   // bonus mob dungeon dibanding mob dunia terbuka (level sama)
 const DG_BOSS=['bos_slime','bos_goblin','bos_ratu','bos_titan','bos_lich','bos_naga','bos_ksatria'];   // 1 jenis bos per dungeon
+const SECRET_BOSS_HP=2000000;
+const dgBossType=D=>D.secret?'bos_gelap':DG_BOSS[D.i%DG_BOSS.length];
+function dgSecretReq(D){return DUNGEONS.findIndex(q=>q.s===D.s&&!q.secret);}
+function dgSecretOpen(D){return !D||!D.secret||isAdmin()||((P.dg.clr[dgSecretReq(D)]|0)>0);}
 function dgPickType(D,f,rng){
   const fr=D.floors>1?(f-1)/(D.floors-1):0,dd=D.diff;
   const t=[['slime',60*(1-fr*0.75)]];
@@ -5488,9 +5561,10 @@ function dgGen(D,f){
     }
   });
   if(isLast){
-    const bt=DG_BOSS[D.i%DG_BOSS.length],bd=MOBS[bt];
+    const bt=dgBossType(D),bd=MOBS[bt];
     const b=makeMob(bt,en.cx*T+8,en.cy*T+12,0,null,0,0,lvl+3);
     b.hp=b.maxHp=Math.round(b.hp/bd.hpm*(5+D.diff*0.8)*1.4);b.home={x:b.x,y:b.y};
+    if(D.secret){b.hp=b.maxHp=SECRET_BOSS_HP;b.gk=true;b.spd=1.2;b.xp=Math.round(b.xp*400);}
     F.mobs.push(b);
   }else if(f%5===0){      // bos tengah tiap 5 lantai: jenis lain, lebih lemah dari bos akhir
     const bt=DG_BOSS[(D.i+f/5)%DG_BOSS.length],bd=MOBS[bt];
@@ -5512,6 +5586,7 @@ function dgGen(D,f){
 function dgEnter(di,fl){
   const D=DUNGEONS[di];
   if(DG||dying)return;
+  if(!dgSecretOpen(D)){toast('🔒 Gerbang ini tersegel.');return;}
   dgSprites(D);
   DG={d:D,i:di,cache:{},f:0,F:null,ox:P.x,oy:P.y,sw:{mobs,pickups},t:0};
   mobs=[];pickups=[];proj=[];fx=[];fishS=null;P.shield=false;
@@ -5526,7 +5601,7 @@ function dgLoad(f,goingUp){
   const s=goingUp&&F.down?F.down:F.up;
   P.x=s.tx*T+8;P.y=(s.ty+1)*T+12;P.inv=Math.max(P.inv,1);P.dir=0;
   const b=P.dg.best;if(!(b[DG.i]>=f))b[DG.i]=f;
-  if(f===DG.d.floors&&!F.bossDead)toast('⚠️ Lantai terakhir: '+MOBS[DG_BOSS[DG.d.i%DG_BOSS.length]].name+' menunggu!');
+  if(f===DG.d.floors&&!F.bossDead)toast('⚠️ Lantai terakhir: '+MOBS[dgBossType(DG.d)].name+' menunggu!');
   else if(f%5===0&&f<DG.d.floors&&!F.miniDead)toast('⚠️ Bos tengah menunggu di lantai ini!');
 }
 function dgLeave(){
@@ -5585,8 +5660,10 @@ function dgBossDead(m){
   for(let k=0;k<3;k++)pickups.push({kind:'pickup',type:'crystal',x:m.x+(k-1)*10,y:m.y,ck:null,t:0});
   const first=!P.dg.clr[D.i];P.dg.clr[D.i]=(P.dg.clr[D.i]||0)+1;
   if(first)P.pts=(P.pts||0)+2;
+  if(D.secret&&first)P.pts=(P.pts||0)+8;
   const gr=dgGearReward(D,first);
-  toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota'+(first?', +2 poin stat':'')+' · 🎁 '+gr+' · Tekan I untuk memakai · Portal keluar muncul');
+  toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota'+(first?', +'+(D.secret?10:2)+' poin stat':'')+' · 🎁 '+gr+' · Tekan I untuk memakai · Portal keluar muncul');
+  if(first&&!D.secret){const sd=DUNGEONS.find(q=>q.secret&&q.s===D.s&&dgSecretReq(q)===D.i);if(sd)setTimeout(()=>toast('🌑 Terdengar gemuruh jauh... segel sebuah gerbang rahasia di dalam '+D.s+' telah terbuka.'),4500);}
 }
 function dgUpdate(dt){DG.t+=dt;}
 /* khusus admin: lompat ke lantai mana pun di dalam dungeon (tombol L) */
@@ -5610,9 +5687,11 @@ function dgNear(){
 }
 function dgDoorInteract(){
   const d=dgNear();if(!d)return false;
+  if(!dgSecretOpen(d)){toast('🔒 Sebuah segel gelap menutup gerbang ini... Mungkin dungeon terakhir kota ini menyimpan kuncinya.');return true;}
   openMenu('🕳️ '+d.name,()=>{
     const best=Math.max(1,P.dg.best[d.i]|0);
-    const r=[{t:'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss akhir: '+MOBS[DG_BOSS[d.i%DG_BOSS.length]].name+' · Bos tengah tiap 5 lantai · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: 2 perlengkapan acak ('+dgRewardTxt(d)+')</small>',b:'—',off:true,f:()=>{}}];
+    const r=[{t:d.secret?'<b style="color:#c07bff">🌑 '+d.name+'</b> · RAHASIA<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' · Boss: '+MOBS[dgBossType(d)].name+' (HP hampir tak terbatas, tapi bisa dikalahkan) · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: '+dgRewardTxt(d)+' (sangat kuat, Lv 120)</small>'
+      :'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss akhir: '+MOBS[dgBossType(d)].name+' · Bos tengah tiap 5 lantai · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: 2 perlengkapan acak ('+dgRewardTxt(d)+')</small>',b:'—',off:true,f:()=>{}}];
     if(isAdmin())r.push({t:'<small style="color:#ffd23f">🛠️ Admin: semua lantai bisa dimasuki langsung. Di dalam dungeon tekan L untuk lompat lantai.</small>',b:'—',off:true,f:()=>{}});
     for(let f=1;f<=(isAdmin()?d.floors:Math.min(d.floors,best));f++)r.push({t:'Masuk lantai '+f+(f===1?' (awal)':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(d,f)+(f===d.floors?' · BOSS AKHIR':(f%5===0?' · BOS TENGAH':''))+'</small>',b:'Masuk',f:()=>dgEnter(d.i,f)});
     if(MPon)MPpeers.forEach(fr=>{const z=(fr.g|0)-1000,fi=Math.floor(z/100),ff=z%100;
@@ -5622,12 +5701,15 @@ function dgDoorInteract(){
 }
 function dgDoorHint(){
   if(dlg||menu)return;const d=dgNear();
-  if(d)txt('E: Masuk '+d.name,Math.round(d.ex*T+16-camX),Math.round((d.ey+2)*T-camY-38),'#ffe066',7);
+  if(d&&dgSecretOpen(d))txt('E: Masuk '+d.name,Math.round(d.ex*T+16-camX),Math.round((d.ey+2)*T-camY-38),'#ffe066',7);
 }
 function drawDent(d){
   const sx=Math.round(d.ex*T-camX),sy=Math.round((d.ey+2)*T-34-camY);
+  const lk=!dgSecretOpen(d);
+  if(lk)ctx.globalAlpha=0.5;
   ctx.drawImage(SPR.dent[d.i],sx,sy);
-  if(Math.hypot(P.x-(d.ex*T+16),P.y-(d.ey+2)*T)<100)txt(d.name,sx+16,sy-3,d.col,6);
+  if(lk)ctx.globalAlpha=1;
+  if(Math.hypot(P.x-(d.ex*T+16),P.y-(d.ey+2)*T)<100)txt(lk?'???':d.name,sx+16,sy-3,d.col,6);
 }
 function drawTorch(sx,sy,now,tx,ty){
   const fl=Math.floor(now*8+tx*3+ty)%3;
