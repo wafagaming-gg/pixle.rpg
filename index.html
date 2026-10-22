@@ -525,7 +525,7 @@ const DG_DEF=[
 ];
 const DUNGEONS=DG_DEF.map((d,i)=>{const s=SETT.find(q=>q.name===d.s);return Object.assign({},d,{i,ex:Math.round(s.x+d.off[0]),ey:Math.round(s.y+d.off[1]),col:s.col});});
 /* DUNGEON RAHASIA: Gerbang Kegelapan (di dalam Ibu Kota; terbuka setelah dungeon terakhir dikalahkan) */
-const SECRET_DG={name:'Gerbang Kegelapan',dn:'???',floors:5,base:100,step:6,diff:8,fav:'ghost',fl:'#1b1230',wl:'#09050f',off:[-9,-4],secret:true};
+const SECRET_DG={name:'Ruang Bawah Tanah Istana',dn:'???',floors:5,base:100,step:6,diff:8,fav:'ghost',fl:'#1b1230',wl:'#09050f',off:[-1,-1],secret:true};   // off [-1,-1] = tepat di pintu kastil; hanya Dunia 1
 function addSecretDg(capName){
   const st=SETT.find(q=>q.name===capName);if(!st)return;
   DUNGEONS.push(Object.assign({},SECRET_DG,{s:capName,i:DUNGEONS.length,ex:Math.round(st.x+SECRET_DG.off[0]),ey:Math.round(st.y+SECRET_DG.off[1]),col:'#8a3cff'}));
@@ -858,7 +858,6 @@ function buildStruct2(){
    {s:'Desa Kristal Malam',name:'Gua Kristal Malam',dn:'Neraka',floors:18,base:42,step:4,diff:6,off:[8,5],fav:'ghost',fl:'#4a3a7a',wl:'#261a4a'},
    {s:'Ibu Kota Valdoria',name:'Menara Valdoria',dn:'Legendaris',floors:22,base:50,step:4,diff:7,off:[7,-4],fav:'golem',fl:'#5a5272',wl:'#2a2048'}
   ].forEach((d,i)=>{const st=SETT.find(q=>q.name===d.s);DUNGEONS.push(Object.assign({},d,{i,ex:Math.round(st.x+d.off[0]),ey:Math.round(st.y+d.off[1]),col:st.col}));});
-  addSecretDg('Ibu Kota Valdoria');
   setupRoutes([
    {a:'Desa Senja',b:'Benteng Abu',w:1,pts:[[-17,0],[-26,-6],[-32,-22],[-36,-30],[-41,-30]]},
    {a:'Desa Senja',b:'Desa Lumut Hitam',w:1,pts:[[0,17],[8,30],[24,36],[40,36],[40,41]]},
@@ -2144,8 +2143,8 @@ const WALK=[0,1,0,3];
 const LEGACY_KEY='pixel_rpg_save_v2';         // save lama (sebelum ada akun)
 const ACC_KEY='pixel_rpg_accounts_v1', SESSION_KEY='pixel_rpg_session_v1', SAVE_PFX='pixel_rpg_save_acc:';
 let SAVE_KEY=null;                             // diisi setelah login
-const SAVE_FIELDS=['v2','x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg','bk','gear','w','w2','wd'];
-const WFIELDS=SAVE_FIELDS.filter(k=>!['role','name','look','w','w2','wd'].includes(k));   // data yang terpisah per dunia
+const SAVE_FIELDS=['v2','x','y','hp','maxHp','mp','maxMp','lvl','xp','coins','weapon','sel','hasBow','sp','qdone','qact','st','bag','land','crops','animals','homes','hf','selSeed','selF','vis','role','bhp','bmp','food','name','look','stats','pts','eq','dg','bk','gear','w','w2','wd','sb'];
+const WFIELDS=SAVE_FIELDS.filter(k=>!['role','name','look','w','w2','wd','sb'].includes(k));   // data yang terpisah per dunia
 const ROLES={
   warga:{id:'warga',n:'Warga Desa',ic:'🧑‍🌾',col:'#7bd88f',hp0:8,hpl:1,def:1,mp0:10,mpl:1,mpr:1,sword:0.3,bow:0,spell:0,maxLvl:700,farm:true,xpMul:0.5,
     ket:1,atk:1,hint:'🧑‍🌾 Warga: tanam/panen, ternak & pancing dengan E. Naik level dari bertani, memancing, beternak.',
@@ -2275,9 +2274,13 @@ function saveGame(){
    ========================================================= */
 function w1Max(){const l=WORLD===1?P.lvl:((P.wd&&P.wd[1]&&+P.wd[1].lvl)||0);return !!P.role&&l>=RL().maxLvl;}
 const visited2=()=>!!(P.v2||WORLD===2||(P.wd&&P.wd[2]));
-function canWorld2(){return !!P.role&&(w1Max()||P.w2||visited2());}   // syarat mutlak: level di Dunia 1 harus sudah maksimal
+function canWorld2(){return !!P.role&&(visited2()||((!!P.sb||isAdmin())&&(w1Max()||P.w2)));}   // syarat: level maks di Dunia 1 DAN Raja Kegelapan (dungeon rahasia istana) sudah dikalahkan
 function checkWorldUnlock(silent){
   if(P.w2||WORLD!==1||!P.role)return;
+  if(P.lvl>=RL().maxLvl&&!(P.sb||isAdmin())){
+    if(!silent&&!checkWorldUnlock.n){checkWorldUnlock.n=1;setTimeout(()=>toast('🏰 Level maksimal! Turunlah ke ruang bawah tanah di pintu istana ibu kota dan kalahkan Raja Kegelapan untuk membuka Dunia 2.'),2600);}
+    return;
+  }
   if(P.lvl>=RL().maxLvl){
     P.w2=true;
     if(!silent){
@@ -2326,7 +2329,7 @@ function applyWorldEnv(){
 }
 function switchWorld(n){
   if(n===WORLD||(n!==1&&n!==2))return;
-  if(n===2&&!canWorld2()){P.w2=false;toast('🔒 Hanya pemain dengan level maksimal di Dunia 1 yang bisa masuk Dunia 2.');return;}
+  if(n===2&&!canWorld2()){P.w2=false;toast('🔒 Dunia 2 butuh level maksimal di Dunia 1 DAN mengalahkan Raja Kegelapan di ruang bawah tanah istana ibu kota.');return;}
   if(IN!==null||DG){toast('Keluar dulu dari rumah / dungeon sebelum pindah dunia');return;}
   if(dying||dlg)return;
   closeMenu();
@@ -2374,7 +2377,7 @@ function worldMenu(){
     r.push({t:'🌍 <b>Dunia 1</b>'+(WORLD===1?' <span style="color:#7dffb0">(kamu di sini)</span>':'')+'<br><small style="color:#9ad">Tingkat kesulitan normal · Lv '+worldLvl(1)+'/'+mx+'</small>',
       b:WORLD===1?'—':'Pergi',off:WORLD===1,f:()=>switchWorld(1)});
     if(!canWorld2()){
-      r.push({t:'🔒 <b>Dunia 2</b><br><small style="color:#9ad">Hanya untuk pemain level maksimal. Capai Lv '+mx+' di Dunia 1 untuk masuk. Sekarang Lv '+worldLvl(1)+'.</small>',b:'🔒',off:true,f:()=>{}});
+      r.push({t:'🔒 <b>Dunia 2</b><br><small style="color:#9ad">Capai Lv '+mx+' di Dunia 1 (sekarang Lv '+worldLvl(1)+'), lalu kalahkan <b>Raja Kegelapan</b> di ruang bawah tanah istana ibu kota'+(P.sb?' (sudah ✅)':'')+'.</small>',b:'🔒',off:true,f:()=>{}});
     }else{
       r.push({t:'🔥 <b>Dunia 2</b>'+(WORLD===2?' <span style="color:#7dffb0">(kamu di sini)</span>':'')+'<br><small style="color:#ff9a9a">Musuh +70% lebih kuat · peta baru, senja abadi, monster lebih ganas · level & stat mulai dari awal · Lv '+worldLvl(2)+'/'+mx+'</small>',
         b:WORLD===2?'—':'Pergi',off:WORLD===2,f:()=>switchWorld(2)});
@@ -2994,6 +2997,7 @@ function interact(){
   if(fishS)return fishInteract();
   if(DG)return dgInteract();
   if(IN!==null)return inInteract();
+  {const dn=dgNear();if(dn&&dn.secret){dgDoorInteract();return;}}   // pintu kastil didahulukan dibanding NPC di dekatnya
   const n=nearestNpc(28);if(!n){doorInteract()||dgDoorInteract()||farmInteract()||ranchInteract()||fishInteract();return;}
   const dx=P.x-n.x,dy=P.y-n.y;
   n.dir=dirFromVec(dx,dy)===3?3:dirFromVec(dx,dy);n.moving=false;
@@ -5498,8 +5502,8 @@ const DG_MOB={hp:1.25,dmg:1.15,spd:1.1,xp:1.3};   // bonus mob dungeon dibanding
 const DG_BOSS=['bos_slime','bos_goblin','bos_ratu','bos_titan','bos_lich','bos_naga','bos_ksatria'];   // 1 jenis bos per dungeon
 const SECRET_BOSS_HP=2000000;
 const dgBossType=D=>D.secret?'bos_gelap':DG_BOSS[D.i%DG_BOSS.length];
-function dgSecretReq(D){return DUNGEONS.findIndex(q=>q.s===D.s&&!q.secret);}
-function dgSecretOpen(D){return !D||!D.secret||isAdmin()||((P.dg.clr[dgSecretReq(D)]|0)>0);}
+const secretLvl=()=>RL().maxLvl;   // syarat masuk: level maksimal peran (1200; Warga 700)
+function dgSecretOpen(D){return !D||!D.secret||isAdmin()||(!!P.role&&P.lvl>=secretLvl());}
 function dgPickType(D,f,rng){
   const fr=D.floors>1?(f-1)/(D.floors-1):0,dd=D.diff;
   const t=[['slime',60*(1-fr*0.75)]];
@@ -5638,6 +5642,7 @@ function dgBossShared(){
   F.bossDead=true;F.chests.push({tx:en.cx-2,ty:en.cy,open:false,rich:true});F.portal={tx:en.cx,ty:en.cy-1};
   const bc=D.diff*60;P.coins+=bc;P.st.coin+=bc;gainXp(D.diff*40);
   const gr=dgGearReward(D,false);
+  if(D.secret&&!P.sb){P.sb=true;if(WORLD===1&&P.lvl>=RL().maxLvl)P.w2=true;setTimeout(()=>toast('🌍 Raja Kegelapan telah jatuh! DUNIA 2 TERBUKA — tekan N atau tombol 🌀 Dunia'),4500);}
   toast('👑 Boss '+D.name+' kalah bersama timmu! +'+bc+' koin · 🎁 '+gr+' · Portal keluar muncul');
 }
 function dgMiniDead(m){
@@ -5663,7 +5668,7 @@ function dgBossDead(m){
   if(D.secret&&first)P.pts=(P.pts||0)+8;
   const gr=dgGearReward(D,first);
   toast('👑 Boss '+D.name+' kalah! +'+bc+' koin, Mahkota'+(first?', +'+(D.secret?10:2)+' poin stat':'')+' · 🎁 '+gr+' · Tekan I untuk memakai · Portal keluar muncul');
-  if(first&&!D.secret){const sd=DUNGEONS.find(q=>q.secret&&q.s===D.s&&dgSecretReq(q)===D.i);if(sd)setTimeout(()=>toast('🌑 Terdengar gemuruh jauh... segel sebuah gerbang rahasia di dalam '+D.s+' telah terbuka.'),4500);}
+  if(D.secret&&!P.sb){P.sb=true;if(WORLD===1&&P.lvl>=RL().maxLvl)P.w2=true;setTimeout(()=>{toast('🌍 Raja Kegelapan telah jatuh! DUNIA 2 TERBUKA — tekan N atau tombol 🌀 Dunia untuk pindah');try{sfx('levelup');}catch(e){}},4500);}
 }
 function dgUpdate(dt){DG.t+=dt;}
 /* khusus admin: lompat ke lantai mana pun di dalam dungeon (tombol L) */
@@ -5687,10 +5692,10 @@ function dgNear(){
 }
 function dgDoorInteract(){
   const d=dgNear();if(!d)return false;
-  if(!dgSecretOpen(d)){toast('🔒 Sebuah segel gelap menutup gerbang ini... Mungkin dungeon terakhir kota ini menyimpan kuncinya.');return true;}
-  openMenu('🕳️ '+d.name,()=>{
+  if(!dgSecretOpen(d)){toast('🏰 Penjaga Istana: "Tangga ke ruang bawah tanah hanya untuk pahlawan yang sudah mencapai Lv '+secretLvl()+'. Kamu baru Lv '+P.lvl+'."');return true;}
+  openMenu(d.secret?'🏰 Istana — Ruang Bawah Tanah':'🕳️ '+d.name,()=>{
     const best=Math.max(1,P.dg.best[d.i]|0);
-    const r=[{t:d.secret?'<b style="color:#c07bff">🌑 '+d.name+'</b> · RAHASIA<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' · Boss: '+MOBS[dgBossType(d)].name+' (HP hampir tak terbatas, tapi bisa dikalahkan) · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: '+dgRewardTxt(d)+' (sangat kuat, Lv 120)</small>'
+    const r=[{t:d.secret?'<b style="color:#c07bff">🌑 '+d.name+'</b> · RAHASIA<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' · Boss: '+MOBS[dgBossType(d)].name+' (HP hampir tak terbatas, tapi bisa dikalahkan) · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: '+dgRewardTxt(d)+' (sangat kuat, Lv 120)<br>'+(P.sb?'✅ Raja Kegelapan sudah pernah kalah: Dunia 2 terbuka.':'🌍 Kalahkan Raja Kegelapan untuk membuka Dunia 2.')+'</small>'
       :'<b>'+d.s+'</b> · '+'⭐'.repeat(d.diff)+' '+d.dn+'<br><small style="color:#9ad">'+d.floors+' lantai · musuh Lv '+dgLvl(d,1)+'–'+dgLvl(d,d.floors)+' (makin dalam makin kuat)<br>Boss akhir: '+MOBS[dgBossType(d)].name+' · Bos tengah tiap 5 lantai · Dikalahkan: '+(P.dg.clr[d.i]|0)+'x<br>🎁 Hadiah boss: 2 perlengkapan acak ('+dgRewardTxt(d)+')</small>',b:'—',off:true,f:()=>{}}];
     if(isAdmin())r.push({t:'<small style="color:#ffd23f">🛠️ Admin: semua lantai bisa dimasuki langsung. Di dalam dungeon tekan L untuk lompat lantai.</small>',b:'—',off:true,f:()=>{}});
     for(let f=1;f<=(isAdmin()?d.floors:Math.min(d.floors,best));f++)r.push({t:'Masuk lantai '+f+(f===1?' (awal)':'')+'<br><small style="color:#9ad">musuh Lv '+dgLvl(d,f)+(f===d.floors?' · BOSS AKHIR':(f%5===0?' · BOS TENGAH':''))+'</small>',b:'Masuk',f:()=>dgEnter(d.i,f)});
@@ -5701,9 +5706,10 @@ function dgDoorInteract(){
 }
 function dgDoorHint(){
   if(dlg||menu)return;const d=dgNear();
-  if(d&&dgSecretOpen(d))txt('E: Masuk '+d.name,Math.round(d.ex*T+16-camX),Math.round((d.ey+2)*T-camY-38),'#ffe066',7);
+  if(d)txt(d.secret?'E: Masuk Istana':'E: Masuk '+d.name,Math.round(d.ex*T+16-camX),Math.round((d.ey+2)*T-camY-38),'#ffe066',7);
 }
 function drawDent(d){
+  if(d.secret)return;   // pintunya adalah pintu kastil itu sendiri
   const sx=Math.round(d.ex*T-camX),sy=Math.round((d.ey+2)*T-34-camY);
   const lk=!dgSecretOpen(d);
   if(lk)ctx.globalAlpha=0.5;
