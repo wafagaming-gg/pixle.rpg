@@ -2620,7 +2620,7 @@ function bossAI(m,d,dt,TG,TGd,dx,dy,dist,ca,sa,sm){
   const hpf=m.hp/m.maxHp,enr=hpf<0.4;          // enrage di bawah 40% HP
   m.cd-=dt;m.sum=(m.sum||0)-dt;
   if(m.gk){   // Raja Kegelapan: serangan mengikuti HP pemain, regenerasi pelan, perisai berkala
-    m.dmg=Math.max(80,Math.round(P.maxHp*(enr?0.32:0.22)));
+    m.dmg=Math.max(90,Math.round(P.maxHp*(enr?0.45:0.35)));
     if(m.hp<m.maxHp)m.hp=Math.min(m.maxHp,m.hp+m.maxHp*0.00012*dt);
     if(m.shOn>0)m.shOn-=dt;
     if(!TGd&&dist<330){m.shC=(m.shC===undefined?16:m.shC)-dt;if(m.shC<=0){m.shC=enr?13:19;m.shOn=2.5;floatText(m.x,m.y-d_h(m)-14,'PERISAI KEGELAPAN','#c07bff');ringFx(m.x,m.y-20,40,'#8a3cff',0.5,0.6);}}
