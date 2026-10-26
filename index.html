@@ -2678,6 +2678,7 @@ function nightF(){
   const nf=clamp((0.4-light)/0.4,0,1);
   return WORLD===2?0.35+nf*0.65:nf;   // Dunia 2: senja abadi, malam lebih pekat
 }
+Object.defineProperty(MOBS,'pvp',{value:{rad:5,cy:8,col:'#ff6b6b',hp:1,xp:0},enumerable:false});   // proxy hitbox pemain (PvP)
 const mc=m=>m.y-MOBS[m.type].cy;      // titik tengah badan musuh
 
 /* =========================================================
@@ -4083,7 +4084,7 @@ function attack(){
   fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.2});
   const cx=P.x+ca*13,cy=P.y-7+sa*13;
   const dmg=Math.max(1,Math.round((2+Math.floor((effLvl()-1)/4))*RL().sword*strMul()));
-  for(const m of mobs){
+  for(const m of mobsPv()){
     if(m.dead)continue;
     if(Math.hypot(m.x-cx,mc(m)-cy)<15+MOBS[m.type].rad){
       hitMob(m,dmg,null,{by:'sword',kx:ca*120,ky:sa*120,kb:0.15});
@@ -4175,7 +4176,7 @@ function dashP(a,maxD){
 function ringFx(x,y,r1,col,life,sq){fx.push({t:0,k:'ring',x,y,r0:3,r1,col,life:life||0.35,sq:sq||1});}
 function rainHit(f){
   for(let k=0;k<5;k++)sparkFx(f.x+(Math.random()-0.5)*f.r*1.6,f.y-6,'#e8dcc0',0.3,0,40,1);
-  for(const m of mobs){
+  for(const m of mobsPv()){
     if(m.dead)continue;
     if(Math.hypot(m.x-f.x,mc(m)-(f.y-4))<f.r+MOBS[m.type].rad)hitMob(m,f.dmg,null,{by:'arrow',kx:0,ky:0,kb:0.05});
   }
@@ -4190,7 +4191,7 @@ const SK_FN={
     fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.25});
     const cx=P.x+ca*16,cy=P.y-7+sa*16,dmg=skillDmg(3);
     ringFx(cx,cy,18,'#ffb0a0',0.25);
-    for(const m of mobs){if(m.dead)continue;
+    for(const m of mobsPv()){if(m.dead)continue;
       if(Math.hypot(m.x-cx,mc(m)-cy)<20+MOBS[m.type].rad)hitMob(m,dmg,null,{by:'sword',kx:ca*220,ky:sa*220,kb:0.25});}
     P.atk=0.3;return true;
   },
@@ -4198,7 +4199,7 @@ const SK_FN={
     const cx=P.x,cy=P.y-7,dmg=skillDmg(1.8);
     ringFx(cx,cy,32,'#ff9a6a',0.3);ringFx(cx,cy,20,'#ffffff',0.22);
     for(let k=0;k<14;k++){const b=k/14*6.283;sparkFx(cx,cy,k%2?'#ffd0b0':'#ffffff',0.35,Math.cos(b)*80,Math.sin(b)*80,1);}
-    for(const m of mobs){if(m.dead)continue;
+    for(const m of mobsPv()){if(m.dead)continue;
       const dx=m.x-cx,dy=mc(m)-cy;
       if(Math.hypot(dx,dy)<32+MOBS[m.type].rad)hitMob(m,dmg,null,{by:'sword',kx:dx*4,ky:dy*4,kb:0.2});}
     P.atk=0.3;return true;
@@ -4210,7 +4211,7 @@ const SK_FN={
     P.x+=ca*d;P.y+=sa*d;P.inv=Math.max(P.inv,0.45);
     const cx=P.x,cy=P.y-3,dmg=skillDmg(1.6);
     ringFx(cx,cy,26,'#ffb36a',0.35);ringFx(cx,cy,14,'#ffffff',0.25);sparkBurst(P.x,P.y,'#d9c9a8');
-    for(const m of mobs){if(m.dead)continue;
+    for(const m of mobsPv()){if(m.dead)continue;
       const dx=m.x-cx,dy=mc(m)-cy;
       if(Math.hypot(dx,dy)<26+MOBS[m.type].rad){hitMob(m,dmg,null,{by:'sword',kx:dx*3,ky:dy*3,kb:0.15});if(!m.dead)m.stun=1.5;}}
     P.atk=0.3;return true;
@@ -4265,7 +4266,7 @@ const SK_FN={
   hantam(a,ca,sa){
     const cx=P.x+ca*14,cy=P.y-7+sa*14,dmg=skillDmg(4);
     ringFx(cx,cy,18,'#8ad0ff',0.3);fx.push({k:'slash',x:P.x,y:P.y-7,a,t:0,life:0.2});
-    for(const m of mobs){if(m.dead)continue;
+    for(const m of mobsPv()){if(m.dead)continue;
       if(Math.hypot(m.x-cx,mc(m)-cy)<17+MOBS[m.type].rad){hitMob(m,dmg,null,{by:'sword',kx:ca*200,ky:sa*200,kb:0.2});if(!m.dead)m.stun=1.5;}}
     P.atk=0.3;return true;
   },
@@ -4358,7 +4359,7 @@ function cast(){
       fx.push({t:0,k:'ring',x:cx,y:cy,r0:4,r1:R0,col:'#fff3a0',life:0.45});
       fx.push({t:0,k:'ring',x:cx,y:cy,r0:2,r1:R0*0.65,col:'#ffffff',life:0.3});
       for(let k=0;k<16;k++){const b=k/16*6.283;sparkFx(cx,cy,k%2?'#fff3a0':'#ffffff',0.5,Math.cos(b)*70,Math.sin(b)*70,2);}
-      for(const m of mobs){
+      for(const m of mobsPv()){
         if(m.dead)continue;
         const mx=m.x-cx,my=mc(m)-cy;
         if(Math.hypot(mx,my)<R0+MOBS[m.type].rad)hitMob(m,2*pw,'cahaya',{by:'spell',kx:mx*4,ky:my*4,kb:0.2});
@@ -4385,6 +4386,7 @@ function hitMob(m,dmg,elem,o){
   if(m.dead)return;
   o=o||{};
   hitSnd(o,elem);
+  if(m.pvp){pvpHit(m,dmg,elem,o);return;}   // PvP: target = pemain lain
   if(m.net){mpHitNet(m,dmg,elem,o);return;}
   m.lastSrc=MPsrc;
   const d=MOBS[m.type];
@@ -4466,7 +4468,7 @@ function explode(p){
   fx.push({t:0,k:'ring',x:p.x,y:p.y,r0:3,r1:26,col:'#ff9a3c',life:0.35});
   fx.push({t:0,k:'ring',x:p.x,y:p.y,r0:1,r1:16,col:'#ffe066',life:0.25});
   for(let k=0;k<14;k++){const b=Math.random()*6.283,v=30+Math.random()*60;sparkFx(p.x,p.y,k%3?'#ff7a1a':'#ffd23f',0.45,Math.cos(b)*v,Math.sin(b)*v-10,2);}
-  for(const m of mobs){
+  for(const m of mobsPv()){
     if(m.dead)continue;
     const dx=m.x-p.x,dy=mc(m)-p.y,d=MOBS[m.type];
     if(Math.hypot(dx,dy)<26+d.rad){
@@ -4518,7 +4520,7 @@ function updateProj(dt){
     p.life-=dt;
     if(p.homing){
       let best=null,bd=150;
-      for(const m of mobs){if(m.dead)continue;const d=Math.hypot(m.x-p.x,mc(m)-p.y);if(d<bd){bd=d;best=m;}}
+      for(const m of mobsPv()){if(m.dead)continue;const d=Math.hypot(m.x-p.x,mc(m)-p.y);if(d<bd){bd=d;best=m;}}
       if(best){
         const a=Math.atan2(mc(best)-p.y,best.x-p.x),cur=Math.atan2(p.vy,p.vx);
         let da=a-cur;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;
@@ -4546,7 +4548,7 @@ function updateProj(dt){
     if(p.hostile){
       if(P.inv<=0&&!dying&&Math.hypot(p.x-P.x,p.y-(P.y-6))<7){hurt(p.dmg,p.x-p.vx*0.05,p.y-p.vy*0.05);p.dead=true;}
     }else{
-      for(const m of mobs){
+      for(const m of mobsPv()){
         if(m.dead)continue;
         if(Math.hypot(m.x-p.x,mc(m)-p.y)<p.r+MOBS[m.type].rad){projHit(p,m);if(p.dead)break;}
       }
@@ -4561,7 +4563,7 @@ function updateProj(dt){
 function spikeHit(f){
   sfx('spike');debrisFx(f.x,f.y-2,'#b98a52',4,40,0.4);shake(1.2,0.08);
   for(let k=0;k<6;k++)sparkFx(f.x,f.y-2,'#b98a52',0.4,(Math.random()-0.5)*50,-20-Math.random()*30,2);
-  for(const m of mobs){
+  for(const m of mobsPv()){
     if(m.dead||MOBS[m.type].fly)continue;
     if(Math.hypot(m.x-f.x,m.y-f.y)<14){hitMob(m,f.dmg,'tanah',{by:'spell'});if(!m.dead)m.stun=0.9;}
   }
@@ -4770,7 +4772,7 @@ function update(dt){
     deathT+=dt;
     if(deathT>1.6){
       if(DG)dgLeave();
-      P.buf={};P.absorb=0;fishS=null;P.shield=false;dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;if(P.ins>0){P.ins--;toast('🛡️ Asuransi dipakai: koin aman. Sisa polis '+P.ins);}else{P.coins=Math.floor(P.coins*0.7);toast('Kamu bangun di desa. Koin berkurang 30%. (Beli asuransi di Guild)');}P.inv=2;P.food=Math.max(P.food,40);P.stam=P.maxSt;P.exh=false;
+      P.buf={};P.absorb=0;fishS=null;P.shield=false;dying=false;P.x=8;P.y=44;P.hp=P.maxHp;P.mp=P.maxMp;if(pvpDie){pvpDie=false;toast('⚔️ Kalah duel PvP. Koinmu aman.');}else if(P.ins>0){P.ins--;toast('🛡️ Asuransi dipakai: koin aman. Sisa polis '+P.ins);}else{P.coins=Math.floor(P.coins*0.7);toast('Kamu bangun di desa. Koin berkurang 30%. (Beli asuransi di Guild)');}P.inv=2;P.food=Math.max(P.food,40);P.stam=P.maxSt;P.exh=false;
     }
   }else{
     let ax=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
@@ -6909,6 +6911,63 @@ $('rok').onclick=async()=>{
 addEventListener('pagehide',()=>{saveGame();cloudPush();});
 /* ===== MAIN ONLINE DENGAN TEMAN (opsional; PeerJS hanya dimuat saat dipakai, jadi mode offline tetap utuh) ===== */
 const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=null,MPcode='';let MPnr=null,MPunsub=null,MProom=null,MPws=null,MPwsAvail=false,MPsb=null;
+
+/* ===== PvP ANTAR PEMAIN (opt-in) =====
+   - Tombol ⚔️ PvP: hanya pemain yang sama-sama PvP ON yang bisa saling serang.
+   - Hanya di dunia luar (bukan di desa, dungeon, arena, atau dalam bangunan).
+   - Penyerang yang mendeteksi tabrakan, korban yang menerapkan damage (pertahanan/perisai korban tetap berlaku).
+   - Mati karena PvP: tidak kehilangan koin. */
+const PVP={on:false,last:0,by:'',byU:''},PVP_DMG=0.6,MYUID=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+let pvpDie=false;
+function pvpCan(r){
+  return !!(PVP.on&&MPon&&!MPnr&&!dying&&started&&IN===null&&!DG&&!AR&&myG()===0&&r&&r.pv&&r.uid&&!r.dy&&!r.ind&&sameZone(r.g,r.w)&&!inSafe(P.x,P.y)&&!inSafe(r.x,r.y));}
+// daftar target serangan: musuh + proxy pemain PvP (proxy tetap sama per pemain supaya Set 'p.hit' dsb. bekerja)
+function mobsPv(){
+  if(!PVP.on||!MPon||MPnr||dying||IN!==null||DG||AR||inSafe(P.x,P.y))return mobs;
+  const now=performance.now();let out=null;
+  MPpeers.forEach(r=>{
+    if(!r.pv||!r.uid||r.dy||r.ind||!sameZone(r.g,r.w)||now-(r.seen||0)>4000||inSafe(r.x,r.y))return;
+    const q=r.pvm||(r.pvm={pvp:true,rem:r,type:'pvp',dead:false,hp:1,maxHp:1,flash:0,hit:0});
+    q.x=r.x;q.y=r.y;q.dead=false;(out||(out=[])).push(q);});
+  return out?mobs.concat(out):mobs;}
+function pvpHit(m,dmg,elem,o){
+  if(o&&o.burn)return;
+  const r=m.rem;if(!pvpCan(r))return;
+  const now=performance.now();if(now-(r.pvT||0)<400)return;
+  r.pvT=now;PVP.last=now;
+  const n=Math.max(1,Math.round((+dmg||1)*PVP_DMG));
+  floatText(m.x,mc(m)-8,'-'+n+' \u2694','#ff8a8a');crossFx(m.x,mc(m),'#ff6b6b',10,0.22);
+  mpOut({t:'pv',to:r.uid,u:MYUID,n,fx:Math.round(P.x),fy:Math.round(P.y),g:myG()});}
+function mpPvIn(m){
+  if(!m||m.to!==MYUID||!PVP.on||!started||dying||IN!==null||DG||AR||myG()!==0)return;
+  if(((m.w|0)||1)!==WORLD||(m.g|0)!==0)return;
+  if(P.inv>0||inSafe(P.x,P.y))return;
+  let a=null;MPpeers.forEach(r=>{if(r.uid&&r.uid===m.u)a=r;});
+  if(!a||!a.pv||a.dy||a.ind||!sameZone(a.g,a.w))return;
+  if(Math.hypot(a.tx-P.x,a.ty-P.y)>300)return;            // penyerang harus berada di dekat kita
+  const cap=Math.max(2,Math.ceil(P.maxHp*0.35));          // batas damage per pukulan
+  const n=clamp(Math.round(+m.n||1),1,cap);
+  PVP.last=performance.now();PVP.by=a.name||'Pemain';PVP.byU=m.u;
+  hurt(n,a.tx,a.ty);
+  P.inv=Math.min(P.inv,P.shield?0.35:0.45);               // jeda kebal singkat antar pukulan
+  floatText(P.x,P.y-40,'\u2694 '+PVP.by,'#ff8a8a');
+  if(dying){pvpDie=true;mpOut({t:'pk',to:m.u,n:P.name,g:0});}}
+function mpPkIn(m){
+  if(!m||m.to!==MYUID)return;
+  P.st=P.st||{};P.st.pvpk=(P.st.pvpk|0)+1;
+  const nm=cleanName(m.n)||'Pemain';
+  toast('\u2694\ufe0f Kamu mengalahkan '+nm+' di duel PvP! (total '+P.st.pvpk+')');
+  floatText(P.x,P.y-40,'K.O. '+nm,'#ffe066');}
+function pvpToggle(){
+  if(!MPon){toast('PvP hanya tersedia saat online \ud83c\udf10');return;}
+  if(MPnr){toast('PvP belum tersedia di mode ruangan ini');return;}
+  if(PVP.on){
+    const left=Math.ceil((PVP.last+8000-performance.now())/1000);
+    if(left>0){toast('Sedang bertarung! PvP baru bisa dimatikan '+left+' detik lagi');return;}
+    PVP.on=false;toast('PvP nonaktif. Kamu aman dari serangan pemain lain.');
+  }else{
+    PVP.on=true;toast('\u2694\ufe0f PvP AKTIF! Kamu bisa menyerang & diserang pemain ber-PvP di luar desa.');}
+  mpUi();}
 const MPLIBS=['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 {const s=document.createElement('style');s.textContent='#mp{display:none;position:absolute;inset:0;z-index:48;background:rgba(10,14,28,.85);align-items:center;justify-content:center}#mp.on{display:flex}#mp .abox{touch-action:auto}#mpmsg{color:#ffe066;font-size:12px;min-height:34px;white-space:pre-wrap;margin-bottom:6px}#mpchat{position:absolute;left:8px;bottom:64px;width:min(270px,62vw);z-index:15;pointer-events:none;font-size:12px;text-shadow:1px 1px #000}#mpchat div{background:rgba(10,14,28,.7);padding:2px 6px;margin-top:2px;word-break:break-word}#mpchat input{display:none;pointer-events:auto;width:100%;font:inherit;font-size:14px;color:#fff;background:#1a2036;border:2px solid #fff;padding:6px;margin-top:4px;user-select:text;-webkit-user-select:text;touch-action:auto}#mpchat.open input{display:block}@media (pointer:coarse){#mpchat{bottom:250px}}';document.head.appendChild(s);}
 const mpPanel=document.createElement('div');mpPanel.id='mp';
@@ -6917,10 +6976,12 @@ document.body.appendChild(mpPanel);
 const mpChat=document.createElement('div');mpChat.id='mpchat';mpChat.innerHTML='<input id="mpin" maxlength="80" placeholder="Ketik pesan, Enter kirim" autocomplete="off">';document.body.appendChild(mpChat);
 const MPbtn=document.createElement('button'),MPchatBtn=document.createElement('button');
 MPbtn.type=MPchatBtn.type='button';MPchatBtn.textContent='\ud83d\udcac';MPchatBtn.style.display='none';
-{const t=$('tools')||document.body;t.appendChild(MPchatBtn);t.appendChild(MPbtn);}
+const PVPbtn=document.createElement('button');PVPbtn.type='button';PVPbtn.style.display='none';PVPbtn.title='Duel antar pemain (PvP)';PVPbtn.onclick=pvpToggle;
+{const t=$('tools')||document.body;t.appendChild(MPchatBtn);t.appendChild(PVPbtn);t.appendChild(MPbtn);}
 const mpMsg=s=>{$('mpmsg').textContent=s;};
 function mpUi(){const n=MPpeers.size+1;MPbtn.textContent=MPon?'\ud83c\udf10 '+MPcode+' ('+n+')':'\ud83c\udf10 Online';
   $('mpoff').style.display=(!MProom&&!(MPon&&!MPhost))?'block':'none';$('mproom').style.display=(MProom&&!MPon)?'block':'none';$('mpLeave').style.display=MPon?'block':'none';MPchatBtn.style.display=MPon?'':'none';
+  if(!MPon)PVP.on=false;PVPbtn.style.display=(MPon&&!MPnr)?'':'none';PVPbtn.textContent=PVP.on?'\u2694\ufe0f PvP ON':'\u2694\ufe0f PvP';PVPbtn.style.background=PVP.on?'#7a1f2b':'';PVPbtn.style.borderColor=PVP.on?'#ff5a5a':'';
   if(MPon)mpMsg(MPhost?'Kode ruangan: '+MPcode+'\nBagikan kode ini ke temanmu.':'Terhubung ke ruangan '+MPcode+'.');else mpChat.classList.remove('open');}
 function mpLoad(cb){
   if(window.Peer)return cb();
@@ -6943,14 +7004,16 @@ function mpMsgIn(from,m){
     let r=MPpeers.get(id);const nm=cleanName(m.n)||'Pemain';
     if(!r){r={kind:'remote',id:id,inv:0,x:+m.x||0,y:+m.y||0,set:null,lkS:'',say:'',sayT:0};MPpeers.set(id,r);toast('\ud83c\udf10 '+nm+' bergabung');mpUi();}
     r.tx=+m.x||0;r.ty=+m.y||0;r.dir=(m.d|0)&3;r.mv=!!m.m;r.name=nm;r.lvl=Math.max(1,Math.min(999,m.l|0));
-    r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.dy=!!m.dy;r.g=m.g|0;r.w=((m.w|0)||1);r.v2=!!m.v2;r.seen=performance.now();
+    r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.dy=!!m.dy;r.g=m.g|0;r.w=((m.w|0)||1);r.v2=!!m.v2;r.pv=!!m.pv;r.uid=String(m.u||'').slice(0,20);r.seen=performance.now();
     const gv=gearVis(m.gr);r.gr=gv;r.bw=!!m.bw;
     const lk=JSON.stringify([m.lk||{},gv.h,gv.a,gv.b]);if(lk!==r.lkS&&lk.length<700){r.lkS=lk;try{r.set=makeSet(lookPal(sanitizeLook(m.lk),gv));}catch(e){}}
   }else if(m.t==='c'){
     const r=MPpeers.get(id),tx=String(m.x||'').slice(0,80);if(r&&tx){r.say=tx;r.sayT=performance.now()+6000;mpLog(r.name,tx);}
   }else if(m.t==='hl'){mpHealIn(m,id);
+  }else if(m.t==='pv'){mpPvIn(m);
+  }else if(m.t==='pk'){mpPkIn(m);
   }else if(m.t==='bye'&&!MPhost){MPpeers.delete(id);mpUi();}
-  if(MPhost&&(m.t==='s'||m.t==='c'||m.t==='hl')){const o=Object.assign({},m,{f:from});MPconns.forEach((c,cid)=>{if(cid!==from&&c.open)try{c.send(o);}catch(e){}});}
+  if(MPhost&&(m.t==='s'||m.t==='c'||m.t==='hl'||m.t==='pv'||m.t==='pk')){const o=Object.assign({},m,{f:from});MPconns.forEach((c,cid)=>{if(cid!==from&&c.open)try{c.send(o);}catch(e){}});}
 }
 function mpWire(c){MPconns.set(c.peer,c);c.on('data',m=>mpMsgIn(c.peer,m));
   c.on('close',()=>{if(MPhost)mpDrop(c.peer);else{toast('\ud83c\udf10 Host keluar dari ruangan');mpCleanup();}});c.on('error',()=>{});}
@@ -6985,7 +7048,7 @@ function mpDraw(e,sx,sy){
   shadow(sx,sy,10);
   ctx.drawImage(e.set[e.dir][e.mv?WALK[Math.floor(performance.now()/130)%4]:0],sx-9,sy-21);
   try{drawRemoteHeld(e,sx,sy);}catch(_){}
-  const y2=sy-24;wTag(e.w,e.v2,sx,y2-16);txt(e.name,sx,y2-8,'#9fe8ff',7);txt('Lv '+e.lvl+' \u00b7 '+e.rn,sx,y2,e.rc,6);
+  const y2=sy-24;wTag(e.w,e.v2,sx,y2-16);txt(e.name,sx,y2-8,'#9fe8ff',7);txt('Lv '+e.lvl+' \u00b7 '+e.rn,sx,y2,e.rc,6);if(e.pv)txt('\u2694 PvP',sx,y2-33,'#ff5a5a',6);
   if(e.say&&performance.now()<e.sayT)txt(e.say,sx,y2-26,'#ffffff',7);}
 const MPpcs=[],MPICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};let MPman=null;
 const mpEnc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))),mpDec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/\s+/g,'')))));
@@ -7052,7 +7115,7 @@ function mpLoadSb(cb){
 let sbLast=0,sbKey='';
 function mpSbOut(m){
   if(!MPsb)return;const now=performance.now();
-  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy,m.g,m.w,m.bw,JSON.stringify(m.gr)].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
+  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy,m.g,m.w,m.bw,m.pv,JSON.stringify(m.gr)].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
   MPsb.ch.send({type:'broadcast',event:'m',payload:Object.assign({},m,{f:MPsb.id,g:myG()})}).catch(()=>{});}
 function mpSb(create,code){
   if(create)code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
@@ -7316,7 +7379,7 @@ function mpTick(dt){
       a.push([m.id,m.type,m.tier,m.lvl,q(m.x),q(m.y),m.hp,m.maxHp,m.dir&3,m.walkT>0?1:0,q(m.hop),q(m.lunge),q(m.aim),q(m.wind),q(m.fade)]);}
     mpOut({t:'M',a});}}
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
-  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,gr:gearVis(P.gear),bw:(P.weapon==='bow'&&P.hasBow)?1:0,i:(IN===null&&!DG&&!AR)?0:1,dy:dying?1:0,g:myG(),v2:visited2()?1:0});},100);
+  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,gr:gearVis(P.gear),bw:(P.weapon==='bow'&&P.hasBow)?1:0,i:(IN===null&&!DG&&!AR)?0:1,dy:dying?1:0,g:myG(),v2:visited2()?1:0,pv:PVP.on?1:0,u:MYUID});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
 $('mpX').onclick=()=>$('mp').classList.remove('on');
 $('mpHost').onclick=mpHost;$('mpJoin').onclick=mpJoin;
