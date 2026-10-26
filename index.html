@@ -6917,7 +6917,7 @@ const MPpeers=new Map(),MPconns=new Map();let MPon=false,MPhost=false,MPpeer=nul
    - Hanya di dunia luar (bukan di desa, dungeon, arena, atau dalam bangunan).
    - Penyerang yang mendeteksi tabrakan, korban yang menerapkan damage (pertahanan/perisai korban tetap berlaku).
    - Mati karena PvP: tidak kehilangan koin. */
-const PVP={on:false,last:0,by:'',byU:''},PVP_DMG=0.6,MYUID=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+const PVP={on:false,last:0,by:'',byU:''},PVP_DMG=1,PVP_TANK=0.8,MYUID=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 let pvpDie=false;
 function pvpCan(r){
   return !!(PVP.on&&MPon&&!MPnr&&!dying&&started&&IN===null&&!DG&&!AR&&myG()===0&&r&&r.pv&&r.uid&&!r.dy&&!r.ind&&sameZone(r.g,r.w)&&!inSafe(P.x,P.y)&&!inSafe(r.x,r.y));}
@@ -6945,16 +6945,22 @@ function mpPvIn(m){
   let a=null;MPpeers.forEach(r=>{if(r.uid&&r.uid===m.u)a=r;});
   if(!a||!a.pv||a.dy||a.ind||!sameZone(a.g,a.w))return;
   if(Math.hypot(a.tx-P.x,a.ty-P.y)>300)return;            // penyerang harus berada di dekat kita
-  const cap=Math.max(2,Math.ceil(P.maxHp*0.35));          // batas damage per pukulan
-  const n=clamp(Math.round(+m.n||1),1,cap);
+  let n=clamp(Math.round(+m.n||1),1,9999);                // damage persis sama dengan pukulan penyerang
+  if(P.role==='tanker')n=Math.max(1,Math.round(n*PVP_TANK));   // khusus tanker: damage berkurang sedikit
   PVP.last=performance.now();PVP.by=a.name||'Pemain';PVP.byU=m.u;
   const hp0=P.hp;
-  hurt(n,a.tx,a.ty);
-  P.inv=Math.min(P.inv,P.shield?0.35:0.45);               // jeda kebal singkat antar pukulan
+  pvpHurt(n,a.tx,a.ty);                                   // tanpa pengurangan pertahanan/batas: 20 pukulan = -20 HP
   floatText(P.x,P.y-40,'\u2694 '+PVP.by,'#ff8a8a');
-  const lost=Math.max(0,Math.round(hp0-Math.max(0,P.hp)));
+  const lost=Math.max(0,Math.round(hp0-P.hp));
   mpOut({t:'pr',to:m.u,n:lost,hp:Math.max(0,Math.round(P.hp)),mh:Math.round(P.maxHp),g:0});   // hasil nyata untuk penyerang
   if(dying){pvpDie=true;mpOut({t:'pk',to:m.u,n:P.name,g:0});}}
+function pvpHurt(n,fromX,fromY){
+  P.hp-=n;P.inv=0.45;
+  sfx('hurt');shake(2.5,0.18);crossFx(P.x,P.y-9,'#ff6b6b',10,0.22);
+  floatText(P.x,P.y-24,'-'+n,'#ff6b6b');
+  const a=Math.atan2(P.y-fromY,P.x-fromX);
+  for(let i=0;i<3;i++)moveEnt(P,Math.cos(a)*3,Math.sin(a)*3,false);
+  if(P.hp<=0&&!dying){dying=true;deathT=0;sfx('die');toast('Kamu pingsan...');}}
 function mpPrIn(m){
   if(!m||m.to!==MYUID)return;
   let r=null;MPpeers.forEach(q=>{if(q.uid&&q.uid===m.u)r=q;});
