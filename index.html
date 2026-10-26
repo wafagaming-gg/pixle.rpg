@@ -3301,8 +3301,10 @@ function arStart(a,n,di){
   P.bag.tix--;closeMenu();fishS=null;P.shield=false;
   const df=AR_DIFF[di],Rm=AR_RM,bowM=(P.weapon==='bow'&&P.hasBow);
   const lv=Math.floor((effLvl()-1)/4);
-  const dS=Math.max(1,Math.round((2+lv)*RL().sword*strMul())),dB=Math.max(1,Math.round((3+lv)*RL().bow*strMul()));
-  const ref=bowM?dB:dS,kinds=AR_KINDS.filter(k=>SPR[k]);
+  const R_=RL(),pw_=(1+(effLvl()-1)*0.05)*R_.spell*strMul();
+  const dS=Math.max(2,Math.round((2+lv)*R_.sword*strMul())),dB=Math.max(2,Math.round((3+lv)*R_.bow*strMul())),dM=Math.max(2,Math.round(3*pw_));
+  const mode=P.role==='penyihir'?'magic':(P.role==='pemanah'||bowM)?'bow':'melee';   // serangan utama sesuai peran
+  const ref=mode==='magic'?dM:mode==='bow'?dB:dS,kinds=AR_KINDS.filter(k=>SPR[k]);
   const fs=[],used=new Set();
   const nm=()=>{let s;do{s=AR_NAMES[Math.floor(Math.random()*AR_NAMES.length)];}while(used.has(s)&&used.size<AR_NAMES.length);used.add(s);return s;};
   const mkF=(team,i,isMe)=>{
@@ -3311,7 +3313,7 @@ function arStart(a,n,di){
       x:team===0?Rm.x0+26:Rm.x1-26,y:Rm.y0+24+(Rm.y1-Rm.y0-48)*((i+0.5)/n),
       dir:team===0?3:2,anim:0,moving:false,aim:0,
       hp:Math.round(P.maxHp*m),maxHp:Math.round(P.maxHp*m),
-      dmg:isMe?ref:Math.max(1,ref*m),dmgS:dS,dmgB:dB,spd:isMe?58:50+Math.min(10,(m-1)*20)+Math.random()*4,
+      dmg:isMe?ref:Math.max(1,Math.round(ref*m)),dmgS:dS,dmgB:dB,dmgM:dM,mode:isMe?mode:'melee',spd:isMe?58:50+Math.min(10,(m-1)*20)+Math.random()*4,
       cd:0,inv:0,rt:0,tg:null,block:false,kos:0,
       k:(!isMe&&fs.length%3===2)?'bow':'melee',sd:Math.random()<.5?1:-1,n:Math.random()*6,
       set:isMe?null:SPR[kinds[Math.floor(Math.random()*kinds.length)]]};};
@@ -3320,7 +3322,17 @@ function arStart(a,n,di){
   for(let i=0;i<n;i++)fs.push(mkF(1,i,false));
   AR={door:a,n,di,df,fs,pj:[],fl:[],sl:[],state:'count',cd:3.2,t:0,left:150,win:false,menuShown:false,endT:0,res:''};
   toast('🏟️ '+n+' vs '+n+' · '+df.n+' — bersiaplah!');}
-function arExit(){AR=null;P.inv=0.5;P.moving=false;P.atk=0;P.shield=false;toast('Kamu keluar dari arena');}
+const arQuitBtn=document.createElement('button');arQuitBtn.type='button';arQuitBtn.textContent='\ud83c\udff3\ufe0f Menyerah';
+arQuitBtn.style.cssText='display:none;position:fixed;right:8px;top:56px;z-index:12;background:#7a1f2b;color:#fff;border:2px solid #fff;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;touch-action:manipulation';
+document.body.appendChild(arQuitBtn);
+function arQuit(){
+  if(!AR||AR.state==='end'||menu)return;
+  const A=AR;
+  openMenu('Menyerah?',()=>[
+    {t:'Mundur dari pertandingan dianggap KALAH (tiket hangus).',b:'Menyerah',f:()=>{closeMenu();if(AR===A&&A.state!=='end')arEnd(false,'Menyerah');A.menuShown=true;arExit();}},
+    {t:'Lanjut bertarung',b:'Lanjut',f:()=>closeMenu()}]);}
+arQuitBtn.onclick=()=>{arQuitBtn.blur();arQuit();};
+function arExit(){arQuitBtn.style.display='none';AR=null;P.inv=0.5;P.moving=false;P.atk=0;P.shield=false;toast('Kamu keluar dari arena');}
 function arBlk(x,y){
   const Rm=AR_RM;
   if(x<Rm.x0+4||x>Rm.x1-4||y<Rm.y0+8)return true;
@@ -3348,10 +3360,10 @@ function arEnd(win,why){
   else{const c=Math.round(8*n);P.coins+=c;P.st.pvpL=(P.st.pvpL||0)+1;AR.res='💀 KALAH — '+why+'<br><small style="color:#9ad">Hadiah hiburan +'+c+'🪙. Latih diri lalu coba lagi!</small>';}}
 function arHit(f,dmg,by){
   if(f.hp<=0||f.inv>0||AR.state!=='fight')return;
-  if(f.isMe)dmg=dmg*RL().def*defMul();
-  if(f.block)dmg*=0.15;
+  if(f.isMe&&P.role==='tanker')dmg*=PVP_TANK;            // hanya tanker yang menerima damage lebih kecil
+  if(f.isMe&&f.block&&RL().shield)dmg*=0.6;              // tanker yang menahan dengan perisai: berkurang lagi
   dmg=Math.max(1,Math.round(dmg));
-  f.hp-=dmg;f.inv=f.isMe?0.35:0.2;
+  f.hp-=dmg;f.inv=0.45;
   AR.fl.push({x:f.x,y:f.y-24,txt:'-'+dmg,col:f.isMe?'#ff6b6b':'#ffe066',t:0});
   const a=Math.atan2(f.y-by.y,f.x-by.x);arMove(f,Math.cos(a)*4,Math.sin(a)*3);
   try{sfx(f.isMe?'hurt':'swing');}catch(e){}
@@ -3360,7 +3372,10 @@ function arHit(f,dmg,by){
 function arPlayerAtk(me){
   const a=arAim(me),ca=Math.cos(a),sa=Math.sin(a);
   me.dir=dirFromVec(ca,sa);me.aim=a;P.aimA=a;P.aimT=0.4;
-  if(P.weapon==='bow'&&P.hasBow){
+  if(me.mode==='magic'){
+    me.cd=0.55*atkCdMul();AR.pj.push({x:me.x+ca*8,y:me.y-7+sa*8,vx:ca*170,vy:sa*170,life:.8,dmg:me.dmgM,team:me.team,by:me});
+    try{sfx('sp_api');}catch(e){}return;}
+  if(me.mode==='bow'){
     me.cd=0.5*atkCdMul();AR.pj.push({x:me.x+ca*8,y:me.y-7+sa*8,vx:ca*230,vy:sa*230,life:.7,dmg:me.dmgB,team:me.team,by:me});
     try{sfx('bow');}catch(e){}return;}
   me.cd=0.3*atkCdMul();try{sfx('swing');}catch(e){}
@@ -3382,7 +3397,7 @@ function arBot(f,dt){
     if(d<58){mx=-ux;my=-uy;}else if(d>92){mx=ux;my=uy;}else{mx=-uy*f.sd;my=ux*f.sd;}
     if(d<120&&f.cd<=0){
       f.cd=1.1+Math.random()*0.5;const a=Math.atan2(dy,dx);
-      AR.pj.push({x:f.x+ux*8,y:f.y-7+uy*8,vx:Math.cos(a)*200,vy:Math.sin(a)*200,life:.8,dmg:f.dmg*0.8,team:f.team,by:f});}
+      AR.pj.push({x:f.x+ux*8,y:f.y-7+uy*8,vx:Math.cos(a)*200,vy:Math.sin(a)*200,life:.8,dmg:f.dmg,team:f.team,by:f});}
   }else{
     const sw=0.35*f.sd*Math.sin(AR.t*1.7+f.n);
     if(d>13){mx=ux;my=uy;}
@@ -3390,7 +3405,7 @@ function arBot(f,dt){
     if(d<18&&f.cd<=0){
       f.cd=0.75+Math.random()*0.35;
       AR.sl.push({x:f.x,y:f.y-7,a:Math.atan2(dy,dx),t:0});
-      arHit(t,f.dmg*(0.85+Math.random()*0.3),f);}
+      arHit(t,f.dmg,f);}
   }
   const l=Math.hypot(mx,my);
   if(l>0.01){const sp=f.spd*dt/l;arMove(f,mx*sp,my*sp);f.moving=true;f.anim+=dt*7;}else f.moving=false;
@@ -3399,6 +3414,7 @@ function arBot(f,dt){
 function arUpdate(dt){
   const A=AR,me=A.fs[0];
   A.t+=dt;
+  arQuitBtn.style.display=(A.state==='count'||A.state==='fight')?'block':'none';
   for(const q of A.fl)q.t+=dt;A.fl=A.fl.filter(q=>q.t<0.9);
   for(const q of A.sl)q.t+=dt;A.sl=A.sl.filter(q=>q.t<0.2);
   if(P.aimT>0)P.aimT-=dt;
