@@ -6933,10 +6933,10 @@ function mobsPv(){
 function pvpHit(m,dmg,elem,o){
   if(o&&o.burn)return;
   const r=m.rem;if(!pvpCan(r))return;
-  const now=performance.now();if(now-(r.pvT||0)<400)return;
+  const now=performance.now();if(now-(r.pvT||0)<450)return;
   r.pvT=now;PVP.last=now;
   const n=Math.max(1,Math.round((+dmg||1)*PVP_DMG));
-  floatText(m.x,mc(m)-8,'-'+n+' \u2694','#ff8a8a');crossFx(m.x,mc(m),'#ff6b6b',10,0.22);
+  crossFx(m.x,mc(m),'#ff6b6b',10,0.22);   // angka damage asli menunggu balasan korban ('pr')
   mpOut({t:'pv',to:r.uid,u:MYUID,n,fx:Math.round(P.x),fy:Math.round(P.y),g:myG()});}
 function mpPvIn(m){
   if(!m||m.to!==MYUID||!PVP.on||!started||dying||IN!==null||DG||AR||myG()!==0)return;
@@ -6948,10 +6948,20 @@ function mpPvIn(m){
   const cap=Math.max(2,Math.ceil(P.maxHp*0.35));          // batas damage per pukulan
   const n=clamp(Math.round(+m.n||1),1,cap);
   PVP.last=performance.now();PVP.by=a.name||'Pemain';PVP.byU=m.u;
+  const hp0=P.hp;
   hurt(n,a.tx,a.ty);
   P.inv=Math.min(P.inv,P.shield?0.35:0.45);               // jeda kebal singkat antar pukulan
   floatText(P.x,P.y-40,'\u2694 '+PVP.by,'#ff8a8a');
+  const lost=Math.max(0,Math.round(hp0-Math.max(0,P.hp)));
+  mpOut({t:'pr',to:m.u,n:lost,hp:Math.max(0,Math.round(P.hp)),mh:Math.round(P.maxHp),g:0});   // hasil nyata untuk penyerang
   if(dying){pvpDie=true;mpOut({t:'pk',to:m.u,n:P.name,g:0});}}
+function mpPrIn(m){
+  if(!m||m.to!==MYUID)return;
+  let r=null;MPpeers.forEach(q=>{if(q.uid&&q.uid===m.u)r=q;});
+  if(!r)return;
+  r.hp=+m.hp;r.mh=+m.mh;
+  const n=Math.max(0,Math.round(+m.n||0));
+  floatText(r.x,r.y-16,n>0?'-'+n+' \u2694':'Serap','#ff8a8a');}
 function mpPkIn(m){
   if(!m||m.to!==MYUID)return;
   P.st=P.st||{};P.st.pvpk=(P.st.pvpk|0)+1;
@@ -7004,7 +7014,7 @@ function mpMsgIn(from,m){
     let r=MPpeers.get(id);const nm=cleanName(m.n)||'Pemain';
     if(!r){r={kind:'remote',id:id,inv:0,x:+m.x||0,y:+m.y||0,set:null,lkS:'',say:'',sayT:0};MPpeers.set(id,r);toast('\ud83c\udf10 '+nm+' bergabung');mpUi();}
     r.tx=+m.x||0;r.ty=+m.y||0;r.dir=(m.d|0)&3;r.mv=!!m.m;r.name=nm;r.lvl=Math.max(1,Math.min(999,m.l|0));
-    r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.dy=!!m.dy;r.g=m.g|0;r.w=((m.w|0)||1);r.v2=!!m.v2;r.pv=!!m.pv;r.uid=String(m.u||'').slice(0,20);r.seen=performance.now();
+    r.rn=String(m.rn||'').slice(0,12);r.rc=/^#[0-9a-f]{3,8}$/i.test(m.rc)?m.rc:'#ffffff';r.ind=!!m.i;r.dy=!!m.dy;r.g=m.g|0;r.w=((m.w|0)||1);r.v2=!!m.v2;r.hp=+m.hp;r.mh=+m.mh;r.pv=!!m.pv;r.uid=String(m.u||'').slice(0,20);r.seen=performance.now();
     const gv=gearVis(m.gr);r.gr=gv;r.bw=!!m.bw;
     const lk=JSON.stringify([m.lk||{},gv.h,gv.a,gv.b]);if(lk!==r.lkS&&lk.length<700){r.lkS=lk;try{r.set=makeSet(lookPal(sanitizeLook(m.lk),gv));}catch(e){}}
   }else if(m.t==='c'){
@@ -7012,8 +7022,9 @@ function mpMsgIn(from,m){
   }else if(m.t==='hl'){mpHealIn(m,id);
   }else if(m.t==='pv'){mpPvIn(m);
   }else if(m.t==='pk'){mpPkIn(m);
+  }else if(m.t==='pr'){mpPrIn(m);
   }else if(m.t==='bye'&&!MPhost){MPpeers.delete(id);mpUi();}
-  if(MPhost&&(m.t==='s'||m.t==='c'||m.t==='hl'||m.t==='pv'||m.t==='pk')){const o=Object.assign({},m,{f:from});MPconns.forEach((c,cid)=>{if(cid!==from&&c.open)try{c.send(o);}catch(e){}});}
+  if(MPhost&&(m.t==='s'||m.t==='c'||m.t==='hl'||m.t==='pv'||m.t==='pk'||m.t==='pr')){const o=Object.assign({},m,{f:from});MPconns.forEach((c,cid)=>{if(cid!==from&&c.open)try{c.send(o);}catch(e){}});}
 }
 function mpWire(c){MPconns.set(c.peer,c);c.on('data',m=>mpMsgIn(c.peer,m));
   c.on('close',()=>{if(MPhost)mpDrop(c.peer);else{toast('\ud83c\udf10 Host keluar dari ruangan');mpCleanup();}});c.on('error',()=>{});}
@@ -7048,7 +7059,7 @@ function mpDraw(e,sx,sy){
   shadow(sx,sy,10);
   ctx.drawImage(e.set[e.dir][e.mv?WALK[Math.floor(performance.now()/130)%4]:0],sx-9,sy-21);
   try{drawRemoteHeld(e,sx,sy);}catch(_){}
-  const y2=sy-24;wTag(e.w,e.v2,sx,y2-16);txt(e.name,sx,y2-8,'#9fe8ff',7);txt('Lv '+e.lvl+' \u00b7 '+e.rn,sx,y2,e.rc,6);if(e.pv)txt('\u2694 PvP',sx,y2-33,'#ff5a5a',6);
+  const y2=sy-24;wTag(e.w,e.v2,sx,y2-16);txt(e.name,sx,y2-8,'#9fe8ff',7);txt('Lv '+e.lvl+' \u00b7 '+e.rn,sx,y2,e.rc,6);if(e.pv){txt('\u2694 PvP',sx,y2-33,'#ff5a5a',6);if(e.mh>0){const f=Math.max(0,Math.min(1,e.hp/e.mh));ctx.fillStyle='#000';ctx.fillRect(sx-11,y2-43,22,4);ctx.fillStyle=f>0.5?'#5fd66a':f>0.25?'#ffd23f':'#ff5a5a';ctx.fillRect(sx-10,y2-42,Math.round(20*f),2);}}
   if(e.say&&performance.now()<e.sayT)txt(e.say,sx,y2-26,'#ffffff',7);}
 const MPpcs=[],MPICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};let MPman=null;
 const mpEnc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))),mpDec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/\s+/g,'')))));
@@ -7115,7 +7126,7 @@ function mpLoadSb(cb){
 let sbLast=0,sbKey='';
 function mpSbOut(m){
   if(!MPsb)return;const now=performance.now();
-  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy,m.g,m.w,m.bw,m.pv,JSON.stringify(m.gr)].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
+  if(m.t==='s'){const k=[m.x,m.y,m.d,m.m,m.i,m.l,m.dy,m.g,m.w,m.bw,m.pv,m.hp,m.mh,JSON.stringify(m.gr)].join();if(k===sbKey&&now-sbLast<2000)return;if(now-sbLast<250)return;sbKey=k;sbLast=now;}
   MPsb.ch.send({type:'broadcast',event:'m',payload:Object.assign({},m,{f:MPsb.id,g:myG()})}).catch(()=>{});}
 function mpSb(create,code){
   if(create)code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
@@ -7379,7 +7390,7 @@ function mpTick(dt){
       a.push([m.id,m.type,m.tier,m.lvl,q(m.x),q(m.y),m.hp,m.maxHp,m.dir&3,m.walkT>0?1:0,q(m.hop),q(m.lunge),q(m.aim),q(m.wind),q(m.fade)]);}
     mpOut({t:'M',a});}}
 setInterval(()=>{if(!MPon||!started)return;const R=RL();
-  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,gr:gearVis(P.gear),bw:(P.weapon==='bow'&&P.hasBow)?1:0,i:(IN===null&&!DG&&!AR)?0:1,dy:dying?1:0,g:myG(),v2:visited2()?1:0,pv:PVP.on?1:0,u:MYUID});},100);
+  mpOut({t:'s',x:Math.round(P.x),y:Math.round(P.y),d:P.dir,m:P.moving?1:0,n:P.name,l:P.lvl,rn:R.n,rc:R.col,lk:P.look,gr:gearVis(P.gear),bw:(P.weapon==='bow'&&P.hasBow)?1:0,i:(IN===null&&!DG&&!AR)?0:1,dy:dying?1:0,g:myG(),v2:visited2()?1:0,pv:PVP.on?1:0,u:MYUID,hp:Math.max(0,Math.round(P.hp)),mh:Math.round(P.maxHp)});},100);
 MPbtn.onclick=()=>{for(const k in keys)keys[k]=false;mpUi();$('mp').classList.add('on');};
 $('mpX').onclick=()=>$('mp').classList.remove('on');
 $('mpHost').onclick=mpHost;$('mpJoin').onclick=mpJoin;
